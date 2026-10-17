@@ -1,302 +1,352 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Novabit
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Shell;
 using System.Windows.Threading;
 using NovaMotion.Core;
+using NovaMotion.Core.ViewModels;
 using Forms = System.Windows.Forms;
 
 namespace NovaMotion.App;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Window, IUiHost
 {
     private readonly SettingsStore _store = new();
     private readonly RuntimeLayout? _runtime = RuntimeLayout.Find();
-    private readonly DispatcherTimer _statusTimer = new() { Interval = TimeSpan.FromSeconds(1) };
-    private AppSettings _settings;
-    private MpvPlayer? _player;
+    private readonly DispatcherTimer _tick = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    private readonly MainViewModel _vm;
+    private PlayerOverlay? _overlay;
     private Forms.NotifyIcon? _tray;
-    private bool _loadingUi = true;   // ignore control events fired while XAML loads; LoadUi() clears it
     private bool _quitting;
+    private Rect _restoreBounds;
+    private WindowState _restoreState;
+
+    public MainViewModel ViewModel => _vm;
 
     public MainWindow()
     {
         InitializeComponent();
-        _settings = _store.Load();
+        _vm = new MainViewModel(this, _store, _runtime, CreatePlayer);
+        DataContext = _vm;
+        _vm.PropertyChanged += OnVmChanged;
 
-        Drop += OnDrop;
+        _tick.Tick += (_, _) => _vm.Tick();
+        _tick.Start();
         Loaded += async (_, _) => await OnLoadedAsync();
-        _statusTimer.Tick += async (_, _) => await RefreshStatusAsync();
+        Activated += (_, _) => _vm.CheckClipboard();
+        LocationChanged += (_, _) => PlaceOverlay();
+        SizeChanged += (_, _) => PlaceOverlay();
+        StateChanged += (_, _) => OnStateChanged();
+        Video.SizeChanged += (_, _) => PlaceOverlay();
+        PreviewKeyDown += (_, e) => OnKey(e);
+        DragEnter += OnDragEnter;
+        DragOver += (_, e) => { e.Effects = DragDropEffects.Copy; e.Handled = true; };
+        DragLeave += (_, _) => DropHint.Visibility = Visibility.Collapsed;
+        Drop += (_, e) => OnDrop(e);
         SetupTray();
-        ShowProblems();
-        LoadUi();
     }
 
-    // ------------------------------------------------------------------ startup
+    private IPlayerBackend CreatePlayer()
+    {
+        if (_runtime is null) throw new InvalidOperationException("the player files are missing. Run build.cmd once, then restart NOVA Motion");
+        return new MpvPlayer(_runtime, _store) { WindowHandle = Video.VideoHandle.ToInt64() };
+    }
 
     private async Task OnLoadedAsync()
     {
-        var gpu = await GpuInfo.DetectAsync();
-        GpuText.Text = gpu.Names.Count > 0 ? gpu.Primary : "GPU unknown";
-        if (!_settings.FirstRunDone)
-        {
-            // Pick sensible profiles for this machine the first time
-            _settings = AppSettings.CreateDefaults(gpu);
-            _settings.FirstRunDone = true;
-            _store.Save(_settings);
-            LoadUi();
-        }
-        VsrBox.IsEnabled = gpu.IsNvidiaRtx || gpu.Names.Count == 0;
-        if (!VsrBox.IsEnabled) VsrBox.ToolTip = "Needs an NVIDIA RTX GPU";
+        _overlay = new PlayerOverlay(_vm) { Owner = this };
+        _overlay.Dropped += OnDrop;
+        _overlay.KeyPressed += OnKey;
+        UpdatePlayerSurface();
+        Home.FocusLink();
+        _vm.SetGpu(await GpuInfo.DetectAsync());
+        if (UiTest.Requested) _ = UiTest.RunAsync(this, _vm);
     }
 
-    private void ShowProblems()
+    // ------------------------------------------------------------------ IUiHost
+
+    public void Post(Action action)
     {
-        if (_runtime is null)
-        {
-            ProblemsText.Text = "Runtime not found. Run setup\\Get-Runtime.ps1 once, then restart NOVA Motion.";
-            PlayButton.IsEnabled = false;
-            return;
-        }
-        ProblemsText.Text = string.Join(Environment.NewLine, _runtime.Problems());
+        if (Dispatcher.CheckAccess()) action();
+        else Dispatcher.BeginInvoke(action);
     }
+
+    public IReadOnlyList<string>? PickVideoFiles()
+    {
+        var exts = string.Join(";", MediaSource.VideoExtensions.Select(e => "*" + e));
+        var dlg = new Microsoft.Win32.OpenFileDialog { Multiselect = true, Filter = $"Videos|{exts}|All files|*.*", Title = "Open videos" };
+        return dlg.ShowDialog(this) == true ? dlg.FileNames : null;
+    }
+
+    public string? PickSubtitleFile()
+    {
+        var exts = string.Join(";", MediaSource.SubtitleExtensions.Select(e => "*" + e));
+        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = $"Subtitles|{exts}|All files|*.*", Title = "Add a subtitle file" };
+        return dlg.ShowDialog(this) == true ? dlg.FileName : null;
+    }
+
+    public string? ClipboardText()
+    {
+        try { return Clipboard.ContainsText() ? Clipboard.GetText() : null; }
+        catch (Exception) { return null; }   // clipboard busy in another app
+    }
+
+    public void OpenExternal(string pathOrUrl)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(pathOrUrl) { UseShellExecute = true }); }
+        catch (Exception) { }
+    }
+
+    // ------------------------------------------------------------------ view state
+
+    private void OnVmChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(MainViewModel.HasMedia):
+            case nameof(MainViewModel.IsSettingsOpen):
+                UpdatePlayerSurface();
+                break;
+            case nameof(MainViewModel.IsFullscreen):
+                SetFullscreen(_vm.IsFullscreen);
+                break;
+            case nameof(MainViewModel.EngineState):
+                EngineDot.Fill = (Brush)FindResource(_vm.EngineState switch
+                {
+                    EngineState.Active => "Nova",
+                    EngineState.Failed => "Danger",
+                    EngineState.Preparing or EngineState.PreparingLong or EngineState.Opening => "Muted",
+                    _ => "Faint",
+                });
+                break;
+            case nameof(MainViewModel.ToastVisible):
+                HomeToast.Visibility = _vm.ToastVisible && (!_vm.HasMedia || _vm.IsSettingsOpen) ? Visibility.Visible : Visibility.Collapsed;
+                break;
+        }
+    }
+
+    /// <summary>The video window and its overlay show only while a video plays and no page covers it.</summary>
+    private void UpdatePlayerSurface()
+    {
+        var show = _vm.HasMedia && !_vm.IsSettingsOpen;
+        Video.Visibility = show ? Visibility.Visible : Visibility.Hidden;
+        if (_overlay is null) return;
+        if (show && IsVisible && WindowState != WindowState.Minimized)
+        {
+            PlaceOverlay();
+            if (!_overlay.IsVisible) _overlay.Show();
+            _overlay.ShowControls();
+        }
+        else if (_overlay.IsVisible) _overlay.Hide();
+        if (!_vm.HasMedia) Home.FocusLink();
+    }
+
+    /// <summary>Keeps the overlay window exactly over the video area.</summary>
+    private void PlaceOverlay()
+    {
+        if (_overlay is null || !Video.IsVisible || PresentationSource.FromVisual(Video) is not { CompositionTarget: { } ct }) return;
+        var topLeft = ct.TransformFromDevice.Transform(Video.PointToScreen(new Point(0, 0)));
+        var bottomRight = ct.TransformFromDevice.Transform(Video.PointToScreen(new Point(Video.ActualWidth, Video.ActualHeight)));
+        _overlay.Left = topLeft.X;
+        _overlay.Top = topLeft.Y;
+        _overlay.Width = Math.Max(0, bottomRight.X - topLeft.X);
+        _overlay.Height = Math.Max(0, bottomRight.Y - topLeft.Y);
+    }
+
+    private void OnStateChanged()
+    {
+        MaxButton.Content = WindowState == WindowState.Maximized ? "" : "";
+        // A maximised custom-chrome window overhangs the screen by its resize border
+        Frame.Padding = WindowState == WindowState.Maximized && !_vm.IsFullscreen ? new Thickness(7) : new Thickness(0);
+        UpdatePlayerSurface();
+    }
+
+    private void SetFullscreen(bool on)
+    {
+        if (on)
+        {
+            _restoreState = WindowState;
+            _restoreBounds = WindowState == WindowState.Normal ? new Rect(Left, Top, Width, Height) : RestoreBounds;
+            var screen = Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle).Bounds;
+            var src = PresentationSource.FromVisual(this)?.CompositionTarget;
+            var tl = src?.TransformFromDevice.Transform(new Point(screen.Left, screen.Top)) ?? new Point(screen.Left, screen.Top);
+            var br = src?.TransformFromDevice.Transform(new Point(screen.Right, screen.Bottom)) ?? new Point(screen.Right, screen.Bottom);
+            TitleRow.Height = new GridLength(0);
+            WindowChrome.SetWindowChrome(this, MakeChrome(caption: 0, resize: 0));
+            ResizeMode = ResizeMode.NoResize;
+            WindowState = WindowState.Normal;
+            Frame.Padding = new Thickness(0);
+            Left = tl.X; Top = tl.Y; Width = br.X - tl.X; Height = br.Y - tl.Y;
+            Topmost = true;
+        }
+        else
+        {
+            Topmost = false;
+            TitleRow.Height = new GridLength(44);
+            WindowChrome.SetWindowChrome(this, MakeChrome(caption: 44, resize: 6));
+            ResizeMode = ResizeMode.CanResize;
+            if (!_restoreBounds.IsEmpty)
+            {
+                Left = _restoreBounds.Left; Top = _restoreBounds.Top;
+                Width = _restoreBounds.Width; Height = _restoreBounds.Height;
+            }
+            WindowState = _restoreState;
+            OnStateChanged();
+        }
+        Dispatcher.BeginInvoke(PlaceOverlay, DispatcherPriority.Loaded);
+    }
+
+    private static WindowChrome MakeChrome(double caption, double resize) => new()
+    {
+        CaptionHeight = caption,
+        ResizeBorderThickness = new Thickness(resize),
+        GlassFrameThickness = new Thickness(0),
+        CornerRadius = new CornerRadius(0),
+        UseAeroCaptionButtons = false,
+    };
+
+    // ------------------------------------------------------------------ input
+
+    private void OnKey(KeyEventArgs e)
+    {
+        if (!_vm.HasMedia || _vm.IsSettingsOpen) return;
+        if (Keyboard.FocusedElement is TextBox) return;
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        var mods = Keyboard.Modifiers;
+        var (action, arg) = KeyMap.Resolve(key.ToString(), mods.HasFlag(ModifierKeys.Control), mods.HasFlag(ModifierKeys.Shift), mods.HasFlag(ModifierKeys.Alt));
+        if (action == PlayerAction.None) return;
+        e.Handled = true;
+        _overlay?.ShowControls();
+        _ = _vm.HandleAsync(action, arg);
+    }
+
+    private void OnDragEnter(object sender, DragEventArgs e)
+    {
+        if (_vm.HasMedia) return;     // over the video, the overlay window takes drops
+        DropHint.Visibility = Visibility.Visible;
+        e.Handled = true;
+    }
+
+    private void OnDrop(DragEventArgs e)
+    {
+        DropHint.Visibility = Visibility.Collapsed;
+        var enqueue = e.KeyStates.HasFlag(DragDropKeyStates.ShiftKey);
+        List<string> targets = new();
+        if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
+        {
+            foreach (var f in files)
+            {
+                if (Directory.Exists(f))
+                    targets.AddRange(Directory.GetFiles(f).Where(MediaSource.IsVideoFile).OrderBy(x => x, NaturalComparer.Instance));
+                else if (MediaSource.IsSubtitleFile(f) && _vm.HasMedia)
+                {
+                    _vm.AddSubtitle(f);
+                    return;
+                }
+                else targets.Add(f);
+            }
+        }
+        else if (MediaSource.AsLink(e.Data.GetData(DataFormats.UnicodeText) as string ?? e.Data.GetData(DataFormats.Text) as string) is { } link)
+            targets.Add(link);
+        if (targets.Count == 0) return;
+        if (enqueue && _vm.HasMedia) _vm.Enqueue(targets);
+        else _ = _vm.OpenAsync(targets);
+        Activate();
+    }
+
+    /// <summary>A command-line argument or one forwarded from a second instance.</summary>
+    public void HandleArgument(string arg)
+    {
+        ShowFromTray();
+        if (arg == "--show") return;
+        if (NovaMotionLink.Parse(arg) is { } link) _ = _vm.OpenAsync(new[] { link.Target }, link.Start);
+        else if (File.Exists(arg)) _ = _vm.OpenAsync(new[] { arg });
+    }
+
+    public void OpenSettings(string section)
+    {
+        SettingsPage.ShowSection(section);
+        _vm.OpenSettingsCommand.Execute(null);
+    }
+
+    private void EngineChip_Click(object sender, RoutedEventArgs e)
+    {
+        if (_vm.HasMedia && !_vm.IsSettingsOpen) _vm.ToggleDrawerCommand.Execute("motion");
+        else OpenSettings("smoothing");
+    }
+
+    // ------------------------------------------------------------------ title bar
+
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void Maximize_Click(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    // ------------------------------------------------------------------ tray & lifetime
 
     private void SetupTray()
     {
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("Open NOVA Motion", null, (_, _) => ShowFromTray());
-        menu.Items.Add("Smoothing on/off", null, (_, _) => Dispatcher.Invoke(() =>
-        {
-            EnabledBox.IsChecked = EnabledBox.IsChecked != true;
-            Setting_Changed(EnabledBox, new RoutedEventArgs());
-        }));
+        menu.Items.Add("Smoothing on/off", null, (_, _) => Dispatcher.Invoke(() => _vm.SmoothingEnabled = !_vm.SmoothingEnabled));
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("Quit", null, (_, _) => Dispatcher.Invoke(Quit));
-
         _tray = new Forms.NotifyIcon
         {
             Text = "NOVA Motion",
-            Icon = (Environment.ProcessPath is { } exe ? System.Drawing.Icon.ExtractAssociatedIcon(exe) : null)
-                   ?? System.Drawing.SystemIcons.Application,
+            Icon = (Environment.ProcessPath is { } exe ? System.Drawing.Icon.ExtractAssociatedIcon(exe) : null) ?? System.Drawing.SystemIcons.Application,
             ContextMenuStrip = menu,
             Visible = true,
         };
         _tray.DoubleClick += (_, _) => ShowFromTray();
     }
 
-    private void ShowFromTray() => Dispatcher.Invoke(() =>
+    public void ShowFromTray() => Dispatcher.Invoke(() =>
     {
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
         Activate();
+        UpdatePlayerSurface();
     });
 
     protected override void OnClosing(CancelEventArgs e)
     {
-        if (!_quitting)
+        if (!_quitting && _vm.Settings.CloseToTray)
         {
-            e.Cancel = true;     // keep running in the tray
+            e.Cancel = true;
+            _ = _vm.StopAsync();
+            _vm.IsFullscreen = false;
             Hide();
-            _tray?.ShowBalloonTip(2000, "NOVA Motion", "Still running in the tray.", Forms.ToolTipIcon.None);
+            _overlay?.Hide();
+            _tray?.ShowBalloonTip(2000, "NOVA Motion", "Still running in the tray, ready for links from your browser.", Forms.ToolTipIcon.None);
             return;
         }
+        if (!_quitting) { e.Cancel = true; Quit(); return; }
         base.OnClosing(e);
     }
 
-    private async void Quit()
+    public async void Quit()
     {
+        if (_quitting) return;
         _quitting = true;
-        _statusTimer.Stop();
-        if (_player is not null) await _player.DisposeAsync();
+        _tick.Stop();
+        _overlay?.Close();
+        await _vm.DisposeAsync();
         if (_tray is not null) { _tray.Visible = false; _tray.Dispose(); }
         Close();
         Application.Current.Shutdown();
-    }
-
-    // ------------------------------------------------------------------ open & play
-
-    /// <summary>Handles a command-line argument or one forwarded from a second instance.</summary>
-    public void HandleArgument(string arg)
-    {
-        ShowFromTray();
-        if (arg == "--show") return;
-        if (NovaMotionLink.Parse(arg) is { } link)
-        {
-            TargetBox.Text = link.Target;
-            _ = PlayAsync(link.Target, link.Start);
-        }
-        else if (File.Exists(arg))
-        {
-            TargetBox.Text = arg;
-            _ = PlayAsync(arg, null);
-        }
-    }
-
-    private void Browse_Click(object sender, RoutedEventArgs e)
-    {
-        var dlg = new Microsoft.Win32.OpenFileDialog
-        {
-            Filter = "Video|*.mkv;*.mp4;*.avi;*.mov;*.webm;*.m2ts;*.ts;*.wmv;*.flv|All files|*.*",
-        };
-        if (dlg.ShowDialog(this) == true) TargetBox.Text = dlg.FileName;
-    }
-
-    private void OnDrop(object sender, DragEventArgs e)
-    {
-        if (e.Data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } files)
-        {
-            TargetBox.Text = files[0];
-            _ = PlayAsync(files[0], null);
-        }
-        else if (e.Data.GetData(DataFormats.Text) is string text && Uri.IsWellFormedUriString(text.Trim(), UriKind.Absolute))
-        {
-            TargetBox.Text = text.Trim();
-            _ = PlayAsync(text.Trim(), null);
-        }
-    }
-
-    private void Play_Click(object sender, RoutedEventArgs e)
-    {
-        var target = TargetBox.Text.Trim().Trim('"');
-        if (target.Length == 0) return;
-        _ = PlayAsync(target, null);
-    }
-
-    private async Task PlayAsync(string target, int? startSeconds)
-    {
-        if (_runtime is null) return;
-        try
-        {
-            PlayButton.IsEnabled = false;
-            FpsText.Text = "Starting…";
-            if (_player is null || !_player.IsRunning)
-            {
-                if (_player is not null) await _player.DisposeAsync();
-                _player = new MpvPlayer(_runtime, _store);
-                _player.Exited += () => Dispatcher.Invoke(() =>
-                {
-                    _statusTimer.Stop();
-                    TitleText.Text = "Nothing playing";
-                    FpsText.Text = "Idle";
-                    EngineDot.Fill = (Brush)FindResource("Muted");
-                });
-            }
-            await _player.StartAsync(target, _settings);
-            if (startSeconds is > 0)
-            {
-                await Task.Delay(1500);   // let the file open before seeking
-                try { await _player.CommandAsync("seek", startSeconds.Value, "absolute"); } catch (Exception) { }
-            }
-            _statusTimer.Start();
-        }
-        catch (Exception ex)
-        {
-            FpsText.Text = "Could not start player: " + ex.Message;
-        }
-        finally
-        {
-            PlayButton.IsEnabled = true;
-        }
-    }
-
-    private async Task RefreshStatusAsync()
-    {
-        if (_player is null) return;
-        PlaybackStatus? st;
-        try { st = await _player.GetStatusAsync(); }
-        catch (Exception) { return; }
-        if (st is null) return;
-
-        TitleText.Text = string.IsNullOrEmpty(st.Title) ? "Loading…" : st.Title;
-        if (st.EngineActive && st.OutputFps > st.SourceFps * 1.1)
-        {
-            FpsText.Text = $"{st.SourceFps:0.###} fps → {st.OutputFps:0.#} fps   ·   display {st.DisplayFps:0.#} Hz";
-            EngineDot.Fill = (Brush)FindResource("Good");
-        }
-        else
-        {
-            var why = !_settings.Active.Engine.Enabled ? "smoothing off"
-                    : st.SourceFps > _settings.Active.Engine.MaxSourceFps ? "source is already high frame rate"
-                    : st.EngineActive ? "warming up"
-                    : "engine failed - switch engine or check mpv.log";
-            FpsText.Text = $"{st.SourceFps:0.###} fps   ·   {why}";
-            var failed = !st.EngineActive && _settings.Active.Engine.Enabled && st.SourceFps <= _settings.Active.Engine.MaxSourceFps;
-            EngineDot.Fill = failed ? Brushes.IndianRed : (Brush)FindResource(st.EngineActive ? "Warn" : "Muted");
-        }
-    }
-
-    // ------------------------------------------------------------------ settings UI
-
-    private void LoadUi()
-    {
-        _loadingUi = true;
-        try
-        {
-            ProfileBox.ItemsSource = _settings.Profiles.Select(p => p.Name).ToList();
-            ProfileBox.SelectedItem = _settings.Active.Name;
-
-            var models = _runtime?.RifeModels() ?? Array.Empty<string>();
-            ModelBox.ItemsSource = models;
-
-            var e = _settings.Active.Engine;
-            Select(EngineBox, e.Engine);
-            Select(TargetFpsBox, e.TargetText);
-            Select(MvQualityBox, e.MvQuality);
-            Select(OnlineHeightBox, _settings.OnlineMaxHeight.ToString());
-            ModelBox.SelectedItem = models.Contains(e.RifeModel) ? e.RifeModel : models.FirstOrDefault();
-            EnabledBox.IsChecked = e.Enabled;
-            SceneBox.IsChecked = e.SceneDetect;
-            DemoBox.IsChecked = e.Demo;
-            VsrBox.IsChecked = e.RtxVsr;
-        }
-        finally { _loadingUi = false; }
-    }
-
-    private static void Select(ComboBox box, string tag)
-    {
-        box.SelectedItem = box.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tag)
-                           ?? box.Items.OfType<ComboBoxItem>().FirstOrDefault();
-    }
-
-    private static string? TagOf(ComboBox box) => (box.SelectedItem as ComboBoxItem)?.Tag as string;
-
-    private void Profile_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (_loadingUi || ProfileBox.SelectedItem is not string name) return;
-        _settings.ActiveProfile = name;
-        LoadUi();
-        _ = SaveAndApplyAsync();
-    }
-
-    private void Setting_Changed(object sender, RoutedEventArgs e)
-    {
-        if (_loadingUi) return;
-        var eng = _settings.Active.Engine;
-        eng.Engine = TagOf(EngineBox) ?? eng.Engine;
-        eng.TargetText = TagOf(TargetFpsBox) ?? eng.TargetText;
-        eng.MvQuality = TagOf(MvQualityBox) ?? eng.MvQuality;
-        if (ModelBox.SelectedItem is string model) eng.RifeModel = model;
-        eng.Enabled = EnabledBox.IsChecked == true;
-        eng.SceneDetect = SceneBox.IsChecked == true;
-        eng.Demo = DemoBox.IsChecked == true;
-        eng.RtxVsr = VsrBox.IsChecked == true;
-        if (int.TryParse(TagOf(OnlineHeightBox), out var h)) _settings.OnlineMaxHeight = h;
-        _ = SaveAndApplyAsync();
-    }
-
-    private async Task SaveAndApplyAsync()
-    {
-        _store.Save(_settings);
-        if (_player is { IsRunning: true })
-        {
-            try { await _player.ApplyAsync(_settings.Active.Engine); }
-            catch (Exception ex) { FpsText.Text = "Could not update player: " + ex.Message; }
-        }
     }
 }

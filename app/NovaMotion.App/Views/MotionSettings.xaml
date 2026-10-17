@@ -1,0 +1,131 @@
+<!-- Smoothing choices. Shared by the Motion panel in the player and the Settings page. -->
+<UserControl x:Class="NovaMotion.App.Views.MotionSettings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Style="{StaticResource Text.Strong}" Text="Profile"/>
+        <TextBlock Style="{StaticResource Text.Small}" Margin="0,2,0,10" TextWrapping="Wrap"
+                   Text="A profile is a saved set of the choices below. Changes are saved to the profile you're on."/>
+        <ItemsControl ItemsSource="{Binding Profiles}" Focusable="False">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <RadioButton Style="{StaticResource Chip}" GroupName="profiles" Content="{Binding Label}" ToolTip="{Binding Description}"
+                                 IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                 Command="{Binding DataContext.SelectProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                 CommandParameter="{Binding}"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock Style="{StaticResource Text.Strong}" Text="Engine" Margin="0,18,0,10"/>
+        <ItemsControl ItemsSource="{Binding Engines}" Focusable="False">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <RadioButton Style="{StaticResource OptionRow}" GroupName="engines" IsEnabled="{Binding Available}"
+                                 IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                 Command="{Binding DataContext.SelectEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                 CommandParameter="{Binding}">
+                        <StackPanel>
+                            <DockPanel>
+                                <Border DockPanel.Dock="Right" CornerRadius="5" Background="{StaticResource Raised}" Padding="7,2"
+                                        VerticalAlignment="Center" Visibility="{Binding Badge, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{Binding Badge}" FontSize="11.5" FontWeight="Medium" Foreground="{StaticResource Muted}"/>
+                                </Border>
+                                <TextBlock Style="{StaticResource Text.Strong}" Text="{Binding Label}"/>
+                            </DockPanel>
+                            <TextBlock Style="{StaticResource Text.Small}" Margin="0,3,0,0" TextWrapping="Wrap" TextTrimming="None"
+                                       Text="{Binding Description}"/>
+                        </StackPanel>
+                    </RadioButton>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock Style="{StaticResource Text.Strong}" Text="Frame rate" Margin="0,18,0,10"/>
+        <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+            <ItemsControl ItemsSource="{Binding Targets}" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="3"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <RadioButton Style="{StaticResource Segment}" GroupName="targets" Content="{Binding Label}" ToolTip="{Binding Description}"
+                                     IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                     Command="{Binding DataContext.SelectTargetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                     CommandParameter="{Binding}"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+        <TextBlock Style="{StaticResource Text.Small}" Margin="0,8,0,0" TextWrapping="Wrap"
+                   Text="NOVA Motion never makes more frames than your screen can show."/>
+
+        <StackPanel Visibility="{Binding HasModels, Converter={StaticResource BoolToVis}}">
+            <TextBlock Style="{StaticResource Text.Strong}" Text="RIFE model" Margin="0,18,0,10"/>
+            <ItemsControl ItemsSource="{Binding Models}" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <RadioButton Style="{StaticResource Chip}" GroupName="models" Content="{Binding Label}" ToolTip="{Binding Description}"
+                                     IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                     Command="{Binding DataContext.SelectModelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                     CommandParameter="{Binding}"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <StackPanel Visibility="{Binding IsMvTools, Converter={StaticResource BoolToVis}}">
+            <TextBlock Style="{StaticResource Text.Strong}" Text="MVTools quality" Margin="0,18,0,10"/>
+            <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+                <ItemsControl ItemsSource="{Binding MvQualities}" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="3"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="mvq" Content="{Binding Label}"
+                                         IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                         Command="{Binding DataContext.SelectMvQualityCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                         CommandParameter="{Binding}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+        </StackPanel>
+
+        <Border Style="{StaticResource Divider}"/>
+
+        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding SceneDetect}">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Text.Body}" Text="Scene-cut detection"/>
+                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Shows cuts as cuts instead of blending two shots."/>
+            </StackPanel>
+        </CheckBox>
+        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Demo}" Margin="0,12,0,0">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Text.Body}" Text="Before and after"/>
+                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Original on the left half, smoothed on the right."/>
+            </StackPanel>
+        </CheckBox>
+        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding RtxVsr}" Margin="0,12,0,0">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Text.Body}" Text="RTX Video Super Resolution"/>
+                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="NVIDIA's upscaler for sharper low-resolution video. RTX GPUs only."/>
+            </StackPanel>
+        </CheckBox>
+    </StackPanel>
+</UserControl>

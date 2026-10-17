@@ -141,6 +141,7 @@ public sealed partial class MainViewModel
     // ------------------------------------------------------------------ engine status
 
     private DateTime? _engineChangedAt;
+    private string? _engineSignature;
     private EngineState _engineState = EngineState.Idle;
     public EngineState EngineState { get => _engineState; private set => Set(ref _engineState, value); }
 
@@ -235,6 +236,10 @@ public sealed partial class MainViewModel
         else s = EngineState.Failed;
 
         EngineState = s;
+        // Called for every frame-rate report: only notify the view when something it shows changed
+        var signature = $"{s}|{OutputFpsText}|{SourceFpsText}|{DisplayText}|{VideoSizeText}|{DecoderText}|{Eng.Engine}";
+        if (signature == _engineSignature) return;
+        _engineSignature = signature;
         Raise(nameof(EngineActive), nameof(EngineWorking), nameof(EngineProblem), nameof(BadgeText), nameof(EngineStatusText),
               nameof(OutputFpsText), nameof(SourceFpsText), nameof(DisplayText), nameof(VideoSizeText), nameof(DecoderText),
               nameof(GeneratedShareText), nameof(CadenceTicks), nameof(EngineSizeHint));

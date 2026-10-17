@@ -54,6 +54,11 @@ trap {
 function Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 function Info($msg) { Write-Host "    $msg" }
 
+# GitHub API calls: anonymous use is limited to 60 an hour per IP, which shared CI machines hit.
+# A token (CI sets GITHUB_TOKEN) lifts that; it is only ever sent to api.github.com.
+$ApiHeaders = @{ "User-Agent" = "NovaMotion-Setup" }
+if ($env:GITHUB_TOKEN) { $ApiHeaders["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
+
 function Get-File([string]$Url, [string]$Name) {
     $dest = Join-Path $Cache $Name
     if ((Test-Path $dest) -and -not $Force) { Info "cached  $Name"; return $dest }
@@ -65,12 +70,12 @@ function Get-File([string]$Url, [string]$Name) {
 function Get-Release([string]$Repo, [string]$Tag = "latest") {
     $api = if ($Tag -eq "latest") { "https://api.github.com/repos/$Repo/releases/latest" }
            else { "https://api.github.com/repos/$Repo/releases/tags/$Tag" }
-    return Invoke-RestMethod -Uri $api -Headers @{ "User-Agent" = "NovaMotion-Setup" }
+    return Invoke-RestMethod -Uri $api -Headers $ApiHeaders
 }
 
 function Get-NewestAssetAcrossReleases([string]$Repo, [string]$Pattern) {
     # Some projects stop attaching Windows builds to newer releases; take the newest one that has it
-    $rels = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=30" -Headers @{ "User-Agent" = "NovaMotion-Setup" }
+    $rels = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=30" -Headers $ApiHeaders
     foreach ($rel in $rels) {
         $asset = $rel.assets | Where-Object { $_.name -match $Pattern } | Select-Object -First 1
         if ($asset) {
@@ -162,7 +167,7 @@ Get-ChildItem $rifeX -Recurse -Filter "flownet.param" | ForEach-Object {
 
 # Model files live in the repository source, not in the release downloads: fetch just the ones we use
 $wantModels = @("rife-v4.6_ensembleFalse", "rife-v4.26_ensembleFalse", "rife-v4.25-lite_ensembleFalse", "rife-v4.22_lite_ensembleFalse")
-$tree = Invoke-RestMethod -Uri "https://api.github.com/repos/$RifeRepo/git/trees/$($rel.tag_name)?recursive=1" -Headers @{ "User-Agent" = "NovaMotion-Setup" }
+$tree = Invoke-RestMethod -Uri "https://api.github.com/repos/$RifeRepo/git/trees/$($rel.tag_name)?recursive=1" -Headers $ApiHeaders
 foreach ($m in $wantModels) {
     if (Test-Path (Join-Path $Models "$m\flownet.bin")) { Info "cached  model $m"; continue }
     $files = $tree.tree | Where-Object { $_.type -eq "blob" -and $_.path -match "(^|/)models/$([regex]::Escape($m))/[^/]+$" }

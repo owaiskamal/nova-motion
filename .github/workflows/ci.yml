@@ -6,7 +6,7 @@ on:
 
 jobs:
   core:
-    name: Core library smoke tests
+    name: Core library and view-model tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,15 +15,67 @@ jobs:
           dotnet-version: 8.0.x
       - run: dotnet run --project app/NovaMotion.SmokeTest -c Release
 
+  ui-lint:
+    name: XAML checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tests/ui/lint_xaml.py app/NovaMotion.App app/NovaMotion.Core
+
   app:
-    name: Windows app build (WPF)
+    name: Windows app build and UI run
     runs-on: windows-latest
+    needs: [ui-lint]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - run: dotnet build app/NovaMotion.App -c Release
+      - name: Build
+        run: dotnet publish app/NovaMotion.App -c Release -r win-x64 -o dist
+
+      # The player runtime (mpv, VapourSynth, RIFE, MVTools, yt-dlp), cached between runs
+      - uses: actions/cache@v4
+        id: runtime
+        with:
+          path: runtime
+          key: runtime-${{ hashFiles('setup/Get-Runtime.ps1') }}
+      - name: Download the runtime
+        if: steps.runtime.outputs.cache-hit != 'true'
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File setup/Get-Runtime.ps1
+      - name: Copy the engine into the runtime
+        shell: cmd
+        run: |
+          copy /y engine\novamotion.vpy runtime\
+          copy /y engine\novamotion_trt.py runtime\
+          xcopy /e /y /i /q engine\mpv runtime\mpv\portable_config
+
+      # Walk through the UI on the runner's desktop and screenshot each screen
+      - name: UI run with screenshots
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD "uitest"
+          New-Item -ItemType Directory -Force $out | Out-Null
+          $env:NOVAMOTION_UITEST = $out
+          $p = Start-Process -FilePath "dist\NovaMotion.exe" -PassThru
+          if (-not $p.WaitForExit(180000)) { $p.Kill(); Write-Host "::error::UI run did not finish in 3 minutes" }
+          Write-Host "exit code: $($p.ExitCode)"
+          $log = Join-Path $out "uitest.log"
+          if (Test-Path $log) { Get-Content $log } else { Write-Host "::error::no uitest.log" }
+          $appdata = Join-Path $env:APPDATA "NovaMotion"
+          if (Test-Path $appdata) { Copy-Item "$appdata\*.log" $out -ErrorAction SilentlyContinue }
+          if (Test-Path "$out\crash.log") { Get-Content "$out\crash.log" }
+          $text = if (Test-Path $log) { Get-Content $log -Raw } else { "" }
+          if ($text -match "CRASH|UNHANDLED|ERROR" -or -not (Test-Path "$out\01-home.png")) { exit 1 }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-screenshots
+          path: uitest
+          retention-days: 14
 
   engine:
     name: Engine tests (VapourSynth, no GPU)

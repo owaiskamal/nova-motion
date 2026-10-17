@@ -1,0 +1,362 @@
+<!--
+  Player controls. A transparent window kept exactly over the video: WPF can't draw on top of
+  mpv's Win32 child window inside the main window, but it can draw in a window above it.
+-->
+<Window x:Class="NovaMotion.App.PlayerOverlay"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:NovaMotion.App.Controls"
+        xmlns:v="clr-namespace:NovaMotion.App.Views"
+        Title="NOVA Motion controls" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" ResizeMode="NoResize" ShowActivated="False"
+        FontFamily="{StaticResource UiFont}" FontSize="14" Foreground="{StaticResource OnVideo}"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Ideal" AllowDrop="True">
+    <Window.Resources>
+        <Style x:Key="GoldWhenActive" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource OnVideo}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding EngineActive}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource Nova}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding EngineProblem}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource Danger}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="DrawerTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="Margin" Value="12,18,0,6"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name="Root" Background="#01000000">
+
+        <!-- ==================================================== busy -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"
+                    Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+            <ContentControl Style="{StaticResource Spinner}"/>
+            <TextBlock Text="{Binding BusyText}" Margin="0,14,0,0" HorizontalAlignment="Center" Foreground="{StaticResource OnVideoMuted}"/>
+        </StackPanel>
+
+        <!-- ==================================================== top bar -->
+        <Border x:Name="TopBar" VerticalAlignment="Top" Background="{StaticResource ScrimTop}" Padding="14,12,22,52">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE72B;" FontSize="15" Command="{Binding StopCommand}"
+                        ToolTip="Back to home" VerticalAlignment="Top"/>
+                <StackPanel Grid.Column="1" Margin="10,2,24,0" VerticalAlignment="Top">
+                    <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Origin}" FontSize="12.5" Foreground="{StaticResource OnVideoMuted}" Margin="0,2,0,0"
+                               TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" VerticalAlignment="Top" Margin="0,4,0,0" HorizontalAlignment="Right"
+                            Visibility="{Binding HasNext, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Up next" FontSize="12" Foreground="{StaticResource OnVideoMuted}" HorizontalAlignment="Right"/>
+                    <TextBlock Text="{Binding NextTitle}" FontSize="13" FontWeight="Medium" MaxWidth="280" TextTrimming="CharacterEllipsis"
+                               HorizontalAlignment="Right" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ==================================================== bottom controls -->
+        <Border x:Name="BottomBar" VerticalAlignment="Bottom" Background="{StaticResource ScrimBottom}" Padding="20,64,20,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="2,0,2,4">
+                    <c:SeekBar x:Name="Seek" ProgressBrush="{StaticResource Nova}"
+                               Value="{Binding SeekValue}" IsScrubbing="{Binding IsScrubbing}"
+                               Maximum="{Binding Duration, Mode=OneWay}" CacheFraction="{Binding CachedFraction, Mode=OneWay}"
+                               Chapters="{Binding ChapterFractions, Mode=OneWay}"/>
+                    <Canvas IsHitTestVisible="False">
+                        <Border x:Name="HoverBubble" Canvas.Top="-34" Background="{StaticResource Raised}" CornerRadius="6"
+                                Padding="8,4" Visibility="Collapsed">
+                            <TextBlock x:Name="HoverText" FontSize="12.5" FontWeight="Medium" Foreground="{StaticResource Text}"/>
+                        </Border>
+                    </Canvas>
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE892;" Command="{Binding PreviousCommand}" ToolTip="Previous (P)"/>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Content="{Binding PlayPauseGlyph}" FontSize="22" Width="46" Height="46"
+                                Command="{Binding TogglePauseCommand}" ToolTip="{Binding PlayPauseTip}"/>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE893;" Command="{Binding NextCommand}" ToolTip="Next (N)"
+                                Visibility="{Binding HasNext, Converter={StaticResource BoolToVis}}"/>
+                        <Button x:Name="VolumeButton" Style="{StaticResource Btn.VideoIcon}" Content="{Binding VolumeGlyph}" Margin="6,0,0,0"
+                                Command="{Binding ToggleMuteCommand}" ToolTip="Mute (M)"/>
+                        <Slider Style="{StaticResource VolumeSlider}" Maximum="130" Value="{Binding Volume}" Margin="2,0,14,0"
+                                ToolTip="{Binding VolumeText}"/>
+                        <TextBlock VerticalAlignment="Center" FontSize="13.5" FontWeight="Medium">
+                            <Run Text="{Binding PositionText, Mode=OneWay}"/>
+                            <Run Text=" / " Foreground="{StaticResource OnVideoMuted}"/>
+                            <Run Text="{Binding DurationText, Mode=OneWay}" Foreground="{StaticResource OnVideoMuted}"/>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <!-- Engine badge: the cadence strip and what it's doing; opens the Motion panel -->
+                        <Button Style="{StaticResource Btn.VideoText}" Command="{Binding ToggleDrawerCommand}" CommandParameter="motion"
+                                ToolTip="Motion panel (Tab)" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal">
+                                <c:CadenceStrip Ticks="{Binding CadenceTicks}" BarWidth="3" Gap="2" Height="13" Margin="0,0,9,0"
+                                                RealBrush="{StaticResource OnVideo}" GeneratedBrush="{StaticResource Nova}" VerticalAlignment="Center"
+                                                Visibility="{Binding EngineActive, Converter={StaticResource BoolToVis}}"/>
+                                <ContentControl Style="{StaticResource Spinner}" Margin="0,0,9,0" VerticalAlignment="Center"
+                                                Visibility="{Binding EngineWorking, Converter={StaticResource BoolToVis}}">
+                                    <ContentControl.LayoutTransform>
+                                        <ScaleTransform ScaleX="0.36" ScaleY="0.36"/>
+                                    </ContentControl.LayoutTransform>
+                                </ContentControl>
+                                <TextBlock Style="{StaticResource GoldWhenActive}" Text="{Binding BadgeText}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE7F0;" Command="{Binding ToggleDrawerCommand}" CommandParameter="tracks"
+                                ToolTip="Subtitles, audio and speed"/>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE8FD;" Command="{Binding ToggleDrawerCommand}" CommandParameter="queue"
+                                ToolTip="Queue" Visibility="{Binding HasQueue, Converter={StaticResource BoolToVis}}"/>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Content="{Binding FullscreenGlyph}" Command="{Binding ToggleFullscreenCommand}"
+                                ToolTip="Full screen (F)"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- ==================================================== drawer -->
+        <Border x:Name="DrawerPanel" HorizontalAlignment="Right" Width="376" Margin="0,14,14,104" Background="{StaticResource Glass}"
+                CornerRadius="14" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                Visibility="{Binding IsDrawerOpen, Converter={StaticResource BoolToVis}}">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="DrawerShift" X="0"/>
+            </Border.RenderTransform>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <DockPanel Margin="20,12,10,0">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Icon}" Content="&#xE711;" FontSize="11"
+                            Command="{Binding CloseDrawerCommand}" ToolTip="Close (Esc)"/>
+                    <TextBlock VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Text}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="Motion"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsTracksOpen}" Value="True">
+                                        <Setter Property="Text" Value="Subtitles and audio"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsQueueOpen}" Value="True">
+                                        <Setter Property="Text" Value="Queue"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </DockPanel>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False" Margin="0,4,4,12">
+                    <Grid Margin="20,4,16,8">
+
+                        <!-- ============================================ Motion -->
+                        <StackPanel Visibility="{Binding IsMotionOpen, Converter={StaticResource BoolToVis}}">
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Style="{StaticResource Text.Number}" Text="{Binding OutputFpsText}"/>
+                                <StackPanel Grid.Column="1" Margin="12,0,0,8" VerticalAlignment="Bottom">
+                                    <TextBlock Text="fps on screen" FontSize="13" Foreground="{StaticResource Text}"/>
+                                    <TextBlock FontSize="13" Foreground="{StaticResource Muted}">
+                                        <Run Text="from"/>
+                                        <Run Text="{Binding SourceFpsText, Mode=OneWay}"/>
+                                        <Run Text="fps"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Grid>
+                            <c:CadenceStrip Ticks="{Binding CadenceTicks}" Repeat="2" BarWidth="6" Gap="5" Height="24" HorizontalAlignment="Left"
+                                            Margin="0,14,0,0" RealBrush="{StaticResource Text}" GeneratedBrush="{StaticResource Nova}"/>
+                            <TextBlock Style="{StaticResource Text.Muted}" FontSize="13" LineHeight="19" Margin="0,12,0,0" Text="{Binding EngineStatusText}"/>
+                            <TextBlock Style="{StaticResource Text.Body}" FontSize="13" Foreground="{StaticResource Nova}" Margin="0,8,0,0"
+                                       Text="{Binding EngineSizeHint}" Visibility="{Binding EngineSizeHint, Converter={StaticResource BoolToVis}}"/>
+
+                            <Path Data="{Binding FpsSparkline}" Stroke="{StaticResource Nova}" StrokeThickness="1.6" Stretch="Fill"
+                                  Height="34" Margin="0,16,0,0" StrokeLineJoin="Round"
+                                  Visibility="{Binding EngineActive, Converter={StaticResource BoolToVis}}"/>
+
+                            <UniformGrid Columns="2" Margin="0,16,0,0">
+                                <StackPanel Margin="0,0,0,12">
+                                    <TextBlock Style="{StaticResource Text.Small}" Text="Video"/>
+                                    <TextBlock FontSize="13.5" Foreground="{StaticResource Text}" Text="{Binding VideoSizeText}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,0,12">
+                                    <TextBlock Style="{StaticResource Text.Small}" Text="Display"/>
+                                    <TextBlock FontSize="13.5" Foreground="{StaticResource Text}" Text="{Binding DisplayText}"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Text.Small}" Text="Decoding"/>
+                                    <TextBlock FontSize="13.5" Foreground="{StaticResource Text}" Text="{Binding DecoderText}" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Text.Small}" Text="Frames generated"/>
+                                    <TextBlock FontSize="13.5" Foreground="{StaticResource Text}" Text="{Binding GeneratedShareText}"/>
+                                </StackPanel>
+                            </UniformGrid>
+
+                            <Border Style="{StaticResource Divider}"/>
+                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding SmoothingEnabled}" Margin="0,0,0,18">
+                                <TextBlock Style="{StaticResource Text.Strong}" Text="Smoothing"/>
+                            </CheckBox>
+                            <v:MotionSettings/>
+                        </StackPanel>
+
+                        <!-- ============================================ Tracks -->
+                        <StackPanel Visibility="{Binding IsTracksOpen, Converter={StaticResource BoolToVis}}" Margin="-12,0,0,0">
+                            <TextBlock Style="{StaticResource DrawerTitle}" Text="Subtitles" Margin="12,6,0,6"/>
+                            <ItemsControl ItemsSource="{Binding SubtitleTracks}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <RadioButton Style="{StaticResource MenuRow}" GroupName="subs" IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                                     Command="{Binding DataContext.SelectSubtitleCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                     CommandParameter="{Binding}">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Label}" Foreground="{StaticResource Text}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Small}" Margin="0,1,0,0"
+                                                           Visibility="{Binding HasDetail, Converter={StaticResource BoolToVis}}"/>
+                                            </StackPanel>
+                                        </RadioButton>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Button Style="{StaticResource Btn.Ghost}" HorizontalAlignment="Left" Margin="4,4,0,0" Command="{Binding AddSubtitleCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Add a subtitle file" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <StackPanel Visibility="{Binding HasAudioChoice, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource DrawerTitle}" Text="Audio"/>
+                                <ItemsControl ItemsSource="{Binding AudioTracks}" Focusable="False">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <RadioButton Style="{StaticResource MenuRow}" GroupName="audio" IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                                         Command="{Binding DataContext.SelectAudioCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                         CommandParameter="{Binding}">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Label}" Foreground="{StaticResource Text}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Small}" Margin="0,1,0,0"
+                                                               Visibility="{Binding HasDetail, Converter={StaticResource BoolToVis}}"/>
+                                                </StackPanel>
+                                            </RadioButton>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <TextBlock Style="{StaticResource DrawerTitle}">
+                                <Run Text="Speed"/>
+                                <Run Text="{Binding SpeedText, Mode=OneWay}" Foreground="{StaticResource Text}"/>
+                            </TextBlock>
+                            <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2" Margin="12,0,0,0">
+                                <ItemsControl ItemsSource="{Binding SpeedOptions}" Focusable="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Rows="1"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource Btn.Ghost}" Padding="0" Height="32" Foreground="{StaticResource Text}"
+                                                    Content="{Binding}" ContentStringFormat="{}{0}×"
+                                                    Command="{Binding DataContext.SetSpeedCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- ============================================ Queue -->
+                        <StackPanel Visibility="{Binding IsQueueOpen, Converter={StaticResource BoolToVis}}" Margin="-10,4,0,0">
+                            <ItemsControl ItemsSource="{Binding QueueItems}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Command="{Binding DataContext.PlayQueueItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}" Cursor="Hand" FocusVisualStyle="{StaticResource FocusRing}">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="Bd" Background="Transparent" CornerRadius="8" Padding="10,8">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="30"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock x:Name="Num" Text="{Binding Number}" FontSize="13" Foreground="{StaticResource Faint}" VerticalAlignment="Center"/>
+                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Title}" Foreground="{StaticResource Text}" TextTrimming="CharacterEllipsis"/>
+                                                                <TextBlock Text="{Binding Origin}" Style="{StaticResource Text.Small}" Margin="0,1,0,0"/>
+                                                            </StackPanel>
+                                                            <Button x:Name="Remove" Grid.Column="2" Style="{StaticResource Btn.Icon}" Width="28" Height="28" FontSize="10"
+                                                                    Content="&#xE711;" ToolTip="Remove from queue" Visibility="Hidden"
+                                                                    Command="{Binding DataContext.RemoveQueueItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}"/>
+                                                        </Grid>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Raised}"/>
+                                                            <Setter TargetName="Remove" Property="Visibility" Value="Visible"/>
+                                                        </Trigger>
+                                                        <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                            <Setter TargetName="Num" Property="Foreground" Value="{StaticResource Nova}"/>
+                                                            <Setter TargetName="Num" Property="Text" Value="&#x25B6;"/>
+                                                            <Setter TargetName="Remove" Property="IsEnabled" Value="False"/>
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Button Style="{StaticResource Btn.Ghost}" HorizontalAlignment="Left" Margin="4,8,0,0" Command="{Binding AddFilesCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Add videos" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- ==================================================== toast -->
+        <Border x:Name="Toast" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,120"
+                Background="{StaticResource Raised}" CornerRadius="10" Padding="16,10" MaxWidth="560"
+                Visibility="{Binding ToastVisible, Converter={StaticResource BoolToVis}}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding ToastText}" Foreground="{StaticResource Text}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420"/>
+                <Button Style="{StaticResource Btn.Link}" Margin="16,0,0,0" Content="{Binding ToastActionText}" Command="{Binding ToastActionCommand}"
+                        Visibility="{Binding HasToastAction, Converter={StaticResource BoolToVis}}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

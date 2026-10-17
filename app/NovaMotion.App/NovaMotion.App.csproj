@@ -9,7 +9,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>NovaMotion</AssemblyName>
     <RootNamespace>NovaMotion.App</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Product>NOVA Motion</Product>
     <Copyright>Copyright (C) 2026 Novabit. GPL-3.0-or-later.</Copyright>
     <Company>Novabit</Company>
@@ -17,6 +17,10 @@
     <SelfContained>false</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Fonts\*.ttf" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NovaMotion.Core\NovaMotion.Core.csproj" />

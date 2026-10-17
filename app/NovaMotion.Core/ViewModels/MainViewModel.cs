@@ -49,6 +49,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
     private DateTime? _loadedAt, _lastHistorySave, _toastUntil, _seekAt;
     private double? _pendingResume;
     private bool _syncingVolume, _handledEof;
+    private double _lastShownPosition = -1;
 
     public MainViewModel(IUiHost host, SettingsStore store, RuntimeLayout? runtime,
                          Func<IPlayerBackend> createBackend, Func<DateTime>? clock = null)
@@ -443,6 +444,13 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         Raise(nameof(HasAudioChoice), nameof(HasSubtitles), nameof(SubtitleSummary));
     }
 
+    /// <summary>Loads a subtitle file (e.g. dropped on the video) and shows it.</summary>
+    public void AddSubtitle(string path)
+    {
+        _ = Send("sub-add", path, "select");
+        ShowToast("Subtitles: " + Path.GetFileName(path));
+    }
+
     public ObservableCollection<QueueItem> QueueItems { get; } = new();
     public bool HasQueue => QueueItems.Count > 1;
     public bool HasNext => _queue.HasNext;
@@ -474,6 +482,10 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         switch (name)
         {
             case "time-pos":
+                // mpv reports every frame; the controls only need about four updates a second
+                // (redrawing the overlay 60 times a second would cost real GPU time)
+                if (Math.Floor(_state.Position * 4) == Math.Floor(_lastShownPosition * 4)) return;
+                _lastShownPosition = _state.Position;
                 if (!IsScrubbing) { _seekValue = _state.Position; Raise(nameof(SeekValue)); }
                 Raise(nameof(Position), nameof(PositionText));
                 return;

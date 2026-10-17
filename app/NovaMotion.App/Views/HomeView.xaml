@@ -1,0 +1,252 @@
+<UserControl x:Class="NovaMotion.App.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:NovaMotion.App.Controls"
+             x:Name="Root">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+        <Grid MaxWidth="1180" Margin="56,28,56,48">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- ==================================================== open -->
+            <StackPanel Grid.Row="0" Margin="0,24,0,44">
+                <TextBlock Style="{StaticResource Text.Display}" MaxWidth="720" HorizontalAlignment="Left"
+                           Text="Watch at your screen's full frame rate."/>
+                <TextBlock Style="{StaticResource Text.Muted}" FontSize="15" LineHeight="23" MaxWidth="620" HorizontalAlignment="Left"
+                           Margin="0,14,0,28"
+                           Text="Open a file, or paste a link from YouTube and 1,000+ other sites. NOVA Motion generates the in-between frames while you watch."/>
+
+                <Grid MaxWidth="860" HorizontalAlignment="Left">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="LinkBox" Style="{StaticResource Input.Hero}" Tag="Paste a link, or drop a video anywhere"
+                             Text="{Binding TargetText, UpdateSourceTrigger=PropertyChanged}" KeyDown="LinkBox_KeyDown"
+                             AutomationProperties.Name="Video link or file path"/>
+                    <Button Grid.Column="1" Style="{StaticResource Btn.Primary}" Height="52" Padding="26,0" Margin="10,0,0,0"
+                            Command="{Binding PlayCommand}" Content="Play"/>
+                    <Button Grid.Column="2" Style="{StaticResource Btn.Secondary}" Height="52" Margin="10,0,0,0"
+                            Command="{Binding OpenFilesCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8E5;" Margin="0,0,10,0"/>
+                            <TextBlock Text="Open files" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- A link on the clipboard: one click to play it -->
+                <Border Margin="0,12,0,0" HorizontalAlignment="Left" CornerRadius="10" Background="{StaticResource NovaSoft}"
+                        Padding="14,6,6,6" Visibility="{Binding HasClipboardLink, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE77F;" Foreground="{StaticResource Nova}" FontSize="14" Margin="0,0,10,0"/>
+                        <TextBlock VerticalAlignment="Center" Foreground="{StaticResource Text}">
+                            <Run Text="Link copied from"/>
+                            <Run Text="{Binding ClipboardOrigin, Mode=OneWay}" FontWeight="SemiBold"/>
+                        </TextBlock>
+                        <Button Style="{StaticResource Btn.Ghost}" Foreground="{StaticResource Nova}" Margin="10,0,0,0" Height="30"
+                                Content="Play it" Command="{Binding PlayClipboardCommand}"/>
+                        <Button Style="{StaticResource Btn.Icon}" Width="30" Height="30" FontSize="10" Content="&#xE711;"
+                                Command="{Binding DismissClipboardCommand}" ToolTip="Dismiss"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- The signature: what NOVA Motion does to a 24 fps film on a 60 Hz screen -->
+                <StackPanel Orientation="Horizontal" Margin="0,40,0,0">
+                    <c:CadenceStrip Ticks="{Binding CadenceTicks}" Repeat="8" BarWidth="5" Gap="5" Height="30"
+                                    RealBrush="{StaticResource Text}" GeneratedBrush="{StaticResource Nova}" VerticalAlignment="Center"/>
+                    <StackPanel Margin="22,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Text}">
+                            <Run Text="24 fps in, 60 fps out." FontWeight="SemiBold"/>
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Text.Small}" Margin="0,3,0,0">
+                            <Run Text="White bars are frames from the film; gold bars are the ones NOVA Motion makes."/>
+                        </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- ==================================================== recent + this PC -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="32"/>
+                    <ColumnDefinition Width="340"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <!-- Continue watching -->
+                    <Button Style="{StaticResource Btn.Link}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                            Margin="0,0,0,28" Command="{Binding PlayRecentCommand}" CommandParameter="{Binding ContinueItem}"
+                            Visibility="{Binding ContinueItem, Converter={StaticResource BoolToVis}}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Bd" Background="{StaticResource Surface}" CornerRadius="14" Padding="20">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="52" Height="52" CornerRadius="26" Background="{StaticResource Nova}">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="18" Foreground="{StaticResource NovaInk}" Margin="3,0,0,0"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="18,0,18,0" VerticalAlignment="Center">
+                                            <TextBlock Style="{StaticResource Text.Small}" Text="Continue watching"/>
+                                            <TextBlock Style="{StaticResource Text.Strong}" FontSize="16" Margin="0,3,0,10" Text="{Binding ContinueItem.Title}"/>
+                                            <ProgressBar Style="{StaticResource ThinProgress}" Value="{Binding ContinueItem.Progress, Mode=OneWay}" MaxWidth="420" HorizontalAlignment="Stretch"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Style="{StaticResource Text.Small}" VerticalAlignment="Center" Text="{Binding ContinueItem.Status}"/>
+                                    </Grid>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="{StaticResource Raised}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+
+                    <DockPanel Margin="0,0,0,8">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Content="Clear list" Command="{Binding ClearRecentCommand}"
+                                Visibility="{Binding HasRecent, Converter={StaticResource BoolToVis}}"/>
+                        <TextBlock Style="{StaticResource Text.Section}" Text="Recently played" Margin="0" VerticalAlignment="Center"/>
+                    </DockPanel>
+
+                    <!-- Empty state -->
+                    <Border CornerRadius="14" BorderThickness="1" BorderBrush="{StaticResource Line}" Padding="22,26"
+                            Visibility="{Binding HasRecent, Converter={StaticResource InvBoolToVis}}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.Body}" Text="Nothing played yet."/>
+                            <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,0"
+                                       Text="Videos you play show up here, ready to pick up where you stopped. Drop a whole folder's worth of files to play them in order."/>
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Recent}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Command="{Binding DataContext.PlayRecentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                        Cursor="Hand" FocusVisualStyle="{StaticResource FocusRing}" ToolTip="{Binding Target}">
+                                    <Button.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Play from the start" Command="{Binding PlacementTarget.Tag.RestartRecentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                                            <MenuItem Header="Remove from list" Command="{Binding PlacementTarget.Tag.RemoveRecentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                                        </ContextMenu>
+                                    </Button.ContextMenu>
+                                    <Button.Tag>
+                                        <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType=UserControl}"/>
+                                    </Button.Tag>
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" Background="Transparent" CornerRadius="10" Padding="10,9">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <!-- Tile: initial letter for files, globe for links; progress along the bottom -->
+                                                    <Grid Width="64" Height="40">
+                                                        <Border CornerRadius="7" Background="{StaticResource Raised}"/>
+                                                        <TextBlock Text="{Binding Initial}" FontFamily="{StaticResource DisplayFont}" FontSize="15"
+                                                                   Foreground="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                   Visibility="{Binding IsOnline, Converter={StaticResource InvBoolToVis}}"/>
+                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE774;" Foreground="{StaticResource Muted}"
+                                                                   Visibility="{Binding IsOnline, Converter={StaticResource BoolToVis}}"/>
+                                                        <ProgressBar Style="{StaticResource ThinProgress}" VerticalAlignment="Bottom" Margin="6,0,6,5"
+                                                                     Value="{Binding Progress, Mode=OneWay}" Background="#33FFFFFF"
+                                                                     Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
+                                                    </Grid>
+                                                    <StackPanel Grid.Column="1" Margin="14,0" VerticalAlignment="Center">
+                                                        <TextBlock Style="{StaticResource Text.Strong}" FontWeight="Medium" Text="{Binding Title}"/>
+                                                        <TextBlock Style="{StaticResource Text.Small}" Margin="0,2,0,0">
+                                                            <Run Text="{Binding Origin, Mode=OneWay}"/>
+                                                            <Run Text="  ·  " Foreground="{StaticResource Faint}"/>
+                                                            <Run Text="{Binding When, Mode=OneWay}"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <TextBlock x:Name="Status" Grid.Column="2" Style="{StaticResource Text.Small}" VerticalAlignment="Center"
+                                                               Text="{Binding Status}"/>
+                                                </Grid>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource Surface}"/>
+                                                    <Setter TargetName="Status" Property="Foreground" Value="{StaticResource Text}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- ================================================ this PC -->
+                <Border Grid.Column="2" Style="{StaticResource Panel}" VerticalAlignment="Top">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Text.Section}" Text="This PC"/>
+                        <TextBlock Style="{StaticResource Text.Small}" Text="Graphics"/>
+                        <TextBlock Style="{StaticResource Text.Body}" Margin="0,2,0,14" Text="{Binding GpuName}"/>
+                        <TextBlock Style="{StaticResource Text.Small}" Text="Smoothing"/>
+                        <TextBlock Style="{StaticResource Text.Body}" Margin="0,2,0,14">
+                            <Run Text="{Binding ActiveProfileName, Mode=OneWay}"/>
+                            <Run Text="·" Foreground="{StaticResource Faint}"/>
+                            <Run Text="{Binding EngineName, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Text.Small}" Text="NVIDIA TensorRT"/>
+                        <TextBlock Style="{StaticResource Text.Body}" Margin="0,2,0,0" Text="{Binding TensorRtText}"/>
+
+                        <!-- Benchmark: how many frames per second each engine manages at 1080p -->
+                        <StackPanel Visibility="{Binding HasBenchmarks, Converter={StaticResource BoolToVis}}">
+                            <Border Style="{StaticResource Divider}"/>
+                            <TextBlock Style="{StaticResource Text.Strong}" Text="Benchmark, 1080p to 60 fps"/>
+                            <TextBlock Style="{StaticResource Text.Small}" Margin="0,2,0,12" TextWrapping="Wrap"
+                                       Text="Frames each engine makes per second. Smooth playback needs 60."/>
+                            <ItemsControl ItemsSource="{Binding Benchmarks}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Result}" FontSize="13" Foreground="{StaticResource Text}"/>
+                                                <TextBlock Text="{Binding Engine}" FontSize="13" Foreground="{StaticResource Muted}"/>
+                                            </DockPanel>
+                                            <ProgressBar Grid.Row="1" Style="{StaticResource ThinProgress}" Height="5" Margin="0,6,0,0"
+                                                         Value="{Binding Fraction, Mode=OneWay}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Setup problems, with the fix -->
+                        <StackPanel Visibility="{Binding HasProblems, Converter={StaticResource BoolToVis}}">
+                            <Border Style="{StaticResource Divider}"/>
+                            <TextBlock Style="{StaticResource Text.Strong}" Text="Needs attention" Foreground="{StaticResource Danger}"/>
+                            <ItemsControl ItemsSource="{Binding Problems}" Margin="0,6,0,0" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Style="{StaticResource Text.Muted}" FontSize="13" Margin="0,0,0,6" Text="{Binding}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <Button Style="{StaticResource Btn.Secondary}" HorizontalAlignment="Left" Margin="0,18,0,0" Height="36"
+                                Content="Smoothing settings" Click="SmoothingSettings_Click"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

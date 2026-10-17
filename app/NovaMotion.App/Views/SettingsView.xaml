@@ -1,0 +1,209 @@
+<UserControl x:Class="NovaMotion.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:NovaMotion.App.Views"
+             xmlns:c="clr-namespace:NovaMotion.App.Controls"
+             Background="{StaticResource Base}">
+    <UserControl.Resources>
+        <!-- Left navigation item -->
+        <Style x:Key="NavItem" TargetType="RadioButton">
+            <Setter Property="GroupName" Value="settings-nav"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="Margin" Value="0,0,0,2"/>
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="8" Padding="12,9">
+                            <Grid>
+                                <Border x:Name="Mark" Width="3" Height="16" CornerRadius="1.5" Background="{StaticResource Nova}"
+                                        HorizontalAlignment="Left" Margin="-12,0,0,0" Visibility="Hidden"/>
+                                <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Surface}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Surface}"/>
+                                <Setter TargetName="Mark" Property="Visibility" Value="Visible"/>
+                                <Setter Property="Foreground" Value="{StaticResource Text}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ======================================================== navigation -->
+        <DockPanel Grid.Column="0" Margin="24,28,16,24">
+            <Button DockPanel.Dock="Top" Style="{StaticResource Btn.Ghost}" HorizontalAlignment="Left" Margin="-8,0,0,22"
+                    Command="{Binding CloseSettingsCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE72B;" FontSize="13" Margin="0,0,10,0"/>
+                    <TextBlock Text="Back" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <TextBlock DockPanel.Dock="Top" Style="{StaticResource Text.Title}" Text="Settings" Margin="0,0,0,18"/>
+            <StackPanel DockPanel.Dock="Top">
+                <RadioButton x:Name="NavPlayback" Style="{StaticResource NavItem}" Content="Playback" IsChecked="True"/>
+                <RadioButton x:Name="NavSmoothing" Style="{StaticResource NavItem}" Content="Smoothing"/>
+                <RadioButton x:Name="NavOnline" Style="{StaticResource NavItem}" Content="Online video"/>
+                <RadioButton x:Name="NavShortcuts" Style="{StaticResource NavItem}" Content="Keyboard shortcuts"/>
+                <RadioButton x:Name="NavAbout" Style="{StaticResource NavItem}" Content="About"/>
+            </StackPanel>
+            <TextBlock DockPanel.Dock="Bottom" VerticalAlignment="Bottom" Style="{StaticResource Text.Small}">
+                <Run Text="NOVA Motion"/>
+                <Run Text="{Binding Version, Mode=OneWay}"/>
+            </TextBlock>
+        </DockPanel>
+
+        <!-- ======================================================== pages -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+            <Grid Margin="40,36,48,48" MaxWidth="680" HorizontalAlignment="Left">
+
+                <!-- Playback -->
+                <StackPanel Visibility="{Binding IsChecked, ElementName=NavPlayback, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Style="{StaticResource Text.Title}" Text="Playback" Margin="0,0,0,24"/>
+                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ResumePlayback}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.Body}" Text="Continue where you stopped"/>
+                            <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Files and links pick up a few seconds before the point you left them."/>
+                        </StackPanel>
+                    </CheckBox>
+                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding AutoQueueFolder}" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.Body}" Text="Play the rest of the folder"/>
+                            <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Opening one episode queues the ones after it, in name order."/>
+                        </StackPanel>
+                    </CheckBox>
+                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding CloseToTray}" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.Body}" Text="Keep running in the tray when closed"/>
+                            <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Needed for the browser extension to send videos here. Quit from the tray icon."/>
+                        </StackPanel>
+                    </CheckBox>
+                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding StartMinimizedToTray}" Margin="0,16,0,0">
+                        <TextBlock Style="{StaticResource Text.Body}" Text="Start in the tray"/>
+                    </CheckBox>
+                    <Border Style="{StaticResource Divider}"/>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Secondary}" Height="36" Content="Clear list"
+                                Command="{Binding ClearRecentCommand}"/>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.Body}" Text="Recently played"/>
+                            <TextBlock Style="{StaticResource Text.Small}" Text="Removes the list and the saved positions."/>
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+
+                <!-- Smoothing -->
+                <StackPanel Visibility="{Binding IsChecked, ElementName=NavSmoothing, Converter={StaticResource BoolToVis}}">
+                    <DockPanel Margin="0,0,0,8">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Content="Reset profiles" Command="{Binding ResetProfilesCommand}"/>
+                        <TextBlock Style="{StaticResource Text.Title}" Text="Smoothing"/>
+                    </DockPanel>
+                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding SmoothingEnabled}" Margin="0,8,0,24">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.Body}" Text="Smoothing"/>
+                            <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Generate in-between frames for videos up to 31 fps. Ctrl+S in the player."/>
+                        </StackPanel>
+                    </CheckBox>
+                    <v:MotionSettings/>
+                    <Border Style="{StaticResource Divider}"/>
+                    <TextBlock Style="{StaticResource Text.Strong}" Text="NVIDIA TensorRT"/>
+                    <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,0" Text="{Binding TensorRtText}"/>
+                    <TextBlock Style="{StaticResource Text.Small}" Margin="0,6,0,0" TextWrapping="Wrap"
+                               Text="TensorRT compiles RIFE for your exact GPU and video size. setup-tensorrt.cmd prepares 1080p; other sizes are prepared the first time you play one."/>
+                </StackPanel>
+
+                <!-- Online -->
+                <StackPanel Visibility="{Binding IsChecked, ElementName=NavOnline, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Style="{StaticResource Text.Title}" Text="Online video" Margin="0,0,0,24"/>
+                    <TextBlock Style="{StaticResource Text.Strong}" Text="Highest quality to fetch"/>
+                    <TextBlock Style="{StaticResource Text.Small}" Margin="0,2,0,10" TextWrapping="Wrap"
+                               Text="Smoothing a 4K stream needs a fast GPU; 1080p works on most RTX cards."/>
+                    <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2" HorizontalAlignment="Left" Width="420">
+                        <ItemsControl ItemsSource="{Binding OnlineHeights}" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Rows="1"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="online" Content="{Binding Label}"
+                                                 IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                                 Command="{Binding DataContext.SelectOnlineHeightCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                 CommandParameter="{Binding}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding AutoUpdateYtDlp}" Margin="0,24,0,0">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.Body}" Text="Keep yt-dlp up to date"/>
+                            <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Sites change often. NOVA Motion checks for a new yt-dlp once a day."/>
+                        </StackPanel>
+                    </CheckBox>
+                    <Border Style="{StaticResource Divider}"/>
+                    <TextBlock Style="{StaticResource Text.Strong}" Text="Send videos from your browser"/>
+                    <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,0"
+                               Text="Load the extension folder in Chrome or Edge (Developer mode, Load unpacked). Alt+Shift+F on a video page opens it here at the same moment."/>
+                </StackPanel>
+
+                <!-- Shortcuts -->
+                <StackPanel Visibility="{Binding IsChecked, ElementName=NavShortcuts, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Style="{StaticResource Text.Title}" Text="Keyboard shortcuts" Margin="0,0,0,24"/>
+                    <ItemsControl ItemsSource="{Binding Shortcuts}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="240"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border HorizontalAlignment="Left" Background="{StaticResource Surface}" CornerRadius="6" Padding="9,4" Margin="0,4">
+                                        <TextBlock Text="{Binding Keys}" FontSize="13" FontWeight="Medium" Foreground="{StaticResource Text}"/>
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" Text="{Binding Description}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- About -->
+                <StackPanel Visibility="{Binding IsChecked, ElementName=NavAbout, Converter={StaticResource BoolToVis}}">
+                    <c:CadenceStrip Ticks="{Binding CadenceTicks}" Repeat="3" BarWidth="5" Gap="5" Height="26" HorizontalAlignment="Left"
+                                    RealBrush="{StaticResource Text}" GeneratedBrush="{StaticResource Nova}"/>
+                    <TextBlock Text="NOVA MOTION" FontFamily="{StaticResource DisplayFont}" FontWeight="SemiBold" FontSize="26" Margin="0,18,0,4"/>
+                    <TextBlock Style="{StaticResource Text.Muted}">
+                        <Run Text="Version"/>
+                        <Run Text="{Binding Version, Mode=OneWay}"/>
+                        <Run Text=" by Novabit"/>
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource Text.Body}" Margin="0,20,0,0" MaxWidth="560" HorizontalAlignment="Left"
+                               Text="Free and open source under the GNU GPL v3. Built on mpv, VapourSynth, RIFE, vs-mlrt, MVTools and yt-dlp. NVIDIA TensorRT is downloaded on your PC by the setup script and is not part of NOVA Motion."/>
+                    <StackPanel Orientation="Horizontal" Margin="0,24,0,0">
+                        <Button Style="{StaticResource Btn.Secondary}" Height="36" Command="{Binding OpenProjectPageCommand}" Content="Project page"/>
+                        <Button Style="{StaticResource Btn.Secondary}" Height="36" Margin="10,0,0,0" Command="{Binding OpenLogFolderCommand}" Content="Open logs folder"/>
+                    </StackPanel>
+                    <Border Style="{StaticResource Divider}"/>
+                    <TextBlock Style="{StaticResource Text.Strong}" Text="Graphics"/>
+                    <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,0" Text="{Binding GpuName}"/>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
