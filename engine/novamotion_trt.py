@@ -92,7 +92,44 @@ def _log(msg, t0):
 MAX_FRAMES = 2**31 - 2
 
 
-def interpolate(rgbh, src, dst, model_name, gpu=0):
+# Mean absolute difference (0..1) between a frame and the one before it that counts as a cut.
+# Measured on a small grey copy, so it costs next to nothing beside RIFE.
+SCENE_THRESHOLD = 0.12
+
+
+def scene_changes(clip):
+    """Clip whose frame k carries _SceneChangePrev=1 when k starts a new shot."""
+    small = core.resize.Bilinear(clip, width=160, height=96, format=vs.GRAY8, matrix_s="709")
+    prev = small[0] + small[:-1] if small.num_frames > 1 else small
+    stats = core.std.PlaneStats(small, prev)
+
+    def mark(n, f):
+        out = f.copy()
+        out.props["_SceneChangePrev"] = 1 if n > 0 and f.props["PlaneStatsDiff"] > SCENE_THRESHOLD else 0
+        return out
+
+    return core.std.ModifyFrame(stats, stats, mark)
+
+
+def record_engine(width, height, model):
+    """Notes in ENGINE_DIR that an engine for this padded size exists (the app shows which are ready)."""
+    import json
+    path = os.path.join(ENGINE_DIR, "novamotion-engines.json")
+    try:
+        data = json.load(open(path, encoding="utf-8")) if os.path.isfile(path) else {}
+        key = f"{width}x{height}"
+        if key in data and data[key].get("model") == model:
+            return
+        data[key] = {"model": model, "built": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp, path)
+    except (OSError, ValueError):
+        pass
+
+
+def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False):
     """rgbh: RGBH clip at src fps. Returns RGBH at dst fps (same size).
 
     Built on vsmlrt.RIFEMerge rather than vsmlrt.RIFE: RIFE() precomputes a table entry for
@@ -126,13 +163,32 @@ def interpolate(rgbh, src, dst, model_name, gpu=0):
 
     _log("loading TensorRT engine (vsmlrt.RIFEMerge)", t0)
     merged = RIFEMerge(left, right, mask, model=model, backend=backend(gpu))
+    record_engine(clip.width, clip.height, model.name)   # RIFEMerge has built or loaded it by now
     # vs-mlrt returns 32-bit float frames even from a 16-bit input, so copied source frames
     # must be converted to the same format before the two can be mixed in one clip
     src_same = core.resize.Point(clip, format=merged.format.id) if clip.format.id != merged.format.id else clip
     left = core.std.FrameEval(merged, lambda n: src_same[min(n * q // p, last)])
 
-    # Frames that land exactly on a source frame (time point 0) are copied, not inferred
-    out = core.std.FrameEval(merged, lambda n: left if (n * q) % p == 0 else merged)
+    if scene_detect:
+        # Across a cut there is no motion to follow: blending two shots gives a ghosted frame.
+        # Show the nearer real frame instead (cuts stay cuts).
+        right_same = core.std.FrameEval(merged, lambda n: src_same[min(n * q // p + 1, last)])
+        cuts = scene_changes(clip)
+        cut_base = core.std.BlankClip(cuts, length=length, fpsnum=dst.numerator, fpsden=dst.denominator, keep=True)
+        cut_at = core.std.FrameEval(cut_base, lambda n: cuts[min(n * q // p + 1, last)])
+
+        def pick(n, f):
+            phase = (n * q) % p
+            if phase == 0:
+                return left
+            if f.props.get("_SceneChangePrev", 0):
+                return left if phase * 2 < p else right_same
+            return merged
+
+        out = core.std.FrameEval(merged, pick, prop_src=cut_at)
+    else:
+        # Frames that land exactly on a source frame (time point 0) are copied, not inferred
+        out = core.std.FrameEval(merged, lambda n: left if (n * q) % p == 0 else merged)
     _log("engine ready", t0)
     out = core.std.AssumeFPS(out, fpsnum=dst.numerator, fpsden=dst.denominator)
     return core.std.Crop(out, right=pw, bottom=ph) if (pw or ph) else out

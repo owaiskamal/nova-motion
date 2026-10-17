@@ -120,7 +120,7 @@ def interpolate_rife_trt(clip, cfg, src, dst):
     matrix = matrix_for(clip)
     # Half-float RGB: what the fp16 engine wants, and half the memory traffic of RGBS
     rgb = core.resize.Bicubic(clip, format=vs.RGBH, matrix_in_s=matrix)
-    smooth = novamotion_trt.interpolate(rgb, src, dst, cfg["rife_model"], cfg["rife_gpu"])
+    smooth = novamotion_trt.interpolate(rgb, src, dst, cfg["rife_model"], cfg["rife_gpu"], bool(cfg["scene_detect"]))
     return core.resize.Bicubic(smooth, format=clip.format.id, matrix_s=matrix, dither_type="ordered")
 
 

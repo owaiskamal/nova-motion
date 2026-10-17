@@ -148,6 +148,28 @@ p_, q_ = r.numerator, r.denominator
 exact = [n for n in range(36) if (n * q_) % p_ == 0]
 check((p_, q_) == (12, 5) and exact == [0, 12, 24], f"trt: 25->60 phases p={p_} q={q_}, exact frames {exact}")
 
+# Scene cuts: frames 0-4 dark, 5-9 bright. At 25 -> 50 each in-between frame sits at t = 0.5;
+# the one between frames 4 and 5 crosses the cut, so it must show a real frame, not a blend.
+dark = core.std.BlankClip(width=320, height=180, format=vs.RGBH, length=5, fpsnum=25, color=[0.1, 0.1, 0.1])
+bright = core.std.BlankClip(dark, color=[0.9, 0.9, 0.9])
+cutclip = dark + bright
+def luma(c, n):
+    return c.get_frame(n)[0][0, 0]
+merged_only = novamotion_trt.interpolate(cutclip, novamotion_trt.Fraction(25), novamotion_trt.Fraction(50), "rife-v4.6", 0, scene_detect=False)
+with_cuts = novamotion_trt.interpolate(cutclip, novamotion_trt.Fraction(25), novamotion_trt.Fraction(50), "rife-v4.6", 0, scene_detect=True)
+check(with_cuts.num_frames == merged_only.num_frames == 20 and with_cuts.format.id == merged_only.format.id,
+      f"trt scene cuts: same length and format ({with_cuts.num_frames}, {with_cuts.format.name})")
+check(luma(with_cuts, 9) > 0.8 and luma(merged_only, 9) < 0.2,
+      f"trt scene cuts: the frame across the cut shows the next shot ({luma(with_cuts, 9):.2f}) instead of the merge ({luma(merged_only, 9):.2f})")
+check(all(abs(luma(with_cuts, n) - luma(merged_only, n)) < 1e-3 for n in (1, 3, 5, 7, 11, 13)),
+      "trt scene cuts: frames within a shot are untouched")
+check(abs(luma(with_cuts, 8) - 0.1) < 0.01 and abs(luma(with_cuts, 10) - 0.9) < 0.01,
+      "trt scene cuts: exact source frames still copied")
+import json as _json
+man = os.path.join(novamotion_trt.ENGINE_DIR, "novamotion-engines.json")
+check(os.path.isfile(man) and "320x192" in _json.load(open(man)) and "1280x768" in _json.load(open(man)),
+      f"trt: engine manifest records each padded size ({sorted(_json.load(open(man))) if os.path.isfile(man) else 'missing'})")
+
 calls.clear()
 o = run({"engine": "rife_trt", "target": "display", "rife_model": "rife-v4.26_ensembleFalse"}, frames=10)
 m = [c for c in calls if c[0] == "merge"]
