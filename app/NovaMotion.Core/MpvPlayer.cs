@@ -12,11 +12,23 @@ namespace NovaMotion.Core;
 public sealed record PlaybackStatus(string Title, double SourceFps, double OutputFps, double DisplayFps,
                                     bool EngineActive, bool Paused, double Position, double Duration);
 
+/// <summary>What the app needs from a player process. MpvPlayer implements it; tests use a fake.</summary>
+public interface IPlayerBackend : IAsyncDisposable
+{
+    bool IsRunning { get; }
+    event Action<string, JsonNode?>? EventReceived;
+    event Action<string, JsonNode?>? PropertyChanged;
+    event Action? Exited;
+    Task StartAsync(string? target, AppSettings settings, CancellationToken ct = default);
+    Task<JsonNode?> CommandAsync(params object?[] command);
+    Task ApplyAsync(EngineSettings engine);
+}
+
 /// <summary>
 /// One mpv window driven over its JSON IPC pipe.
 /// Protocol: newline-delimited JSON, {"command":[...], "request_id":n} -> {"request_id":n,"error":"success","data":...}
 /// </summary>
-public sealed class MpvPlayer : IAsyncDisposable
+public sealed class MpvPlayer : IPlayerBackend
 {
     private readonly RuntimeLayout _runtime;
     private readonly SettingsStore _store;
@@ -28,11 +40,20 @@ public sealed class MpvPlayer : IAsyncDisposable
     private StreamWriter? _writer;
     private CancellationTokenSource? _readerCts;
     private int _nextId;
+    private int _nextObserveId;
 
     public event Action<string, JsonNode?>? EventReceived;  // mpv events: "file-loaded", "end-file", ...
+    /// <summary>Values of observed properties (see <see cref="PlayerState.Observed"/>) as they change.</summary>
+    public event Action<string, JsonNode?>? PropertyChanged;
     public event Action? Exited;
 
     public bool IsRunning => _process is { HasExited: false };
+
+    /// <summary>
+    /// Window to draw the video into (Win32 HWND). When set, mpv runs embedded with no controls
+    /// of its own and stays open between files; the app draws the controls.
+    /// </summary>
+    public long? WindowHandle { get; set; }
 
     public MpvPlayer(RuntimeLayout runtime, SettingsStore store)
     {
@@ -41,7 +62,7 @@ public sealed class MpvPlayer : IAsyncDisposable
     }
 
     /// <summary>Command-line for mpv. Kept separate so it can be unit tested.</summary>
-    public IReadOnlyList<string> BuildArguments(string target, AppSettings settings)
+    public IReadOnlyList<string> BuildArguments(string? target, AppSettings settings)
     {
         var pipePath = OperatingSystem.IsWindows() ? $@"\\.\pipe\{_pipeName}" : Path.Combine(Path.GetTempPath(), _pipeName);
         var h = settings.OnlineMaxHeight;
@@ -50,20 +71,40 @@ public sealed class MpvPlayer : IAsyncDisposable
             $"--input-ipc-server={pipePath}",
             $"--script-opts=novamotion-vpy={_runtime.EngineScript},novamotion-config={_store.EngineConfigPath},ytdl_hook-ytdl_path={_runtime.YtDlpExe}",
             $"--ytdl-format=bestvideo[height<=?{h}][vcodec!*=av01]+bestaudio/bestvideo[height<=?{h}]+bestaudio/best",
-            "--force-window=immediate",
             $"--log-file={Path.Combine(_store.Directory, "mpv.log")}",
-            "--title=${media-title} - NOVA Motion",
         };
+        if (WindowHandle is { } wid)
+        {
+            args.AddRange(new[]
+            {
+                $"--wid={wid}",
+                "--force-window=yes",
+                "--idle=yes",            // stay running between files: the next one opens instantly
+                "--keep-open=yes",       // pause on the last frame instead of closing
+                "--osc=no", "--osd-bar=no", "--osd-level=0",   // the app draws controls and messages
+                "--input-cursor=no", "--input-vo-keyboard=no", // mouse and keys go to the app
+                "--cursor-autohide=no",
+                $"--volume={Math.Clamp(settings.Volume, 0, 130)}",
+            });
+        }
+        else
+        {
+            args.Add("--force-window=immediate");
+            args.Add("--title=${media-title} - NOVA Motion");
+        }
         var userConf = Path.Combine(_store.Directory, "mpv-user.conf");
         if (File.Exists(userConf)) args.Add($"--include={userConf}");
-        args.Add("--");
-        args.Add(target);
+        if (target is not null)
+        {
+            args.Add("--");
+            args.Add(target);
+        }
         return args;
     }
 
-    public async Task StartAsync(string target, AppSettings settings, CancellationToken ct = default)
+    public async Task StartAsync(string? target, AppSettings settings, CancellationToken ct = default)
     {
-        if (IsRunning) { await LoadAsync(target); return; }
+        if (IsRunning) { if (target is not null) await LoadAsync(target); return; }
 
         _store.WriteEngineConfig(settings.Active.Engine);
         var psi = new ProcessStartInfo(_runtime.MpvExe) { UseShellExecute = false, WorkingDirectory = _runtime.MpvDir };
@@ -75,6 +116,18 @@ public sealed class MpvPlayer : IAsyncDisposable
         _process.Exited += (_, _) => { Exited?.Invoke(); _ = DisconnectAsync(); };
 
         await ConnectAsync(TimeSpan.FromSeconds(10), ct);
+        await ObserveAsync(PlayerState.Observed);
+    }
+
+    /// <summary>Asks mpv to report these properties whenever they change (PropertyChanged).</summary>
+    public async Task ObserveAsync(IEnumerable<string> names)
+    {
+        foreach (var name in names)
+        {
+            var id = Interlocked.Increment(ref _nextObserveId);
+            try { await CommandAsync("observe_property", id, name); }
+            catch (MpvException) { /* property unknown to this mpv version */ }
+        }
     }
 
     /// <summary>Connects to an existing IPC pipe (used by StartAsync and by tests with a fake mpv).</summary>
@@ -123,7 +176,10 @@ public sealed class MpvPlayer : IAsyncDisposable
                 }
                 else if (msg["event"]?.GetValue<string>() is { } ev)
                 {
-                    EventReceived?.Invoke(ev, msg);
+                    if (ev == "property-change" && msg["name"]?.GetValue<string>() is { } prop)
+                        PropertyChanged?.Invoke(prop, msg["data"]);
+                    else
+                        EventReceived?.Invoke(ev, msg);
                 }
             }
         }
@@ -153,6 +209,8 @@ public sealed class MpvPlayer : IAsyncDisposable
     }
 
     public Task LoadAsync(string target) => CommandAsync("loadfile", target, "replace");
+
+    public Task SetPropertyAsync(string name, object? value) => CommandAsync("set_property", name, value);
 
     /// <summary>Writes the new engine settings and tells the Lua script to rebuild the filter chain.</summary>
     public async Task ApplyAsync(EngineSettings engine)

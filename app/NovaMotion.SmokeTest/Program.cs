@@ -95,5 +95,6 @@ Check(mpvArgs[^1] == "https://youtu.be/x" && mpvArgs[^2] == "--", "target passed
 Check(mpvArgs.Any(a => a.StartsWith("--ytdl-format=bestvideo[height<=?1080]")), "ytdl format honours max height");
 
 Directory.Delete(dir, true);
+await ViewModelTests.RunAsync(Check);
 Console.WriteLine(failures == 0 ? "\nALL PASSED" : $"\n{failures} FAILED");
 return failures == 0 ? 0 : 1;

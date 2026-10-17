@@ -13,6 +13,7 @@ public sealed class RuntimeLayout
     public string YtDlpExe => Path.Combine(MpvDir, OperatingSystem.IsWindows() ? "yt-dlp.exe" : "yt-dlp");
     public string EngineScript => Path.Combine(Root, "novamotion.vpy");
     public string ModelsDir => Path.Combine(Root, "models");
+    public string TrtEngineDir => Path.Combine(Root, "trt-engines");
 
     private RuntimeLayout(string root) => Root = root;
 

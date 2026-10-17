@@ -47,6 +47,16 @@ public sealed class AppSettings
     /// <summary>Maximum height requested from YouTube & co (yt-dlp format).</summary>
     public int OnlineMaxHeight { get; set; } = 1080;
     public bool StartMinimizedToTray { get; set; }
+    /// <summary>Closing the window keeps NOVA Motion in the tray (for browser links).</summary>
+    public bool CloseToTray { get; set; } = true;
+    /// <summary>Continue files and links from where you stopped.</summary>
+    public bool ResumePlayback { get; set; } = true;
+    /// <summary>Play the rest of the folder after a local file.</summary>
+    public bool AutoQueueFolder { get; set; } = true;
+    /// <summary>Keep yt-dlp current; sites change often and old versions stop working.</summary>
+    public bool AutoUpdateYtDlp { get; set; } = true;
+    public DateTime? YtDlpCheckedUtc { get; set; }
+    public double Volume { get; set; } = 100;
     public bool FirstRunDone { get; set; }
 
     public Profile Active =>
