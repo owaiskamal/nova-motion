@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>  <!-- tray icon only -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>NovaMotion</AssemblyName>
+    <RootNamespace>NovaMotion.App</RootNamespace>
+    <Version>0.1.0</Version>
+    <Product>NOVA Motion</Product>
+    <Copyright>Copyright (C) 2026 Novabit. GPL-3.0-or-later.</Copyright>
+    <Company>Novabit</Company>
+    <!-- dotnet publish -c Release -r win-x64 → single NovaMotion.exe -->
+    <SelfContained>false</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NovaMotion.Core\NovaMotion.Core.csproj" />
+  </ItemGroup>
+
+</Project>

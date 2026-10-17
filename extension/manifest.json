@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "NOVA Motion: Smooth this video",
+  "version": "0.1.0",
+  "description": "Send the video you're watching to NOVA Motion for real-time motion smoothing.",
+  "permissions": ["activeTab", "scripting", "contextMenus"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "Smooth in NOVA Motion" },
+  "commands": {
+    "_execute_action": { "suggested_key": { "default": "Alt+Shift+F" } }
+  }
+}

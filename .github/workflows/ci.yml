@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core:
+    name: Core library smoke tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet run --project app/NovaMotion.SmokeTest -c Release
+
+  app:
+    name: Windows app build (WPF)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet build app/NovaMotion.App -c Release
+
+  engine:
+    name: Engine tests (VapourSynth, no GPU)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install vapoursynth vapoursynth-mvtools
+      - run: python tests/engine/test_engine.py engine/novamotion.vpy
+
+  player-script:
+    name: mpv Lua script tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y lua5.4
+      - run: luac5.4 -p engine/mpv/scripts/novamotion.lua
+      - working-directory: tests/lua
+        run: TESTCFG=/tmp/nm-cfg.json lua5.4 run.lua ../../engine/mpv/scripts/novamotion.lua
+
+  extension:
+    name: Browser extension checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check extension/background.js
+      - run: node -e "JSON.parse(require('fs').readFileSync('extension/manifest.json'))"

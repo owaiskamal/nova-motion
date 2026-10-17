@@ -1,0 +1,12 @@
+# Downloaded by setup (mpv, VapourSynth, Python, models, TensorRT): never committed
+runtime/
+# Build output
+dist/
+bin/
+obj/
+*.log
+# IDE
+.vs/
+.vscode/
+*.user
+__pycache__/
