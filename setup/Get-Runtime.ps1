@@ -24,6 +24,8 @@ param(
     [string]$RifeRepo        = "styler00dollar/VapourSynth-RIFE-ncnn-Vulkan",
     [string]$MvToolsRepo     = "dubhater/vapoursynth-mvtools",
     [string]$MpvRepo         = "shinchiro/mpv-winbuild-cmake",
+    # Use the newest release of everything instead of the versions pinned in setup\versions.json
+    [switch]$Latest,
     [switch]$Force
 )
 
@@ -59,6 +61,16 @@ function Info($msg) { Write-Host "    $msg" }
 $ApiHeaders = @{ "User-Agent" = "NovaMotion-Setup" }
 if ($env:GITHUB_TOKEN) { $ApiHeaders["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
 
+# Known-good versions (setup\versions.json). yt-dlp is never pinned: old versions stop working with sites.
+$PinFile = Join-Path $PSScriptRoot "versions.json"
+$Pins = @{}
+if ((Test-Path $PinFile) -and -not $Latest) {
+    (Get-Content $PinFile -Raw | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $Pins[$_.Name] = $_.Value }
+}
+function Pin([string]$Name) { if ($Pins.ContainsKey($Name) -and $Pins[$Name]) { return [string]$Pins[$Name] } return "latest" }
+# What this run installed, written to runtime\versions.json (shown in the app, used to update the pins)
+$Installed = [ordered]@{}
+
 function Get-File([string]$Url, [string]$Name) {
     $dest = Join-Path $Cache $Name
     if ((Test-Path $dest) -and -not $Force) { Info "cached  $Name"; return $dest }
@@ -68,9 +80,14 @@ function Get-File([string]$Url, [string]$Name) {
 }
 
 function Get-Release([string]$Repo, [string]$Tag = "latest") {
-    $api = if ($Tag -eq "latest") { "https://api.github.com/repos/$Repo/releases/latest" }
-           else { "https://api.github.com/repos/$Repo/releases/tags/$Tag" }
-    return Invoke-RestMethod -Uri $api -Headers $ApiHeaders
+    if ($Tag -ne "latest") {
+        try { return Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -Headers $ApiHeaders }
+        catch {
+            # Some projects delete old releases; the newest one beats failing the whole setup
+            Write-Warning "$Repo $Tag is no longer available; using the latest release"
+        }
+    }
+    return Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $ApiHeaders
 }
 
 function Get-NewestAssetAcrossReleases([string]$Repo, [string]$Pattern) {
@@ -80,14 +97,16 @@ function Get-NewestAssetAcrossReleases([string]$Repo, [string]$Pattern) {
         $asset = $rel.assets | Where-Object { $_.name -match $Pattern } | Select-Object -First 1
         if ($asset) {
             Info "$Repo $($rel.tag_name) -> $($asset.name)"
+            if ($Repo -eq $MvToolsRepo) { $Installed["mvtools"] = $rel.tag_name }
             return Get-File $asset.browser_download_url $asset.name
         }
     }
     throw "No release of $Repo has an asset matching '$Pattern'"
 }
 
-function Get-ReleaseAsset([string]$Repo, [string]$Pattern, [string]$Tag = "latest") {
+function Get-ReleaseAsset([string]$Repo, [string]$Pattern, [string]$Tag = "latest", [string]$Key = "") {
     $rel = Get-Release $Repo $Tag
+    if ($Key) { $Installed[$Key] = $rel.tag_name }
     $asset = $rel.assets | Where-Object { $_.name -match $Pattern } | Select-Object -First 1
     if (-not $asset) {
         $names = ($rel.assets | ForEach-Object { $_.name }) -join ", "
@@ -116,18 +135,19 @@ Step "7-Zip extractor"
 $null = Get-File "https://www.7-zip.org/a/7zr.exe" "7zr.exe"
 
 Step "mpv"
-$mpvArchive = Get-ReleaseAsset $MpvRepo '^mpv-x86_64-\d{8}-git-[0-9a-f]+\.7z$'
+$mpvArchive = Get-ReleaseAsset $MpvRepo '^mpv-x86_64-\d{8}-git-[0-9a-f]+\.7z$' (Pin "mpv") "mpv"
 $tmp = Join-Path $Cache "mpv-x"
 Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
 Expand-Any $mpvArchive $tmp
 Copy-Item (Join-Path $tmp "*") $MpvDir -Recurse -Force
 
 Step "Python $PythonVersion (embeddable)"
+$Installed["python"] = $PythonVersion
 $py = Get-File "https://www.python.org/ftp/python/$PythonVersion/python-$PythonVersion-embed-amd64.zip" "python-$PythonVersion-embed-amd64.zip"
 Expand-Any $py $MpvDir
 
 Step "VapourSynth $VapourSynthTag (portable)"
-$vs = Get-ReleaseAsset "vapoursynth/vapoursynth" 'VapourSynth64-Portable-.*\.(zip|7z)$' $VapourSynthTag
+$vs = Get-ReleaseAsset "vapoursynth/vapoursynth" 'VapourSynth64-Portable-.*\.(zip|7z)$' $VapourSynthTag "vapoursynth"
 Expand-Any $vs $MpvDir
 # R70+ ships the Python module + core DLL as a wheel; a wheel is a zip, so unpack it beside python.exe
 $pyTag = "cp" + ($PythonVersion.Split('.')[0..1] -join '')
@@ -147,7 +167,8 @@ if ($wheel) {
 New-Item -ItemType File -Force -Path (Join-Path $MpvDir "portable.vs") | Out-Null
 
 Step "RIFE ncnn-Vulkan plugin + models"
-$rel = Get-Release $RifeRepo
+$rel = Get-Release $RifeRepo (Pin "rife")
+$Installed["rife"] = $rel.tag_name
 $rifeX = Join-Path $Cache "rife-x"
 Remove-Item $rifeX -Recurse -Force -ErrorAction SilentlyContinue
 $wanted = $rel.assets | Where-Object { $_.name -match '(win|windows).*\.(dll|zip|7z)$' -or $_.name -match '^models.*\.(zip|7z)$' }
@@ -186,7 +207,8 @@ if ($modelCount -eq 0) { Write-Warning "No RIFE models installed; NOVA Motion wi
 Info "$modelCount RIFE model(s) installed in runtime\models"
 
 Step "MVTools"
-$mv = Get-NewestAssetAcrossReleases $MvToolsRepo 'win64\.(7z|zip)$'
+$mv = if ((Pin "mvtools") -ne "latest") { Get-ReleaseAsset $MvToolsRepo 'win64\.(7z|zip)$' (Pin "mvtools") "mvtools" }
+      else { Get-NewestAssetAcrossReleases $MvToolsRepo 'win64\.(7z|zip)$' }
 $mvX = Join-Path $Cache "mv-x"
 Remove-Item $mvX -Recurse -Force -ErrorAction SilentlyContinue
 Expand-Any $mv $mvX
@@ -195,7 +217,7 @@ if (-not $mvDll) { throw "libmvtools.dll not found" }
 Copy-Item $mvDll.FullName $Plugins -Force
 
 Step "yt-dlp"
-$ytdlp = Get-ReleaseAsset "yt-dlp/yt-dlp" '^yt-dlp\.exe$'
+$ytdlp = Get-ReleaseAsset "yt-dlp/yt-dlp" '^yt-dlp\.exe$' "latest" "yt-dlp"
 Copy-Item $ytdlp (Join-Path $MpvDir "yt-dlp.exe") -Force
 
 Step "NOVA Motion config + engine"
@@ -225,6 +247,9 @@ core.std.BlankClip().set_output()
 } else {
     Info "VSPipe.exe not found; skipping self-test"
 }
+
+$Installed | ConvertTo-Json | Set-Content -Encoding UTF8 (Join-Path $Runtime "versions.json")
+Info ("installed: " + (($Installed.GetEnumerator() | ForEach-Object { "$($_.Key) $($_.Value)" }) -join ", "))
 
 Write-Host ""
 Write-Host "Runtime ready: $MpvDir" -ForegroundColor Green

@@ -67,6 +67,7 @@ jobs:
           Write-Host "exit code: $($p.ExitCode)"
           $log = Join-Path $out "uitest.log"
           if (Test-Path $log) { Get-Content $log } else { Write-Host "::error::no uitest.log" }
+          if (Test-Path runtime\versions.json) { Copy-Item runtime\versions.json $out }
           $appdata = Join-Path $env:APPDATA "NovaMotion"
           if (Test-Path $appdata) { Copy-Item "$appdata\*.log" $out -ErrorAction SilentlyContinue }
           if (Test-Path "$out\crash.log") { Get-Content "$out\crash.log" }

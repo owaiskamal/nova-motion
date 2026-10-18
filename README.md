@@ -6,7 +6,7 @@
 
 NOVA Motion plays 24/25/30 fps video at your screen's refresh rate by generating the missing frames with AI, live, while you watch. Local files, YouTube and 1000+ other sites, one click from the browser.
 
-> Status: working prototype (v0.1). Plays 1080p 25 → 60 fps in real time with RIFE on TensorRT. The full player is being built in the open; see the [roadmap](#roadmap).
+> Status: v0.2, the full player. The video plays inside NOVA Motion with its own controls, resume, queue, subtitles and a live Motion panel. 1080p 25 → 60 fps in real time with RIFE on TensorRT. See the [roadmap](#roadmap).
 
 ## Benchmarks
 
@@ -35,7 +35,8 @@ TensorRT is what makes AI interpolation real-time: same model, 1.65× the Vulkan
 - **The engine** (`engine/novamotion.vpy`) receives decoded frames from mpv, works out the target rate (your display's refresh rate by default; 23.976 → 60000/1001 on a 59.94 Hz screen), and generates the in-between frames. It never makes more frames than the screen can show, and falls back TensorRT → Vulkan → MVTools so playback always works.
 - **The TensorRT path** (`engine/novamotion_trt.py`) schedules frames itself: output frame *n* sits between source frames ⌊n·q/p⌋ and the next, at time point (n·q mod p)/p. Frames that land exactly on a source frame are copied, not inferred.
 - **The player script** (`engine/mpv/scripts/novamotion.lua`) applies the engine to every file, handles hotkeys and live settings changes, and writes a performance line every 5 s (output fps, dropped frames, cache) to `mpv.log`.
-- **The app** (`app/`) is the control window: profiles, GPU detection, live fps readout, tray icon, and `novamotion://` links for the browser extension.
+- **The app** (`app/`) is the player. mpv draws the video into a window inside the app; the controls live in a transparent window kept exactly over it, because Windows always paints a native child window above WPF content. All behaviour sits in a view model (`NovaMotion.Core/ViewModels`) with no WPF in it, so it is tested on Linux against a fake mpv.
+- **Scene cuts:** on the TensorRT path a cheap frame-difference check finds cuts, and frames that would blend two shots show the nearer real frame instead.
 
 ### Hard problems solved
 
@@ -46,6 +47,10 @@ TensorRT is what makes AI interpolation real-time: same model, 1.65× the Vulkan
 
 ## Quick start (Windows 10/11)
 
+**Installer:** download `NovaMotion-Setup` from the latest [release](https://github.com/owaiskamal/nova-motion/releases) (or from the newest CI run's artifacts), run it, and start NOVA Motion. No admin rights needed. NVIDIA RTX users then run *Add NVIDIA TensorRT engine* from the Start menu once.
+
+**From source:**
+
 1. Install the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (`winget install Microsoft.DotNet.SDK.8`).
 2. Run **`build.cmd`**. The first run downloads the runtime (about 150 MB: mpv, VapourSynth, RIFE, MVTools, yt-dlp), runs the tests and builds `dist\NovaMotion.exe`.
 3. **NVIDIA RTX users:** run **`setup-tensorrt.cmd`** once. It downloads NVIDIA TensorRT through [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) (about 3.3 GB) and prepares the 1080p engine (about 90 s).
@@ -55,26 +60,41 @@ Optional: load `extension\` in Chrome or Edge (`chrome://extensions` → Develop
 
 Measure your own machine with **`benchmark.cmd`** (results in `runtime\benchmark.log`).
 
-### Player hotkeys
+### The player
+
+- **Home:** paste a link or drop files; a link you've copied is offered with one click. Recently played videos resume a few seconds before where you stopped, and opening an episode queues the rest of its folder.
+- **On the video:** controls that hide while you watch, a seek bar with buffered range, chapters and hover time, double-click for full screen, scroll for volume.
+- **Motion panel** (Tab, or the badge next to the controls): the frame rate on screen, the frame-cadence strip (white bars are frames from the video, gold ones are generated), the engine's status in plain words, and every smoothing choice.
+- **Subtitles, audio, speed and online quality** in one panel; drop a subtitle file on the video to load it.
+
+### Keyboard
 
 | Key | Action |
 | --- | --- |
+| Space / K | Play or pause |
+| ← / → · Shift for 30 s | Back or forward 5 s |
+| ↑ / ↓ · M | Volume · mute |
+| F · Esc | Full screen · leave it |
+| 0 – 9 | Jump to 0 % – 90 % |
+| N / P | Next or previous in the queue |
+| Tab | Motion panel |
 | Ctrl+S | Smoothing on/off |
-| Ctrl+E | Engine: RIFE TensorRT → RIFE Vulkan → MVTools |
-| Ctrl+T | Target: display → ½ display → 60 → 120 → 2× |
-| Ctrl+D | Split-screen before/after |
+| Ctrl+E / Ctrl+T | Next engine / next frame-rate target |
+| Ctrl+D | Before/after split screen |
 | Ctrl+R | RTX Video Super Resolution |
-| Ctrl+I | Current settings |
+
+The full list is in Settings → Keyboard shortcuts.
 
 ## Project layout
 
 ```
-app/                    .NET 8 solution: NovaMotion.Core, NovaMotion.App (WPF), NovaMotion.SmokeTest
+app/                    .NET 8 solution: NovaMotion.Core (logic + view models), NovaMotion.App (WPF), NovaMotion.SmokeTest
 engine/                 novamotion.vpy, novamotion_trt.py, mpv config + Lua player script
 extension/              Chrome/Edge extension (Manifest V3)
 setup/                  Get-Runtime.ps1, Get-TensorRT.ps1, Benchmark.ps1
-tests/                  engine tests (VapourSynth, no GPU) and Lua tests (mock mpv)
-build.cmd · setup-tensorrt.cmd · benchmark.cmd
+installer/              Inno Setup script (per-user install)
+tests/                  engine tests (VapourSynth, no GPU), Lua tests (mock mpv), XAML checks
+build.cmd · setup-tensorrt.cmd · prepare-engines.cmd · benchmark.cmd
 ```
 
 ## Development
@@ -84,18 +104,19 @@ dotnet run --project app/NovaMotion.SmokeTest                       # core libra
 pip install vapoursynth vapoursynth-mvtools
 python tests/engine/test_engine.py engine/novamotion.vpy             # engine, GPU parts stood in
 cd tests/lua && TESTCFG=/tmp/cfg.json lua5.4 run.lua ../../engine/mpv/scripts/novamotion.lua
+python tests/ui/lint_xaml.py app/NovaMotion.App app/NovaMotion.Core  # resource keys, style targets, bindings
 ```
 
-CI runs all of these plus a Windows build of the WPF app on every push.
+CI runs all of these, then builds the app on Windows, plays a test video through the real player, screenshots every screen (published to the `ci-screenshots` branch) and builds the installer.
 
 ## Roadmap
 
 | Milestone | Scope |
 | --- | --- |
-| M1 Foundations | Pinned dependency versions, one installer, CI |
-| M2 Own player window | mpv drawn inside the app, on-video controls, subtitles, play queue |
-| M3 Engine manager | Background TensorRT builds per resolution, scene-cut detection, first-run auto-tuning |
-| M4 Online and launch | Quality picker, yt-dlp auto-update, extension in the stores, project site |
+| M1 Foundations | ✅ CI with Windows UI screenshots · ✅ installer · ✅ pinned dependency versions |
+| M2 Own player window | ✅ mpv inside the app, on-video controls, subtitles, queue, resume |
+| M3 Engine manager | ✅ scene-cut detection on TensorRT · ✅ per-size engine status and preparation · first-run auto-tuning |
+| M4 Online and launch | ✅ quality picker · ✅ daily yt-dlp updates · extension in the stores, project site |
 | Later | Enhance & Export (offline render), smoothing over any window, faster AMD/Intel paths |
 
 ## License

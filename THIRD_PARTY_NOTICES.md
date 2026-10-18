@@ -1,6 +1,6 @@
 # Third-party notices
 
-NOVA Motion's own code is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE)). At setup time it downloads and runs the following components, each under its own licence. None of them is stored in this repository.
+NOVA Motion's own code is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE)). At setup time it downloads and runs the following components, each under its own licence. Apart from the two fonts, none of them is stored in this repository.
 
 | Component | Used for | Licence | Source |
 | --- | --- | --- | --- |
@@ -15,5 +15,6 @@ NOVA Motion's own code is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE
 | akarin plugin | Fractional frame-rate steps for vs-mlrt | See project | https://github.com/AkarinVS/vapoursynth-plugin |
 | yt-dlp | Online video | Unlicense | https://github.com/yt-dlp/yt-dlp |
 | 7-Zip (7zr.exe) | Unpacking downloads during setup | LGPL-2.1 | https://www.7-zip.org |
+| Onest and Unbounded fonts (bundled in the app, `app/NovaMotion.App/Fonts`) | Interface type | SIL Open Font License 1.1 | https://github.com/google/fonts |
 
 Online playback through yt-dlp is subject to each website's own terms of service.
