@@ -63,6 +63,11 @@ o = run({"engine": "mvtools", "target": "display", "demo": True})
 check(o.width == 1280 and o.fps.numerator == 60, f"demo side by side: {o.width}x{o.height} {o.fps}")
 o = run({"engine": "mvtools", "target": "display", "demo": True, "demo_mode": "split"})
 check(o.width == 1280 and o.fps.numerator == 60, f"demo split: {o.width}x{o.height} {o.fps}")
+for mode in ("side", "split"):
+    o = run({"engine": "mvtools", "target": "display", "demo": True, "demo_mode": mode})
+    p_ = o.get_frame(5).props
+    check(Fraction(p_["_DurationNum"], p_["_DurationDen"]) == Fraction(1, 60),
+          f"demo {mode}: frames last 1/60 s, so the player shows 60 fps (got {p_['_DurationNum']}/{p_['_DurationDen']})")
 # Side by side shows the same middle part of the picture twice, with a bright bar between
 ramp = core.std.BlankClip(width=640, height=64, format=vs.GRAY8, length=4, fpsnum=24)
 def _paint(n, f):                                         # brightness = x / 3: tells columns apart

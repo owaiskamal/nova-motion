@@ -220,7 +220,11 @@ def demo_split(original, smooth, src, dst, mode="side"):
         start = ((w - half) // 2) & ~3               # the middle half of the frame
         left = core.std.Crop(before, left=start, right=w - start - half)
         right = core.std.Crop(smooth, left=start, right=w - start - (w - half - bar_w))
-    return core.std.StackHorizontal([left, divider(left, bar_w), right])
+    both = core.std.StackHorizontal([left, divider(left, bar_w), right])
+    # A stacked frame keeps the first input's properties, and the 'before' side carries the
+    # original's frame duration (1/24 s). mpv times frames by that property, so without this
+    # the whole picture would play at the source rate instead of the smoothed one.
+    return core.std.SetFrameProps(both, _DurationNum=dst.denominator, _DurationDen=dst.numerator)
 
 
 def build(clip):
