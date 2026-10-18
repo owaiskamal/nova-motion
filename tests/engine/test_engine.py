@@ -206,6 +206,28 @@ check(sum(marks) == 0, f"scene cuts: fast even motion is not a cut ({marks})")
 marks = [novamotion_trt.scene_changes(cutclip).get_frame(n).props["_SceneChangePrev"] for n in range(10)]
 check(marks == [0, 0, 0, 0, 0, 1, 0, 0, 0, 0], f"scene cuts: a real cut is found exactly once ({marks})")
 
+# Repeated frames: 24 -> 48 (x2) over a ball moving one step per frame, except that frame 3
+# repeats frame 2 (as in many sports uploads). A blending stand-in for RIFE shows the effect.
+def blend_merge(clipa, clipb, mask, model=None, backend=None, **kw):
+    a = core.resize.Point(clipa, format=vs.RGBS); b = core.resize.Point(clipb, format=vs.RGBS)
+    m = core.resize.Point(mask, format=vs.GRAYS)
+    return core.std.MaskedMerge(a, b, m, first_plane=True)
+real_merge = fake.RIFEMerge
+fake.RIFEMerge = blend_merge
+pos = [0.0, 0.1, 0.2, 0.2, 0.4, 0.5, 0.6, 0.7]            # frame 3 repeats frame 2
+moving = core.std.BlankClip(width=128, height=64, format=vs.RGBH, length=len(pos), fpsnum=24)
+moving = core.std.FrameEval(moving, lambda n: core.std.BlankClip(moving, color=[pos[n]] * 3))
+def track(clip, n):
+    return round(float(clip.get_frame(n)[0][0, 0]), 3)
+plain = novamotion_trt.interpolate(moving, Fraction(24), Fraction(48), "rife-v4.6", 0, scene_detect=False, dedup=False)
+fixed = novamotion_trt.interpolate(moving, Fraction(24), Fraction(48), "rife-v4.6", 0, scene_detect=False, dedup=True)
+p_ = [track(plain, n) for n in range(4, 10)]
+f_ = [track(fixed, n) for n in range(4, 10)]
+steps = lambda xs: [round(b - a, 3) for a, b in zip(xs, xs[1:])]
+check(0.0 in steps(p_), f"dedup: without it the motion stops at the repeated frame ({p_})")
+check(all(abs(st - 0.05) < 0.002 for st in steps(f_)), f"dedup: with it the motion keeps an even pace ({f_}, steps {steps(f_)})")
+fake.RIFEMerge = real_merge
+
 import json as _json
 man = os.path.join(novamotion_trt.ENGINE_DIR, "novamotion-engines.json")
 check(os.path.isfile(man) and "320x192" in _json.load(open(man)) and "1280x768" in _json.load(open(man)),

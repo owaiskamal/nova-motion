@@ -49,6 +49,7 @@ DEFAULTS = {
     "rife_gpu": 0,
     "rife_threads": 4,
     "scene_detect": True,
+    "dedup": True,               # repeated frames in the video: blend across them, not to a stop
     "mv_quality": "balanced",    # fast | balanced | quality
     "demo": False,               # before/after: original on the left, smoothed on the right
     "demo_mode": "side",         # side: the same middle part of the picture twice | split: left and right halves
@@ -121,7 +122,8 @@ def interpolate_rife_trt(clip, cfg, src, dst):
     matrix = matrix_for(clip)
     # Half-float RGB: what the fp16 engine wants, and half the memory traffic of RGBS
     rgb = core.resize.Bicubic(clip, format=vs.RGBH, matrix_in_s=matrix)
-    smooth = novamotion_trt.interpolate(rgb, src, dst, cfg["rife_model"], cfg["rife_gpu"], bool(cfg["scene_detect"]))
+    smooth = novamotion_trt.interpolate(rgb, src, dst, cfg["rife_model"], cfg["rife_gpu"],
+                                         bool(cfg["scene_detect"]), bool(cfg.get("dedup", True)))
     return core.resize.Bicubic(smooth, format=clip.format.id, matrix_s=matrix, dither_type="ordered")
 
 

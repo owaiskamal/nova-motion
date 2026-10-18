@@ -137,7 +137,61 @@ def record_engine(width, height, model):
         pass
 
 
-def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False):
+# Two neighbouring frames closer than this (mean absolute difference, 0..1, on a small grey
+# copy) are the same picture shown twice. Compression noise alone stays well below it.
+DUP_THRESHOLD = 0.004
+
+
+def frame_info(clip):
+    """Per source frame k: Cut1/Cut2 (k+1 / k+2 starts a new shot), DupM1/Dup0/Dup1/Dup2 (k-1 .. k+2 repeat the frame before)."""
+    small = core.resize.Bilinear(clip, width=160, height=96, format=vs.GRAY8, matrix_s="709")
+    n = small.num_frames
+    if n < 4:
+        return core.std.SetFrameProps(small, Cut1=0, Cut2=0, DupM1=0, Dup0=0, Dup1=0, Dup2=0)
+    cuts = scene_changes(clip)
+    diff = core.std.PlaneStats(small, small[0] + small[:-1])     # frame k against k-1
+    d1 = diff[1:] + diff[-1]
+    d2 = diff[2:] + diff[-1] + diff[-1]
+    dm1 = diff[0] + diff[:-1]
+    c1 = cuts[1:] + cuts[-1]
+    c2 = cuts[2:] + cuts[-1] + cuts[-1]
+
+    def mark(n, f):
+        out = f[0].copy()
+        dup = lambda fr, idx: 1 if idx > 0 and fr.props["PlaneStatsDiff"] < DUP_THRESHOLD else 0
+        out.props["Dup0"] = dup(f[0], n)
+        out.props["Dup1"] = dup(f[1], n + 1)
+        out.props["Dup2"] = dup(f[2], n + 2)
+        out.props["DupM1"] = dup(f[3], n - 1)
+        out.props["Cut1"] = f[4].props.get("_SceneChangePrev", 0)
+        out.props["Cut2"] = f[5].props.get("_SceneChangePrev", 0)
+        return out
+
+    return core.std.ModifyFrame(diff, [diff, d1, d2, dm1, c1, c2], mark)
+
+
+def plan(n, p, q, info):
+    """Which source frames output frame n is made from, and where between them it sits.
+
+    Returns (a, b, t2, copy): blend frames a and b at time t2 / (2p); copy=True means show
+    frame a as it is. Normally a = floor(n*q/p) and b = a + 1. A repeated frame carries no
+    motion, so blending across it gives a ball that stops and then jumps; instead the pair is
+    widened to skip the repeat and the time point halved to match the longer gap.
+    """
+    i, k = n * q // p, (n * q) % p
+    g = lambda name: info.props.get(name, 0)
+    # Only a single repeat inside moving video counts: a run of identical frames is a still
+    # scene, and a pair is never widened across a cut
+    if g("Dup0") and not g("DupM1") and not g("Dup1") and not g("Cut1"):   # i repeats i-1: blend i-1 .. i+1
+        return i - 1, i + 1, p + k, False
+    if g("Dup1") and not g("Dup0") and not g("Dup2") and not g("Cut2"):    # i+1 repeats i: blend i .. i+2
+        return i, i + 2, k, k == 0
+    if g("Cut1") and k:                             # a cut between i and i+1: no blend
+        return (i, i, 0, True) if k * 2 < p else (i + 1, i + 1, 0, True)
+    return i, i + 1, 2 * k, k == 0
+
+
+def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=True):
     """rgbh: RGBH clip at src fps. Returns RGBH at dst fps (same size).
 
     Built on vsmlrt.RIFEMerge rather than vsmlrt.RIFE: RIFE() precomputes a table entry for
@@ -161,13 +215,28 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False):
     _log(f"model {model.name}, {clip.width}x{clip.height}, x{ratio} ({p} out per {q} in), {length} frames", t0)
 
     base = core.std.BlankClip(clip, length=length, fpsnum=dst.numerator, fpsden=dst.denominator, keep=True)
-    left = core.std.FrameEval(base, lambda n: clip[min(n * q // p, last)])
-    right = core.std.FrameEval(base, lambda n: clip[min(n * q // p + 1, last)])
-
     gray = vs.GRAYH if clip.format.bits_per_sample == 16 else vs.GRAYS
     gray_base = core.std.BlankClip(base, format=gray, keep=True)
-    phases = [core.std.BlankClip(gray_base, color=(k / p), keep=True) for k in range(p)]
-    mask = core.std.FrameEval(gray_base, lambda n: phases[(n * q) % p])
+    # Time points are k/(2p): halves of the normal steps, for pairs widened over a repeated frame
+    phases = [core.std.BlankClip(gray_base, color=(k / (2 * p)), keep=True) for k in range(2 * p + 1)]
+    src_at = lambda idx: clip[min(max(idx, 0), last)]
+
+    if scene_detect or dedup:
+        info = frame_info(clip)
+        if not scene_detect:
+            info = core.std.SetFrameProps(info, Cut1=0, Cut2=0)
+        if not dedup:
+            info = core.std.SetFrameProps(info, DupM1=0, Dup0=0, Dup1=0, Dup2=0)
+        info_base = core.std.BlankClip(info, length=length, fpsnum=dst.numerator, fpsden=dst.denominator, keep=True)
+        info_out = core.std.FrameEval(info_base, lambda n: info[min(n * q // p, last)])
+        decide = lambda n, f: plan(n, p, q, f)
+    else:
+        info_out = core.std.BlankClip(gray_base, format=vs.GRAY8, keep=True)
+        decide = lambda n, f: (n * q // p, n * q // p + 1, 2 * ((n * q) % p), (n * q) % p == 0)
+
+    left = core.std.FrameEval(base, lambda n, f: src_at(decide(n, f)[0]), prop_src=info_out)
+    right = core.std.FrameEval(base, lambda n, f: src_at(decide(n, f)[1]), prop_src=info_out)
+    mask = core.std.FrameEval(gray_base, lambda n, f: phases[decide(n, f)[2]], prop_src=info_out)
 
     _log("loading TensorRT engine (vsmlrt.RIFEMerge)", t0)
     merged = RIFEMerge(left, right, mask, model=model, backend=backend(gpu))
@@ -175,28 +244,13 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False):
     # vs-mlrt returns 32-bit float frames even from a 16-bit input, so copied source frames
     # must be converted to the same format before the two can be mixed in one clip
     src_same = core.resize.Point(clip, format=merged.format.id) if clip.format.id != merged.format.id else clip
-    left = core.std.FrameEval(merged, lambda n: src_same[min(n * q // p, last)])
 
-    if scene_detect:
-        # Across a cut there is no motion to follow: blending two shots gives a ghosted frame.
-        # Show the nearer real frame instead (cuts stay cuts).
-        right_same = core.std.FrameEval(merged, lambda n: src_same[min(n * q // p + 1, last)])
-        cuts = scene_changes(clip)
-        cut_base = core.std.BlankClip(cuts, length=length, fpsnum=dst.numerator, fpsden=dst.denominator, keep=True)
-        cut_at = core.std.FrameEval(cut_base, lambda n: cuts[min(n * q // p + 1, last)])
+    def pick(n, f):
+        a, _, _, copy = decide(n, f)
+        # Frames that land on a real frame (or a cut's nearer side) are copied, not inferred
+        return src_same[min(max(a, 0), last)] if copy else merged
 
-        def pick(n, f):
-            phase = (n * q) % p
-            if phase == 0:
-                return left
-            if f.props.get("_SceneChangePrev", 0):
-                return left if phase * 2 < p else right_same
-            return merged
-
-        out = core.std.FrameEval(merged, pick, prop_src=cut_at)
-    else:
-        # Frames that land exactly on a source frame (time point 0) are copied, not inferred
-        out = core.std.FrameEval(merged, lambda n: left if (n * q) % p == 0 else merged)
+    out = core.std.FrameEval(merged, pick, prop_src=info_out)
     _log("engine ready", t0)
     out = core.std.AssumeFPS(out, fpsnum=dst.numerator, fpsden=dst.denominator)
     # Copied source frames keep the source's duration; give every frame the output's

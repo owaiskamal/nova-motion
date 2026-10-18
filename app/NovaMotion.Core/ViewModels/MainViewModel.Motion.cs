@@ -83,7 +83,7 @@ public sealed partial class MainViewModel
         foreach (var o in OnlineHeights) o.IsSelected = o.Value == _settings.OnlineMaxHeight.ToString(CultureInfo.InvariantCulture);
         foreach (var o in Models) o.IsSelected = o.Value == Eng.RifeModel;
         if (Models.Count > 0 && !Models.Any(m => m.IsSelected)) Models[0].IsSelected = true;
-        Raise(nameof(SmoothingEnabled), nameof(SceneDetect), nameof(Demo), nameof(DemoSideBySide), nameof(ShowDemoLabels), nameof(RtxVsr), nameof(IsRife), nameof(IsMvTools),
+        Raise(nameof(SmoothingEnabled), nameof(SceneDetect), nameof(Dedup), nameof(Demo), nameof(DemoSideBySide), nameof(ShowDemoLabels), nameof(RtxVsr), nameof(IsRife), nameof(IsMvTools),
               nameof(ActiveProfileName), nameof(EngineName), nameof(TargetName), nameof(HasModels),
               nameof(CloseToTray), nameof(ResumePlayback), nameof(AutoQueueFolder), nameof(AutoUpdateYtDlp), nameof(StartMinimizedToTray));
         UpdateEngineState();
@@ -100,6 +100,7 @@ public sealed partial class MainViewModel
     public bool HasModels => Models.Count > 1 && Eng.Engine == "rife";
 
     public bool SmoothingEnabled { get => Eng.Enabled; set { if (Eng.Enabled == value) return; Eng.Enabled = value; Raise(); _ = SaveAndApplyAsync(); } }
+    public bool Dedup { get => Eng.Dedup; set { if (Eng.Dedup == value) return; Eng.Dedup = value; Raise(); _ = SaveAndApplyAsync(); } }
     public bool SceneDetect { get => Eng.SceneDetect; set { if (Eng.SceneDetect == value) return; Eng.SceneDetect = value; Raise(); _ = SaveAndApplyAsync(); } }
     public bool Demo { get => Eng.Demo; set { if (Eng.Demo == value) return; Eng.Demo = value; Raise(); Raise(nameof(ShowDemoLabels)); _ = SaveAndApplyAsync(); } }
     public bool DemoSideBySide
