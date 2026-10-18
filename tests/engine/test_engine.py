@@ -226,6 +226,22 @@ f_ = [track(fixed, n) for n in range(4, 10)]
 steps = lambda xs: [round(b - a, 3) for a, b in zip(xs, xs[1:])]
 check(0.0 in steps(p_), f"dedup: without it the motion stops at the repeated frame ({p_})")
 check(all(abs(st - 0.05) < 0.002 for st in steps(f_)), f"dedup: with it the motion keeps an even pace ({f_}, steps {steps(f_)})")
+
+# A small object moving over a still background is motion, not a repeat (cricket: still camera, moving ball)
+def dot_frame(n, f):
+    out = f.copy(); pl = out[0]
+    for y in range(40, 52):
+        for x in range(60 + 12 * n, 72 + 12 * n):
+            pl[y, x] = 0.9
+    return out
+field = core.std.BlankClip(width=640, height=360, format=vs.GRAYH, length=8, fpsnum=24, color=[0.3])
+field = core.std.ModifyFrame(field, field, dot_frame)
+field = core.resize.Point(field, format=vs.RGBH)
+flags = [novamotion_trt.frame_info(field).get_frame(n).props["Dup0"] for n in range(8)]
+check(sum(flags) == 0, f"dedup: a small moving ball on a still background is not a repeat ({flags})")
+twice = field[0:3] + field[2] + field[3:7]                  # frame 3 repeats frame 2
+flags = [novamotion_trt.frame_info(twice).get_frame(n).props["Dup0"] for n in range(8)]
+check(flags == [0, 0, 0, 1, 0, 0, 0, 0], f"dedup: the repeated frame is still found ({flags})")
 fake.RIFEMerge = real_merge
 
 import json as _json

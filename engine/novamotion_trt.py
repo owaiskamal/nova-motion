@@ -137,9 +137,28 @@ def record_engine(width, height, model):
         pass
 
 
-# Two neighbouring frames closer than this (mean absolute difference, 0..1, on a small grey
-# copy) are the same picture shown twice. Compression noise alone stays well below it.
-DUP_THRESHOLD = 0.004
+# Two frames are the same picture shown twice only if no part of them changed. The average
+# change over the whole picture is no good for this: in sports the camera often holds still
+# while a small ball moves, which averages to almost nothing. So the difference is measured
+# in small blocks (1/60 of the width each) and the most-changed block decides. Compression
+# noise keeps every block of a real repeat under this (0..1 scale); a moving ball does not.
+DUP_THRESHOLD = 0.012
+
+
+def block_change(clip):
+    """Per frame k: BlockChange = the largest average change of any block from frame k-1."""
+    grey = core.resize.Bilinear(clip, width=480, height=272, format=vs.GRAY8, matrix_s="709")
+    prev = grey[0] + grey[:-1]
+    diff = core.std.Expr([grey, prev], "x y - abs")
+    blocks = core.resize.Bilinear(diff, width=60, height=34)          # each pixel: one block's average
+    stats = core.std.PlaneStats(blocks)
+
+    def tag(n, f):
+        out = f.copy()
+        out.props["BlockChange"] = f.props["PlaneStatsMax"] / 255.0
+        return out
+
+    return core.std.ModifyFrame(stats, stats, tag)
 
 
 def frame_info(clip):
@@ -149,7 +168,7 @@ def frame_info(clip):
     if n < 4:
         return core.std.SetFrameProps(small, Cut1=0, Cut2=0, DupM1=0, Dup0=0, Dup1=0, Dup2=0)
     cuts = scene_changes(clip)
-    diff = core.std.PlaneStats(small, small[0] + small[:-1])     # frame k against k-1
+    diff = block_change(clip)                                     # frame k against k-1
     d1 = diff[1:] + diff[-1]
     d2 = diff[2:] + diff[-1] + diff[-1]
     dm1 = diff[0] + diff[:-1]
@@ -158,7 +177,7 @@ def frame_info(clip):
 
     def mark(n, f):
         out = f[0].copy()
-        dup = lambda fr, idx: 1 if idx > 0 and fr.props["PlaneStatsDiff"] < DUP_THRESHOLD else 0
+        dup = lambda fr, idx: 1 if idx > 0 and fr.props["BlockChange"] < DUP_THRESHOLD else 0
         out.props["Dup0"] = dup(f[0], n)
         out.props["Dup1"] = dup(f[1], n + 1)
         out.props["Dup2"] = dup(f[2], n + 2)
