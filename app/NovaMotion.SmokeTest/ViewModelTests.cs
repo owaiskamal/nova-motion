@@ -119,6 +119,22 @@ internal static class ViewModelTests
         vm.Tick();
         check(vm.EngineState == EngineState.Failed && vm.EngineProblem, "vm: disabled filter shows as a failed engine");
 
+        // ---- keeping playback smooth: frames dropping steps down to a lighter TensorRT model
+        vm.Settings.Active.Engine.Engine = "rife_trt";
+        vm.Settings.Active.Engine.TrtModel = "auto";
+        fake.Prop("vf", JsonNode.Parse("[{\"label\":\"novamotion\",\"enabled\":true}]"));
+        fake.Prop("estimated-vf-fps", 60);
+        vm.Tick();
+        var dropsAt = 0;
+        for (var i = 0; i < 16; i++) { now = now.AddSeconds(0.5); dropsAt += 5; fake.Prop("frame-drop-count", dropsAt); vm.Tick(); }
+        check(vm.Settings.Active.Engine.QualityStep == 1 && fake.Applied?.QualityStep == 1 && vm.ToastText.Contains("lighter model"),
+              $"vm: steady dropped frames switch to a lighter model (step {vm.Settings.Active.Engine.QualityStep}, rate {vm.DropRate:0.#})");
+        for (var i = 0; i < 6; i++) { now = now.AddSeconds(0.5); dropsAt += 5; fake.Prop("frame-drop-count", dropsAt); vm.Tick(); }
+        check(vm.Settings.Active.Engine.QualityStep == 1, "vm: waits for the lighter model to settle before stepping again");
+        for (var i = 0; i < 40; i++) { now = now.AddSeconds(0.5); fake.Prop("frame-drop-count", dropsAt); vm.Tick(); }
+        check(vm.Settings.Active.Engine.QualityStep == 1 && vm.DropText == "None", $"vm: no drops, no more steps ({vm.DropText})");
+        vm.Settings.Active.Engine.Engine = "mvtools";
+
         // ---- seek bar scrubbing
         vm.IsScrubbing = true;
         vm.SeekValue = 300;
@@ -233,6 +249,7 @@ internal static class ViewModelTests
         check(!vm.HasMedia && vm.ToastText.Contains("stopped unexpectedly") && vm.HasToastAction, "vm: player crash returns home with a way to the logs");
         await vm.OpenAsync(new[] { "https://vimeo.com/1" });
         check(fake.Starts == 2, "vm: player restarts after a crash");
+        check(vm.Settings.Active.Engine.QualityStep == 0, "vm: every new video starts on the best model again");
         fake.Prop("idle-active", false);
         fake.Event("file-loaded");
         fake.Prop("time-pos", 61);

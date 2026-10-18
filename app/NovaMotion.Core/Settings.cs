@@ -14,6 +14,10 @@ public sealed class EngineSettings
     [JsonPropertyName("max_source_fps")] public double MaxSourceFps { get; set; } = 31.0;
     [JsonPropertyName("rife_model")]     public string RifeModel { get; set; } = "rife-v4.6_ensembleFalse";
     [JsonPropertyName("rife_gpu")]       public int RifeGpu { get; set; }
+    /// <summary>TensorRT model: "auto" picks the best one this PC sustains (see tune.cmd), or e.g. "rife-v4.26".</summary>
+    [JsonPropertyName("trt_model")]      public string TrtModel { get; set; } = "auto";
+    /// <summary>Set by the player while frames drop: use this many models lighter. Reset for every video.</summary>
+    [JsonPropertyName("quality_step")]   public int QualityStep { get; set; }
     [JsonPropertyName("rife_threads")]   public int RifeThreads { get; set; } = 4;
     [JsonPropertyName("scene_detect")]   public bool SceneDetect { get; set; } = true;
     /// <summary>Blend across frames the video repeats (common in sports and TV uploads).</summary>

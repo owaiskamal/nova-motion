@@ -6,6 +6,7 @@ Shared by the player script (novamotion.vpy) and the setup prebuild step, so bot
 ask TensorRT for exactly the same engine. TensorRT engines are tied to the GPU,
 the resolution and these options; a mismatch means a multi-minute rebuild on play.
 """
+import json
 import math
 import os
 import re
@@ -63,16 +64,100 @@ def installed_model(name):
     return RIFEModel.v4_6                  # always installed by setup
 
 
-def backend(gpu=0):
+# ---------------------------------------------------------------- choosing the model
+#
+# setup\Tune.ps1 measures each installed model on this PC and writes tuning.json:
+#   {"streams": 2, "sizes": {"1920x1088": {"v4_26": 61.0, "v4_6": 83.5, ...}}}
+# (output frames per second for 25 -> 60 fps, the whole engine included). The engine then
+# picks the best model that keeps up with the video in hand, with room to spare for decoding
+# and drawing, which share the GPU.
+
+TUNING_PATH = os.path.join(HERE, "tuning.json")
+# Best first. 4.26 is the newest full model; lite models trade a little detail for speed.
+QUALITY_ORDER = ["v4_26", "v4_25", "v4_6", "v4_25_lite", "v4_22_lite"]
+HEADROOM = 1.4   # decoding and drawing share the GPU: the measured speed is not all for RIFE
+TUNED_SIZE = (1920, 1088)
+
+
+def onnx_path(model_name):
+    """'v4_22_lite' -> .../models/rife/rife_v4.22_lite.onnx"""
+    import vsmlrt
+    ver = "v" + model_name[1:].replace("_", ".", 1)
+    return os.path.join(vsmlrt.models_path, "rife", f"rife_{ver}.onnx")
+
+
+def installed_models():
+    from vsmlrt import RIFEModel
+    return [m for m in QUALITY_ORDER if hasattr(RIFEModel, m) and os.path.isfile(onnx_path(m))]
+
+
+def load_tuning():
+    try:
+        with open(TUNING_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def inferences_per_second(src, dst):
+    """Frames RIFE must make each second: all output frames but those that land on a source frame."""
+    ratio = Fraction(dst) / Fraction(src)
+    p = ratio.numerator
+    return float(dst) * (p - 1) / p
+
+
+def choose_model(requested, width, height, src, dst, step=0, tuning=None):
+    """(model name, why). requested: 'auto' or a model such as 'rife-v4.26'. step: how many
+    steps lighter than the best fit to go (the player asks for this when frames drop)."""
+    from vsmlrt import RIFEModel
+    if requested and requested != "auto":
+        return installed_model(requested).name, "chosen in settings"
+    models = installed_models() or ["v4_6"]
+    tuning = load_tuning() if tuning is None else tuning
+    measured = (tuning.get("sizes") or {}).get(f"{TUNED_SIZE[0]}x{TUNED_SIZE[1]}", {})
+    if not measured:
+        base = "v4_6" if "v4_6" in models else models[0]
+        light = models[min(models.index(base) + step, len(models) - 1)]
+        return light, "default (run Tune for this PC to pick automatically)"
+    # Measured at 25 -> 60 (11 of every 12 frames inferred); scale to this video's size and rate
+    per_pixel = (TUNED_SIZE[0] * TUNED_SIZE[1]) / float(width * height)
+    need = inferences_per_second(src, dst) * HEADROOM
+    capacity = {m: measured[m] * (11 / 12) * per_pixel for m in models if m in measured}
+    if not capacity:
+        return models[0], "no measurement for the installed models"
+    fits = [m for m in models if capacity.get(m, 0) >= need]
+    if fits:
+        pick = fits[min(step, len(fits) - 1)]
+        return pick, f"needs {need:.0f}/s with headroom, {pick} manages {capacity[pick]:.0f}/s"
+    fastest = max(capacity, key=capacity.get)
+    return fastest, f"needs {need:.0f}/s, fastest model manages {capacity[fastest]:.0f}/s"
+
+
+def backend(gpu=0, streams=None):
     from vsmlrt import Backend
     os.makedirs(ENGINE_DIR, exist_ok=True)
     return Backend.TRT(
         fp16=True,               # half precision: ~2x faster on RTX, visually identical for RIFE
+        output_format=1,         # half-float frames back too: half the copying of 32-bit output
         device_id=int(gpu),
-        num_streams=2,           # overlap upload / inference / download
+        num_streams=int(streams or load_tuning().get("streams", 2)),   # overlap upload / inference / download
         use_cuda_graph=True,
         engine_folder=ENGINE_DIR,
     )
+
+
+def write_state(**state):
+    """What the engine is doing right now, for the app's Motion panel."""
+    path = os.environ.get("NOVAMOTION_ENGINE_STATE")
+    if not path:
+        return
+    try:
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(state, f)
+        os.replace(tmp, path)
+    except OSError:
+        pass
 
 
 def _log(msg, t0):
@@ -210,7 +295,7 @@ def plan(n, p, q, info):
     return i, i + 1, 2 * k, k == 0
 
 
-def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=True):
+def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=True, step=0, streams=None):
     """rgbh: RGBH clip at src fps. Returns RGBH at dst fps (same size).
 
     Built on vsmlrt.RIFEMerge rather than vsmlrt.RIFE: RIFE() precomputes a table entry for
@@ -228,7 +313,10 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
     # at time point (n*q mod p)/p. The pattern repeats every p output frames.
     ratio = Fraction(dst) / Fraction(src)
     p, q = ratio.numerator, ratio.denominator
-    model = installed_model(model_name)
+    from vsmlrt import RIFEModel
+    chosen, why = choose_model(model_name, clip.width, clip.height, src, dst, step)
+    model = getattr(RIFEModel, chosen)
+    write_state(engine="rife_trt", model=chosen, why=why, width=w, height=h, src=float(src), dst=float(dst))
     last = clip.num_frames - 1
     length = min(clip.num_frames * p // q, MAX_FRAMES)
     _log(f"model {model.name}, {clip.width}x{clip.height}, x{ratio} ({p} out per {q} in), {length} frames", t0)
@@ -258,7 +346,8 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
     mask = core.std.FrameEval(gray_base, lambda n, f: phases[decide(n, f)[2]], prop_src=info_out)
 
     _log("loading TensorRT engine (vsmlrt.RIFEMerge)", t0)
-    merged = RIFEMerge(left, right, mask, model=model, backend=backend(gpu))
+    merged = RIFEMerge(left, right, mask, model=model, backend=backend(gpu, streams))
+    _log(f"model {chosen}: {why}", t0)
     record_engine(clip.width, clip.height, model.name)   # RIFEMerge has built or loaded it by now
     # vs-mlrt returns 32-bit float frames even from a 16-bit input, so copied source frames
     # must be converted to the same format before the two can be mixed in one clip

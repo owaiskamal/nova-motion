@@ -10,6 +10,8 @@ public sealed class SettingsStore
     public string Directory { get; }
     public string SettingsPath => Path.Combine(Directory, "settings.json");
     public string EngineConfigPath => Path.Combine(Directory, "engine.json");
+    /// <summary>Written by the engine: the model it chose and why.</summary>
+    public string EngineStatePath => Path.Combine(Directory, "engine-state.json");
 
     public SettingsStore(string? directory = null)
     {

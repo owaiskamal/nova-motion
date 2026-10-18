@@ -45,7 +45,10 @@ DEFAULTS = {
     "engine": "rife",            # rife_trt (NVIDIA TensorRT) | rife (Vulkan) | mvtools
     "target": "display",         # display | display/2 | x2 | <number, e.g. 60 or 120>
     "max_source_fps": 31.0,      # never interpolate content above this rate
-    "rife_model": "rife-v4.6_ensembleFalse",
+    "rife_model": "rife-v4.6_ensembleFalse",   # Vulkan RIFE model
+    "trt_model": "auto",         # TensorRT model: auto (best this PC sustains, see Tune) or e.g. rife-v4.26
+    "quality_step": 0,           # set by the player when frames drop: go this many models lighter
+    "trt_streams": None,         # TensorRT streams; None: the tuned value
     "rife_gpu": 0,
     "rife_threads": 4,
     "scene_detect": True,
@@ -122,9 +125,12 @@ def interpolate_rife_trt(clip, cfg, src, dst):
     matrix = matrix_for(clip)
     # Half-float RGB: what the fp16 engine wants, and half the memory traffic of RGBS
     rgb = core.resize.Bicubic(clip, format=vs.RGBH, matrix_in_s=matrix)
-    smooth = novamotion_trt.interpolate(rgb, src, dst, cfg["rife_model"], cfg["rife_gpu"],
-                                         bool(cfg["scene_detect"]), bool(cfg.get("dedup", True)))
-    return core.resize.Bicubic(smooth, format=clip.format.id, matrix_s=matrix, dither_type="ordered")
+    smooth = novamotion_trt.interpolate(rgb, src, dst, cfg.get("trt_model", "auto"), cfg["rife_gpu"],
+                                         bool(cfg["scene_detect"]), bool(cfg.get("dedup", True)),
+                                         int(cfg.get("quality_step") or 0), cfg.get("trt_streams"))
+    # Bilinear for the chroma step back to 4:2:0: same look as bicubic at this size, and
+    # cheaper on the CPU for every one of the 60 output frames a second
+    return core.resize.Bilinear(smooth, format=clip.format.id, matrix_s=matrix, dither_type="ordered")
 
 
 def interpolate_rife(clip, cfg, src, dst):

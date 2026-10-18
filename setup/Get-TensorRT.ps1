@@ -180,9 +180,9 @@ try {
     }
 } catch { Write-Warning "akarin not installed ($_). TensorRT still works; non-whole rate steps cost a little more GPU." }
 
-Step "Pre-building TensorRT engines for 1080p (first time: a few minutes per model)"
-& (Join-Path $PSScriptRoot "Build-Engines.ps1") -Sizes 1080p -Models $Prebuild
-if ($LASTEXITCODE -ne 0) { throw "TensorRT engine build failed (see lines above)" }
+Step "Tuning for this PC: building and timing each model at 1080p (about 10 minutes)"
+& (Join-Path $PSScriptRoot "Tune.ps1")
+if ($LASTEXITCODE -ne 0) { Write-Warning "Tuning did not finish; run tune.cmd later. TensorRT still works with the default model." }
 
 if (-not $KeepDownloads) {
     Info "removing downloaded archives (use -KeepDownloads to keep them)"

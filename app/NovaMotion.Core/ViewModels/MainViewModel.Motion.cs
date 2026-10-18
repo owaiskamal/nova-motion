@@ -53,6 +53,7 @@ public sealed partial class MainViewModel
             ShowToast("Profiles reset to the defaults for this PC");
         });
         PrepareEnginesCommand = new Command(PrepareEngines);
+        TuneCommand = new Command(Tune);
         UpdateYtDlpCommand = new Command(() => _ = UpdateYtDlpAsync(force: true));
         SelectQualityNowCommand = new Command(p => { if (p is OptionItem o) _ = SelectQualityNowAsync(o); });
         foreach (var c in EngineCatalog.Targets) Targets.Add(new OptionItem(c));
@@ -284,6 +285,122 @@ public sealed partial class MainViewModel
         : "Not installed · run setup-tensorrt.cmd (NVIDIA RTX)";
     public IReadOnlyList<ShortcutItem> Shortcuts { get; } = KeyMap.All.Select(s => new ShortcutItem(s.Keys, s.Description)).ToList();
 
+    // ------------------------------------------------------------------ keeping playback smooth
+
+    private readonly List<(DateTime At, long Drops)> _dropSamples = new();
+    private DateTime? _lastStepAt;
+    private DateTime _engineStateReadAt;
+
+    /// <summary>Most lighter steps the player takes on its own (one per model below the best fit).</summary>
+    public const int MaxQualityStep = 3;
+    /// <summary>Dropped frames per second, averaged over this window, that count as "not keeping up".</summary>
+    public const double DropRateLimit = 2.5;
+    public static readonly TimeSpan DropWindow = TimeSpan.FromSeconds(6);
+
+    private double _dropRate;
+    /// <summary>Frames the player dropped per second over the last few seconds.</summary>
+    public double DropRate { get => _dropRate; private set { if (Set(ref _dropRate, value)) Raise(nameof(DropText)); } }
+    public string DropText => DropRate < 0.2 ? "None" : $"{DropRate:0.#} a second";
+
+    /// <summary>
+    /// When frames keep dropping, the GPU isn't keeping up with the chosen model: switch to the
+    /// next lighter one (TensorRT, automatic model only). Like a game lowering its resolution
+    /// to hold the frame rate. Resets with the next video.
+    /// </summary>
+    private void WatchDrops(DateTime now)
+    {
+        if (!EngineActive || _state.Paused || _state.Seeking || _state.Buffering)
+        {
+            _dropSamples.Clear();
+            DropRate = 0;
+            return;
+        }
+        _dropSamples.Add((now, _state.FrameDrops));
+        while (_dropSamples.Count > 0 && now - _dropSamples[0].At > DropWindow) _dropSamples.RemoveAt(0);
+        var span = (now - _dropSamples[0].At).TotalSeconds;
+        if (span < DropWindow.TotalSeconds * 0.8) { DropRate = 0; return; }
+        DropRate = Math.Max(0, (_dropSamples[^1].Drops - _dropSamples[0].Drops) / span);
+
+        var canStep = Eng.Engine == "rife_trt" && Eng.TrtModel == "auto" && Eng.QualityStep < MaxQualityStep;
+        var settled = _lastStepAt is null || now - _lastStepAt > TimeSpan.FromSeconds(10);
+        if (DropRate > DropRateLimit && canStep && settled)
+        {
+            _lastStepAt = now;
+            _dropSamples.Clear();
+            Eng.QualityStep++;
+            _ = SaveAndApplyAsync();
+            ShowToast("Frames were dropping, so NOVA Motion switched to a lighter model to stay smooth.");
+        }
+    }
+
+    private string _modelText = "";
+    /// <summary>The model the engine is using right now, e.g. "RIFE 4.26 (picked for this PC)".</summary>
+    public string ModelText { get => _modelText; private set { if (Set(ref _modelText, value)) Raise(nameof(HasModelText)); } }
+    public bool HasModelText => ModelText.Length > 0;
+    public string ModelWhy { get; private set; } = "";
+
+    private void ReadEngineState(DateTime now)
+    {
+        if (!EngineActive) { ModelText = ""; return; }
+        if (now - _engineStateReadAt < TimeSpan.FromSeconds(2)) return;
+        _engineStateReadAt = now;
+        try
+        {
+            if (!File.Exists(_store.EngineStatePath)) return;
+            var json = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(_store.EngineStatePath));
+            var model = TrackInfo.Str(json?["model"]);
+            if (model is null || TrackInfo.Str(json?["engine"]) != Eng.Engine) { ModelText = ""; return; }
+            var name = EngineCatalog.ModelName("rife-" + model.Replace('_', '.').Replace(".lite", "_lite"));
+            ModelText = Eng.TrtModel == "auto"
+                ? name + (Eng.QualityStep > 0 ? " (lighter, to stay smooth)" : " (picked for this PC)")
+                : name;
+            ModelWhy = TrackInfo.Str(json?["why"]) ?? "";
+            Raise(nameof(ModelWhy));
+        }
+        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { }
+    }
+
+    // ------------------------------------------------------------------ tuning
+
+    public Command TuneCommand { get; private set; } = null!;
+    public ObservableCollection<BenchmarkItem> TuningResults { get; } = new();
+    public bool HasTuning => TuningResults.Count > 0;
+    public string TuningText { get; private set; } = "";
+
+    private void RefreshTuning()
+    {
+        TuningResults.Clear();
+        TuningText = "Not tuned yet. Tuning measures each model on this PC (about 10 minutes), then NOVA Motion picks the best one that plays smoothly.";
+        try
+        {
+            var path = Runtime is null ? null : Path.Combine(Runtime.Root, "tuning.json");
+            if (path is not null && File.Exists(path)
+                && System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path)) is { } t
+                && t["sizes"]?["1920x1088"] is System.Text.Json.Nodes.JsonObject sizes)
+            {
+                var max = sizes.Select(kv => TrackInfo.Dbl(kv.Value)).DefaultIfEmpty(1).Max();
+                foreach (var (model, value) in sizes)
+                {
+                    var fps = TrackInfo.Dbl(value);
+                    // 55 AI frames a second for 25 -> 60, with the engine's headroom
+                    TuningResults.Add(new BenchmarkItem(EngineCatalog.ModelName("rife-" + model.Replace('_', '.').Replace(".lite", "_lite")),
+                        $"{fps:0} fps", Math.Clamp(fps / Math.Max(max, 1), 0.02, 1), fps * 11 / 12 >= 55 * 1.4));
+                }
+                TuningText = $"Tuned on {TrackInfo.Str(t["measured"])?.Replace('T', ' ') ?? "this PC"}. Frames each model makes per second at 1080p.";
+            }
+        }
+        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { }
+        Raise(nameof(HasTuning), nameof(TuningText));
+    }
+
+    private void Tune()
+    {
+        if (Runtime is null || !Availability.TensorRt) return;
+        var script = Path.Combine(Path.GetDirectoryName(Runtime.Root) ?? Runtime.Root, "tune.cmd");
+        _host.RunInConsole(script, "");
+        ShowToast("Tuning in a separate window. Close other GPU-heavy apps meanwhile.");
+    }
+
     // ------------------------------------------------------------------ online
 
     private string _ytDlpStatus = "";
@@ -379,6 +496,7 @@ public sealed partial class MainViewModel
         if (Runtime is null) Problems.Add("The player files are missing. Run build.cmd once to download them, then restart NOVA Motion.");
         else foreach (var p in Runtime.Problems()) Problems.Add(p);
         RebuildEngineSizes();
+        RefreshTuning();
         Raise(nameof(Availability), nameof(HasBenchmarks), nameof(HasProblems), nameof(TensorRtText), nameof(CanPlay), nameof(HasTensorRt));
     }
 

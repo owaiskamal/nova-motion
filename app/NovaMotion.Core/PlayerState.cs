@@ -115,7 +115,7 @@ public sealed class PlayerState
         "time-pos", "duration", "pause", "volume", "mute", "speed", "media-title", "path",
         "container-fps", "estimated-vf-fps", "display-fps", "vf", "track-list", "chapter-list",
         "demuxer-cache-time", "paused-for-cache", "seeking", "idle-active", "eof-reached",
-        "video-params/w", "video-params/h", "hwdec-current", "core-idle",
+        "video-params/w", "video-params/h", "hwdec-current", "core-idle", "frame-drop-count",
     };
 
     public double Position { get; private set; }
@@ -139,6 +139,8 @@ public sealed class PlayerState
     public int VideoWidth { get; private set; }
     public int VideoHeight { get; private set; }
     public string HwDec { get; private set; } = "";
+    /// <summary>Frames the player has dropped since the file started (it can't show them in time).</summary>
+    public long FrameDrops { get; private set; }
     public IReadOnlyList<TrackInfo> Tracks { get; private set; } = Array.Empty<TrackInfo>();
     public IReadOnlyList<(double Time, string Title)> Chapters { get; private set; } = Array.Empty<(double, string)>();
 
@@ -185,6 +187,7 @@ public sealed class PlayerState
             case "video-params/h": VideoHeight = TrackInfo.Int(data); break;
             case "hwdec-current": HwDec = TrackInfo.Str(data) ?? ""; break;
             case "core-idle": break;
+            case "frame-drop-count": FrameDrops = TrackInfo.Int(data); break;
             default: return false;
         }
         return true;

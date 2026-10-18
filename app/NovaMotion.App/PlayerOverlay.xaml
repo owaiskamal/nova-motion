@@ -241,9 +241,18 @@
                                     <TextBlock Style="{StaticResource Text.Small}" Text="Decoding"/>
                                     <TextBlock FontSize="13.5" Foreground="{StaticResource Text}" Text="{Binding DecoderText}" TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
-                                <StackPanel>
+                                <StackPanel Margin="0,0,0,12">
                                     <TextBlock Style="{StaticResource Text.Small}" Text="Frames generated"/>
                                     <TextBlock FontSize="13.5" Foreground="{StaticResource Text}" Text="{Binding GeneratedShareText}"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Text.Small}" Text="Dropped frames"/>
+                                    <TextBlock FontSize="13.5" Foreground="{StaticResource Text}" Text="{Binding DropText}"/>
+                                </StackPanel>
+                                <StackPanel Visibility="{Binding HasModelText, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Style="{StaticResource Text.Small}" Text="Model"/>
+                                    <TextBlock FontSize="13.5" Foreground="{StaticResource Text}" Text="{Binding ModelText}"
+                                               TextWrapping="Wrap" ToolTip="{Binding ModelWhy}"/>
                                 </StackPanel>
                             </UniformGrid>
 

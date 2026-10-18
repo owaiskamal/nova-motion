@@ -137,8 +137,8 @@ def RIFEMerge(clipa, clipb, mask, model=None, backend=None, **kw):
     assert clipa.width % 64 == 0 and clipa.height % 64 == 0, "not padded"
     assert clipa.num_frames == clipb.num_frames == mask.num_frames
     # tint by time point so tests can check the phase: out = a*(1-t) + b*t on plane 0
-    # like the real vs-mlrt: output is 32-bit float even for 16-bit input
-    return core.resize.Point(clipa, format=vs.RGBS)
+    # like the real vs-mlrt: 32-bit float out unless asked for half floats
+    return core.resize.Point(clipa, format=vs.RGBH if (backend or {}).get("output_format") == 1 else vs.RGBS)
 fake.RIFEMerge = RIFEMerge
 fake.models_path = tempfile.mkdtemp()
 os.makedirs(os.path.join(fake.models_path, "rife"))
@@ -152,14 +152,15 @@ novamotion_trt.available = lambda: True
 novamotion_trt.ENGINE_DIR = tempfile.mkdtemp()
 
 calls.clear()
-o = run({"engine": "rife_trt", "target": "display", "rife_model": "rife-v4.22_lite_ensembleFalse"}, frames=10)
+o = run({"engine": "rife_trt", "target": "display", "trt_model": "rife-v4.22_lite"}, frames=10)
 m = [c for c in calls if c[0] == "merge"]
 check(o.fps.numerator == 60 and o.width == 1280 and o.height == 720 and o.format.id == vs.YUV420P8,
       f"trt: 24000/1001 -> 60, padded & cropped back: {o.width}x{o.height} {o.fps} {o.format.name}")
 check(m and m[0][1:3] == (1280, 768) and m[0][4] == RIFEModel.v4_22_lite and m[0][5] == "RGBH" and m[0][6] == "GrayH",
-      f"trt: RIFEMerge gets padded RGBH pairs + GrayH time mask, lite model: {m[:1]}")
+      f"trt: RIFEMerge gets padded RGBH pairs + GrayH time mask, model from settings: {m[:1]}")
 b = [c for c in calls if c[0] == "backend"][0][1]
-check(b["fp16"] and b["num_streams"] == 2 and b["engine_folder"] == novamotion_trt.ENGINE_DIR, "trt: fp16, 2 streams, cached engines")
+check(b["fp16"] and b["output_format"] == 1 and b["num_streams"] == 2 and b["engine_folder"] == novamotion_trt.ENGINE_DIR,
+      "trt: fp16 in and out, 2 streams by default, cached engines")
 
 o = run({"engine": "rife_trt", "target": "display"}, fps=25.0, display=60, frames=60)
 durs = {Fraction(o.get_frame(n).props["_DurationNum"], o.get_frame(n).props["_DurationDen"]) for n in range(24)}
@@ -249,8 +250,25 @@ man = os.path.join(novamotion_trt.ENGINE_DIR, "novamotion-engines.json")
 check(os.path.isfile(man) and "320x192" in _json.load(open(man)) and "1280x768" in _json.load(open(man)),
       f"trt: engine manifest records each padded size ({sorted(_json.load(open(man))) if os.path.isfile(man) else 'missing'})")
 
+# Choosing the model from this PC's measurements (tuning.json)
+ch = novamotion_trt.choose_model
+fast_pc = {"sizes": {"1920x1088": {"v4_6": 110.0, "v4_22_lite": 170.0}}}
+slow_pc = {"sizes": {"1920x1088": {"v4_6": 62.0, "v4_22_lite": 95.0}}}
+check(ch("auto", 1920, 1088, Fraction(25), Fraction(60), 0, {})[0] == "v4_6", "tune: without measurements the default model is used")
+check(ch("auto", 1920, 1088, Fraction(25), Fraction(60), 0, fast_pc)[0] == "v4_6", "tune: a fast PC gets the full model at 1080p")
+check(ch("auto", 1920, 1088, Fraction(25), Fraction(60), 0, slow_pc)[0] == "v4_22_lite", "tune: a PC that can't keep up at 25 -> 60 gets the lite model")
+check(ch("auto", 1280, 768, Fraction(25), Fraction(60), 0, slow_pc)[0] == "v4_6", "tune: the same PC keeps the full model at 720p (fewer pixels)")
+check(ch("auto", 1920, 1088, Fraction(25), Fraction(60), 1, fast_pc)[0] == "v4_22_lite", "tune: a step down from the player picks the next lighter model")
+check(ch("rife-v4.22_lite", 1920, 1088, Fraction(25), Fraction(60), 0, fast_pc)[0] == "v4_22_lite", "tune: a model chosen in settings wins")
+check(abs(novamotion_trt.inferences_per_second(Fraction(25), Fraction(60)) - 55) < 1e-9
+      and abs(novamotion_trt.inferences_per_second(Fraction(24), Fraction(60)) - 48) < 1e-9, "tune: 25 -> 60 needs 55 AI frames a second, 24 -> 60 needs 48")
+os.environ["NOVAMOTION_ENGINE_STATE"] = os.path.join(tempfile.mkdtemp(), "engine-state.json")
+o = run({"engine": "rife_trt", "target": "display"}, frames=10)
+st = json.load(open(os.environ["NOVAMOTION_ENGINE_STATE"]))
+check(st.get("model") == "v4_6" and st.get("engine") == "rife_trt", f"trt: engine state written for the app ({st})")
+
 calls.clear()
-o = run({"engine": "rife_trt", "target": "display", "rife_model": "rife-v4.26_ensembleFalse"}, frames=10)
+o = run({"engine": "rife_trt", "target": "display", "trt_model": "rife-v4.26"}, frames=10)
 m = [c for c in calls if c[0] == "merge"]
 check(m and m[0][4] == RIFEModel.v4_6, f"trt: model without ONNX (4.26) falls back to 4.6")
 novamotion_trt.available = lambda: False

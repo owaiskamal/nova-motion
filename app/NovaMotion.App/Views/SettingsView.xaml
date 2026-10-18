@@ -125,6 +125,35 @@
                     <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,0" Text="{Binding TensorRtText}"/>
                     <TextBlock Style="{StaticResource Text.Small}" Margin="0,6,0,0" TextWrapping="Wrap"
                                Text="TensorRT compiles RIFE for your exact GPU and video size. A size without an engine pauses for a few minutes the first time you play it."/>
+                    <StackPanel Visibility="{Binding HasTensorRt, Converter={StaticResource BoolToVis}}" Margin="0,18,0,0">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Height="36" Content="Tune for this PC"
+                                    Command="{Binding TuneCommand}" VerticalAlignment="Top"/>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource Text.Strong}" Text="Model"/>
+                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="0,2,0,0" Text="{Binding TuningText}"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding TuningResults}" Focusable="False" Margin="0,12,0,0"
+                                      Visibility="{Binding HasTuning, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Result}" FontSize="13" Foreground="{StaticResource Text}"/>
+                                            <TextBlock Text="{Binding Engine}" FontSize="13" Foreground="{StaticResource Muted}"/>
+                                        </DockPanel>
+                                        <ProgressBar Grid.Row="1" Style="{StaticResource ThinProgress}" Height="5" Margin="0,6,0,0"
+                                                     Value="{Binding Fraction, Mode=OneWay}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                     <StackPanel Visibility="{Binding HasTensorRt, Converter={StaticResource BoolToVis}}" Margin="0,14,0,0">
                         <ItemsControl ItemsSource="{Binding EngineSizes}" Focusable="False">
                             <ItemsControl.ItemsPanel>

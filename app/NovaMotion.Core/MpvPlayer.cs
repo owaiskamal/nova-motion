@@ -116,6 +116,7 @@ public sealed class MpvPlayer : IPlayerBackend
         var psi = new ProcessStartInfo(_runtime.MpvExe) { UseShellExecute = false, WorkingDirectory = _runtime.MpvDir };
         foreach (var a in BuildArguments(target, settings)) psi.ArgumentList.Add(a);
         psi.Environment["NOVAMOTION_ENGINE_CONFIG"] = _store.EngineConfigPath;
+        psi.Environment["NOVAMOTION_ENGINE_STATE"] = _store.EngineStatePath;
 
         _process = Process.Start(psi) ?? throw new InvalidOperationException("mpv did not start");
         _process.EnableRaisingEvents = true;
