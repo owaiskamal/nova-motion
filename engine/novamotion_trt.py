@@ -92,23 +92,31 @@ def _log(msg, t0):
 MAX_FRAMES = 2**31 - 2
 
 
-# Mean absolute difference (0..1) between a frame and the one before it that counts as a cut.
-# Measured on a small grey copy, so it costs next to nothing beside RIFE.
-SCENE_THRESHOLD = 0.12
+# A cut is a spike in the frame-to-frame difference: big on its own (mean absolute difference
+# over 0..1) and several times bigger than the differences just before and after it. A camera
+# pan or fast play (sports) changes every frame a lot, but evenly, so it is not mistaken for a
+# cut; a flash lights up two neighbouring differences, so it isn't either.
+SCENE_THRESHOLD = 0.10
+SCENE_SPIKE = 2.5
 
 
 def scene_changes(clip):
     """Clip whose frame k carries _SceneChangePrev=1 when k starts a new shot."""
     small = core.resize.Bilinear(clip, width=160, height=96, format=vs.GRAY8, matrix_s="709")
-    prev = small[0] + small[:-1] if small.num_frames > 1 else small
-    stats = core.std.PlaneStats(small, prev)
+    if small.num_frames < 3:
+        return core.std.SetFrameProps(small, _SceneChangePrev=0)
+    diff = core.std.PlaneStats(small, small[0] + small[:-1])     # frame k against k-1
+    before = diff[0] + diff[:-1]                                  # difference k-1 against k-2
+    after = diff[1:] + diff[-1]                                   # difference k+1 against k
 
     def mark(n, f):
-        out = f.copy()
-        out.props["_SceneChangePrev"] = 1 if n > 0 and f.props["PlaneStatsDiff"] > SCENE_THRESHOLD else 0
+        d = f[0].props["PlaneStatsDiff"]
+        around = max(f[1].props["PlaneStatsDiff"], f[2].props["PlaneStatsDiff"])
+        out = f[0].copy()
+        out.props["_SceneChangePrev"] = 1 if n > 0 and d > SCENE_THRESHOLD and d > SCENE_SPIKE * around else 0
         return out
 
-    return core.std.ModifyFrame(stats, stats, mark)
+    return core.std.ModifyFrame(diff, [diff, before, after], mark)
 
 
 def record_engine(width, height, model):

@@ -198,6 +198,14 @@ check(all(abs(luma(with_cuts, n) - luma(merged_only, n)) < 1e-3 for n in (1, 3, 
       "trt scene cuts: frames within a shot are untouched")
 check(abs(luma(with_cuts, 8) - 0.1) < 0.01 and abs(luma(with_cuts, 10) - 0.9) < 0.01,
       "trt scene cuts: exact source frames still copied")
+# Fast, even motion (a pan, a sports broadcast) must not count as a cut: every frame differs a lot
+pan = core.std.BlankClip(width=320, height=180, format=vs.RGBH, length=12, fpsnum=25)
+pan = core.std.FrameEval(pan, lambda n: core.std.BlankClip(pan, color=[0.2 + 0.3 * (n % 2)] * 3))
+marks = [novamotion_trt.scene_changes(pan).get_frame(n).props["_SceneChangePrev"] for n in range(12)]
+check(sum(marks) == 0, f"scene cuts: fast even motion is not a cut ({marks})")
+marks = [novamotion_trt.scene_changes(cutclip).get_frame(n).props["_SceneChangePrev"] for n in range(10)]
+check(marks == [0, 0, 0, 0, 0, 1, 0, 0, 0, 0], f"scene cuts: a real cut is found exactly once ({marks})")
+
 import json as _json
 man = os.path.join(novamotion_trt.ENGINE_DIR, "novamotion-engines.json")
 check(os.path.isfile(man) and "320x192" in _json.load(open(man)) and "1280x768" in _json.load(open(man)),
