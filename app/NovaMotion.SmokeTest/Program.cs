@@ -25,7 +25,7 @@ var dir = Path.Combine(Path.GetTempPath(), "ff-test-" + Guid.NewGuid().ToString(
 var store = new SettingsStore(dir);
 var s = store.Load(new GpuInfo(new[] { "NVIDIA GeForce RTX 4070" }));
 Check(s.Profiles.Count == 4 && s.Active.Name == "Balanced", "defaults for RTX GPU");
-Check(s.Profiles.First(p => p.Name == "Max quality").Engine.RtxVsr, "Max quality enables RTX VSR on RTX");
+Check(!s.Profiles.First(p => p.Name == "Max quality").Engine.RtxVsr, "RTX VSR starts off (too heavy with smoothing at 4K)");
 var light = store.Load(new GpuInfo(new[] { "Intel(R) UHD Graphics 620" }));
 Check(light.Active.Name == "Light (any GPU)", "integrated GPU defaults to light profile");
 s.Active.Engine.TargetText = "120";

@@ -75,7 +75,7 @@ public sealed class AppSettings
             Profiles =
             {
                 new Profile { Name = "Balanced",        Engine = new EngineSettings { Engine = rife, TargetText = "display" } },
-                new Profile { Name = "Max quality",     Engine = new EngineSettings { Engine = rife, TargetText = "display", RifeThreads = 6, RtxVsr = gpu?.IsNvidiaRtx == true } },
+                new Profile { Name = "Max quality",     Engine = new EngineSettings { Engine = rife, TargetText = "display", RifeThreads = 6 } },
                 new Profile { Name = "Light (any GPU)", Engine = new EngineSettings { Engine = "mvtools", MvQuality = "fast", TargetText = "60" } },
                 new Profile { Name = "Anime",           Engine = new EngineSettings { Engine = rife, TargetText = "x2", SceneDetect = true, RifeModel = "rife-v4.22_lite_ensembleFalse" } },
             },

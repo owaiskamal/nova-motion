@@ -261,7 +261,10 @@ def build(clip):
 
     if cfg.get("demo"):
         smooth = demo_split(clip, smooth, src, dst, cfg.get("demo_mode", "side"))
-    return smooth
+    # Every output frame must say it lasts 1/dst s. Frames copied straight from the source
+    # still carry the source's duration (e.g. 1/25 s), and mpv times frames by that property:
+    # mixed durations made it drop and mistime frames on 25 fps video.
+    return core.std.SetFrameProps(smooth, _DurationNum=dst.denominator, _DurationDen=dst.numerator)
 
 
 if _debug:

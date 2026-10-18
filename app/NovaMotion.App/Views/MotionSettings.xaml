@@ -135,7 +135,7 @@
         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding RtxVsr}" Margin="0,12,0,0">
             <StackPanel>
                 <TextBlock Style="{StaticResource Text.Body}" Text="RTX Video Super Resolution"/>
-                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="NVIDIA's upscaler for sharper low-resolution video. RTX GPUs only."/>
+                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="NVIDIA's upscaler for sharper low-resolution video. RTX GPUs only. Heavy together with smoothing on a 4K screen; best for 720p and lower."/>
             </StackPanel>
         </CheckBox>
     </StackPanel>

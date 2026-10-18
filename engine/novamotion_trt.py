@@ -191,4 +191,6 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False):
         out = core.std.FrameEval(merged, lambda n: left if (n * q) % p == 0 else merged)
     _log("engine ready", t0)
     out = core.std.AssumeFPS(out, fpsnum=dst.numerator, fpsden=dst.denominator)
+    # Copied source frames keep the source's duration; give every frame the output's
+    out = core.std.SetFrameProps(out, _DurationNum=dst.denominator, _DurationDen=dst.numerator)
     return core.std.Crop(out, right=pw, bottom=ph) if (pw or ph) else out

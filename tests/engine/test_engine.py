@@ -161,6 +161,13 @@ check(m and m[0][1:3] == (1280, 768) and m[0][4] == RIFEModel.v4_22_lite and m[0
 b = [c for c in calls if c[0] == "backend"][0][1]
 check(b["fp16"] and b["num_streams"] == 2 and b["engine_folder"] == novamotion_trt.ENGINE_DIR, "trt: fp16, 2 streams, cached engines")
 
+o = run({"engine": "rife_trt", "target": "display"}, fps=25.0, display=60, frames=60)
+durs = {Fraction(o.get_frame(n).props["_DurationNum"], o.get_frame(n).props["_DurationDen"]) for n in range(24)}
+check(durs == {Fraction(1, 60)}, f"trt 25 -> 60: every frame lasts 1/60 s, copied ones too ({sorted(durs)})")
+o = run({"engine": "mvtools", "target": "display"}, fps=25.0, display=60, frames=60)
+durs = {Fraction(o.get_frame(n).props["_DurationNum"], o.get_frame(n).props["_DurationDen"]) for n in range(24)}
+check(durs == {Fraction(1, 60)}, f"mvtools 25 -> 60: every frame lasts 1/60 s ({sorted(durs)})")
+
 # The mpv case: a clip of effectively unbounded length must set up instantly
 calls.clear()
 t0 = _time.perf_counter()
