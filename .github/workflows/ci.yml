@@ -33,6 +33,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+      - name: Core tests on Windows (paths and plugins differ from Linux)
+        run: dotnet run --project app/NovaMotion.SmokeTest -c Release
       - name: Build
         run: dotnet publish app/NovaMotion.App -c Release -r win-x64 -o dist
 

@@ -63,6 +63,9 @@ internal static class ViewModelTests
         Directory.CreateDirectory(Path.Combine(rtDir, "models", "rife-v4.6_ensembleFalse"));
         File.WriteAllText(Path.Combine(rtDir, "novamotion.vpy"), "");
         File.WriteAllText(Path.Combine(rtDir, "models", "rife-v4.6_ensembleFalse", "flownet.param"), "");
+        // On Windows the MVTools engine counts as installed only when its plugin is there
+        Directory.CreateDirectory(Path.Combine(rtDir, "mpv", "vs-plugins"));
+        File.WriteAllText(Path.Combine(rtDir, "mpv", "vs-plugins", "libmvtools.dll"), "");
         var vm = new MainViewModel(host, store, RuntimeLayout.Find(dir), () => fake, () => now);
         check(vm.Engines.Single(e => e.Value == "rife_trt").Available == false && vm.Engines.Single(e => e.Value == "rife_trt").Badge == "Needs setup",
               "vm: TensorRT shown as needing setup when not installed");
