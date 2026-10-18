@@ -240,6 +240,7 @@ public static class MediaSource
             var host = new Uri(target).Host;
             return host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? host[4..] : host.StartsWith("m.") ? host[2..] : host;
         }
+        if (target.Contains("://")) return "";   // mpv sources such as av://lavfi:... have no meaningful origin
         try
         {
             var dir = System.IO.Path.GetDirectoryName(target.Replace('\\', System.IO.Path.DirectorySeparatorChar));

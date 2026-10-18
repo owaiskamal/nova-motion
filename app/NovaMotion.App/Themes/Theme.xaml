@@ -178,7 +178,8 @@
                             <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="Bd" Property="Opacity" Value="0.35"/>
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Raised}"/>
+                            <Setter Property="Foreground" Value="{StaticResource Faint}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -740,9 +741,9 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContentControl">
-                    <Grid RenderTransformOrigin="0.5,0.5">
+                    <Grid x:Name="SpinRoot" RenderTransformOrigin="0.5,0.5">
                         <Grid.RenderTransform>
-                            <RotateTransform x:Name="Spin" Angle="0"/>
+                            <RotateTransform Angle="0"/>
                         </Grid.RenderTransform>
                         <Ellipse Stroke="#33FFFFFF" StrokeThickness="3"/>
                         <Path Stroke="{StaticResource Nova}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
@@ -752,7 +753,8 @@
                         <EventTrigger RoutedEvent="FrameworkElement.Loaded">
                             <BeginStoryboard>
                                 <Storyboard RepeatBehavior="Forever">
-                                    <DoubleAnimation Storyboard.TargetName="Spin" Storyboard.TargetProperty="Angle"
+                                    <!-- Targets the element, not the transform: an event trigger can't find a named transform in a template -->
+                                    <DoubleAnimation Storyboard.TargetName="SpinRoot" Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
                                                      From="0" To="360" Duration="0:0:0.9"/>
                                 </Storyboard>
                             </BeginStoryboard>

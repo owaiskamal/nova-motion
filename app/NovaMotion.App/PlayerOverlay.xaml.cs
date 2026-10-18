@@ -101,7 +101,6 @@ public partial class PlayerOverlay : Window
     {
         DrawerShift.BeginAnimation(TranslateTransform.XProperty,
             new DoubleAnimation(24, 0, TimeSpan.FromMilliseconds(180)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
-        DrawerPanel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
     }
 
     // ------------------------------------------------------------------ mouse

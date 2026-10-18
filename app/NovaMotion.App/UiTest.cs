@@ -32,6 +32,10 @@ internal static class UiTest
         Directory.CreateDirectory(OutDir!);
         try
         {
+            // Fill the (small) CI screen so every screenshot shows the whole window
+            var work = SystemParameters.WorkArea;
+            w.WindowState = WindowState.Normal;
+            w.Left = work.Left; w.Top = work.Top; w.Width = work.Width; w.Height = work.Height;
             Note($"screen {SystemParameters.PrimaryScreenWidth}x{SystemParameters.PrimaryScreenHeight}, window {w.ActualWidth}x{w.ActualHeight}");
             await Task.Delay(3000);
             Shot(w, "01-home");

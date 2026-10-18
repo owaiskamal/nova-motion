@@ -138,7 +138,7 @@
         </Border>
 
         <!-- ==================================================== drawer -->
-        <Border x:Name="DrawerPanel" HorizontalAlignment="Right" Width="376" Margin="0,14,14,104" Background="{StaticResource Glass}"
+        <Border x:Name="DrawerPanel" HorizontalAlignment="Right" Width="376" Margin="0,14,14,104" Background="{StaticResource Surface}"
                 CornerRadius="14" BorderBrush="{StaticResource Line}" BorderThickness="1"
                 Visibility="{Binding IsDrawerOpen, Converter={StaticResource BoolToVis}}">
             <Border.RenderTransform>

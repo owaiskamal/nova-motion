@@ -93,6 +93,21 @@ for f, t in trees.items():
             if child and parent and child in BASES and not is_a(child, parent):
                 errors.append(f"{os.path.basename(f)}: style {el.get(X + 'Key')} ({child}) is BasedOn {m.group(1)} ({parent})")
 
+# ---- a storyboard started by an event trigger inside a template can only find named elements,
+# not named transforms or brushes (WPF throws "name cannot be found in the name scope" at run time)
+for f, t in trees.items():
+    for tpl in t.iter():
+        if local(tpl.tag) != "ControlTemplate":
+            continue
+        named = {el.get(X + "Name"): local(el.tag) for el in tpl.iter() if el.get(X + "Name")}
+        for trig in tpl.iter():
+            if local(trig.tag) != "EventTrigger":
+                continue
+            for anim in trig.iter():
+                target = anim.get("Storyboard.TargetName")
+                if target and named.get(target, "").endswith(("Transform", "Brush")):
+                    errors.append(f"{os.path.basename(f)}: event-trigger animation targets {named[target]} '{target}'; target the element instead")
+
 # ---- event handlers and names in code-behind
 EVENTS = {"Click", "KeyDown", "PreviewKeyDown", "SelectionChanged", "Loaded", "MouseDown", "MouseLeftButtonDown",
           "Checked", "Unchecked", "TextChanged", "Drop", "MouseMove"}

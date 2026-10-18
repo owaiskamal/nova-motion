@@ -37,6 +37,10 @@ public partial class MainWindow : Window, IUiHost
     public MainWindow()
     {
         InitializeComponent();
+        // Never open larger than the screen (1280 × 800 by default)
+        var work = SystemParameters.WorkArea;
+        Width = Math.Min(Width, Math.Max(MinWidth, work.Width * 0.92));
+        Height = Math.Min(Height, Math.Max(MinHeight, work.Height * 0.92));
         _vm = new MainViewModel(this, _store, _runtime, CreatePlayer);
         DataContext = _vm;
         _vm.PropertyChanged += OnVmChanged;
