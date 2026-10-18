@@ -118,9 +118,20 @@
         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Demo}" Margin="0,12,0,0">
             <StackPanel>
                 <TextBlock Style="{StaticResource Text.Body}" Text="Before and after"/>
-                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Original on the left half, smoothed on the right."/>
+                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Original on the left, NOVA Motion on the right, labelled. Ctrl+D in the player."/>
             </StackPanel>
         </CheckBox>
+        <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2" Margin="0,10,0,0"
+                Visibility="{Binding Demo, Converter={StaticResource BoolToVis}}">
+            <UniformGrid Columns="2">
+                <RadioButton Style="{StaticResource Segment}" GroupName="demo" Content="Same scene twice"
+                             IsChecked="{Binding DemoSideBySide, Mode=OneWay}" Click="DemoSide_Click"
+                             ToolTip="The middle of the picture, shown twice: easiest to compare"/>
+                <RadioButton Style="{StaticResource Segment}" GroupName="demo" Content="Left and right halves"
+                             IsChecked="{Binding DemoSideBySide, Mode=OneWay, Converter={StaticResource InvertBool}}" Click="DemoSplit_Click"
+                             ToolTip="Left half original, right half smoothed"/>
+            </UniformGrid>
+        </Border>
         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding RtxVsr}" Margin="0,12,0,0">
             <StackPanel>
                 <TextBlock Style="{StaticResource Text.Body}" Text="RTX Video Super Resolution"/>

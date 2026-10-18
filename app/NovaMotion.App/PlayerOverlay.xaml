@@ -40,6 +40,31 @@
             <TextBlock Text="{Binding BusyText}" Margin="0,14,0,0" HorizontalAlignment="Center" Foreground="{StaticResource OnVideoMuted}"/>
         </StackPanel>
 
+        <!-- ==================================================== before / after labels
+             The picture is split down the middle (the engine draws a bar there); these name each side.
+             They stay up while the controls hide, so a screen recording shows them too. -->
+        <Grid IsHitTestVisible="False" Visibility="{Binding ShowDemoLabels, Converter={StaticResource BoolToVis}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,84,0,0"
+                    Background="#CC0F1424" CornerRadius="16" Padding="14,7">
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="7" Height="7" Fill="{StaticResource OnVideoMuted}" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                    <TextBlock Text="{Binding DemoLeftLabel}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource OnVideo}"/>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,84,0,0"
+                    Background="#CC0F1424" CornerRadius="16" Padding="14,7" BorderBrush="{StaticResource Nova}" BorderThickness="1">
+                <StackPanel Orientation="Horizontal">
+                    <c:CadenceStrip Ticks="{Binding CadenceTicks}" BarWidth="3" Gap="2" Height="12" VerticalAlignment="Center" Margin="0,0,9,0"
+                                    RealBrush="{StaticResource OnVideo}" GeneratedBrush="{StaticResource Nova}"/>
+                    <TextBlock Text="{Binding DemoRightLabel}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource Nova}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <!-- ==================================================== top bar -->
         <Border x:Name="TopBar" VerticalAlignment="Top" Background="{StaticResource ScrimTop}" Padding="14,12,22,52">
             <Grid>

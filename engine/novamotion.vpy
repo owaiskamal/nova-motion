@@ -50,7 +50,8 @@ DEFAULTS = {
     "rife_threads": 4,
     "scene_detect": True,
     "mv_quality": "balanced",    # fast | balanced | quality
-    "demo": False,               # split screen: left original, right smoothed
+    "demo": False,               # before/after: original on the left, smoothed on the right
+    "demo_mode": "side",         # side: the same middle part of the picture twice | split: left and right halves
 }
 
 
@@ -184,14 +185,42 @@ def repeat_to_fps(clip, src, dst):
     return core.std.FrameEval(base, pick)
 
 
-def demo_split(original, smooth, src, dst):
+def divider(like, width=4):
+    """A bright vertical bar in the clip's own format, to mark where before ends and after begins."""
+    bar = core.std.Crop(like, right=like.width - width)
+    fmt = bar.format
+    if fmt.sample_type == vs.FLOAT:
+        exprs = ["0.95"] if fmt.color_family != vs.YUV else ["0.95", "0"]
+    else:
+        peak = (1 << fmt.bits_per_sample) - 1
+        if fmt.color_family == vs.YUV:
+            exprs = [str(235 << (fmt.bits_per_sample - 8)), str(128 << (fmt.bits_per_sample - 8))]
+        else:
+            exprs = [str(int(peak * 0.95))]
+    return core.std.Expr(bar, exprs)
+
+
+def demo_split(original, smooth, src, dst, mode="side"):
+    """Before/after in one picture, at the output frame rate (the original's frames are repeated).
+
+    side:  the middle half of the picture, twice: the same motion side by side, which makes the
+           difference obvious (default)
+    split: the left half from the original, the right half smoothed (the classic wipe)
+    """
     before = repeat_to_fps(original, src, dst)
     if before.format.id != smooth.format.id:   # RIFE hands back RGB; match it so the halves can be stacked
         before = core.resize.Bicubic(before, format=smooth.format.id, matrix_in_s=matrix_for(original))
-    half = (original.width // 2) & ~1
-    left = core.std.Crop(before, right=original.width - half)
-    right = core.std.Crop(smooth, left=half)
-    return core.std.StackHorizontal([left, right])
+    w = original.width
+    half = (w // 2) & ~3
+    bar_w = 4
+    if mode == "split":
+        left = core.std.Crop(before, right=w - half)
+        right = core.std.Crop(smooth, left=half + bar_w)
+    else:
+        start = ((w - half) // 2) & ~3               # the middle half of the frame
+        left = core.std.Crop(before, left=start, right=w - start - half)
+        right = core.std.Crop(smooth, left=start, right=w - start - (w - half - bar_w))
+    return core.std.StackHorizontal([left, divider(left, bar_w), right])
 
 
 def build(clip):
@@ -227,7 +256,7 @@ def build(clip):
         smooth = interpolate_mvtools(clip, cfg, src, dst)
 
     if cfg.get("demo"):
-        smooth = demo_split(clip, smooth, src, dst)
+        smooth = demo_split(clip, smooth, src, dst, cfg.get("demo_mode", "side"))
     return smooth
 
 

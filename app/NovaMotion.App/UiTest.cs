@@ -54,6 +54,12 @@ internal static class UiTest
             await Task.Delay(2500);
             State(vm);
             Shot(w, "04-player");
+            vm.Demo = true;
+            await Task.Delay(4000);
+            State(vm);
+            Shot(w, "04b-before-after");
+            vm.Demo = false;
+            await Task.Delay(1500);
             vm.ToggleDrawerCommand.Execute("motion");
             await Task.Delay(1000);
             Shot(w, "05-motion-panel");

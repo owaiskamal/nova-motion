@@ -270,6 +270,12 @@ public sealed class BoolToVisibility : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
+public sealed class InvertBool : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value is not true;
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => value is not true;
+}
+
 /// <summary>Enum value equals the parameter → true (for drawer and page switches).</summary>
 public sealed class EqualsConverter : IValueConverter
 {

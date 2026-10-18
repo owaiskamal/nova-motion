@@ -83,7 +83,7 @@ public sealed partial class MainViewModel
         foreach (var o in OnlineHeights) o.IsSelected = o.Value == _settings.OnlineMaxHeight.ToString(CultureInfo.InvariantCulture);
         foreach (var o in Models) o.IsSelected = o.Value == Eng.RifeModel;
         if (Models.Count > 0 && !Models.Any(m => m.IsSelected)) Models[0].IsSelected = true;
-        Raise(nameof(SmoothingEnabled), nameof(SceneDetect), nameof(Demo), nameof(RtxVsr), nameof(IsRife), nameof(IsMvTools),
+        Raise(nameof(SmoothingEnabled), nameof(SceneDetect), nameof(Demo), nameof(DemoSideBySide), nameof(ShowDemoLabels), nameof(RtxVsr), nameof(IsRife), nameof(IsMvTools),
               nameof(ActiveProfileName), nameof(EngineName), nameof(TargetName), nameof(HasModels),
               nameof(CloseToTray), nameof(ResumePlayback), nameof(AutoQueueFolder), nameof(AutoUpdateYtDlp), nameof(StartMinimizedToTray));
         UpdateEngineState();
@@ -101,7 +101,18 @@ public sealed partial class MainViewModel
 
     public bool SmoothingEnabled { get => Eng.Enabled; set { if (Eng.Enabled == value) return; Eng.Enabled = value; Raise(); _ = SaveAndApplyAsync(); } }
     public bool SceneDetect { get => Eng.SceneDetect; set { if (Eng.SceneDetect == value) return; Eng.SceneDetect = value; Raise(); _ = SaveAndApplyAsync(); } }
-    public bool Demo { get => Eng.Demo; set { if (Eng.Demo == value) return; Eng.Demo = value; Raise(); _ = SaveAndApplyAsync(); } }
+    public bool Demo { get => Eng.Demo; set { if (Eng.Demo == value) return; Eng.Demo = value; Raise(); Raise(nameof(ShowDemoLabels)); _ = SaveAndApplyAsync(); } }
+    public bool DemoSideBySide
+    {
+        get => Eng.DemoMode != "split";
+        set { var m = value ? "side" : "split"; if (Eng.DemoMode == m) return; Eng.DemoMode = m; Raise(); Raise(nameof(DemoLeftLabel)); _ = SaveAndApplyAsync(); }
+    }
+
+    /// <summary>Labels over the before/after picture, shown while it is on.</summary>
+    public bool ShowDemoLabels => Eng.Demo && HasMedia && EngineState == EngineState.Active;
+    public string DemoLeftLabel => _state.SourceFps > 0 ? $"Original · {FormatFps(_state.SourceFps)} fps" : "Original";
+    public string DemoRightLabel => EngineActive ? $"NOVA Motion · {OutputFpsText} fps" : "NOVA Motion";
+
     public bool RtxVsr { get => Eng.RtxVsr; set { if (Eng.RtxVsr == value) return; Eng.RtxVsr = value; Raise(); _ = SaveAndApplyAsync(); } }
 
     public bool CloseToTray { get => _settings.CloseToTray; set { _settings.CloseToTray = value; Raise(); _store.Save(_settings); } }
@@ -245,7 +256,8 @@ public sealed partial class MainViewModel
         _engineSignature = signature;
         Raise(nameof(EngineActive), nameof(EngineWorking), nameof(EngineProblem), nameof(BadgeText), nameof(EngineStatusText),
               nameof(OutputFpsText), nameof(SourceFpsText), nameof(DisplayText), nameof(VideoSizeText), nameof(DecoderText),
-              nameof(GeneratedShareText), nameof(CadenceTicks), nameof(EngineSizeHint));
+              nameof(GeneratedShareText), nameof(CadenceTicks), nameof(EngineSizeHint),
+              nameof(ShowDemoLabels), nameof(DemoLeftLabel), nameof(DemoRightLabel));
     }
 
     /// <summary>Warns before a long TensorRT build: no engine built yet for this video size.</summary>

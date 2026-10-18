@@ -18,6 +18,8 @@ public sealed class EngineSettings
     [JsonPropertyName("scene_detect")]   public bool SceneDetect { get; set; } = true;
     [JsonPropertyName("mv_quality")]     public string MvQuality { get; set; } = "balanced"; // fast | balanced | quality
     [JsonPropertyName("demo")]           public bool Demo { get; set; }
+    /// <summary>"side": the middle of the picture twice, original then smoothed. "split": left and right halves.</summary>
+    [JsonPropertyName("demo_mode")]      public string DemoMode { get; set; } = "side";
     [JsonPropertyName("rtx_vsr")]        public bool RtxVsr { get; set; }
 
     /// <summary>"display", "x2", "x3" or a number such as "60" / "120".</summary>

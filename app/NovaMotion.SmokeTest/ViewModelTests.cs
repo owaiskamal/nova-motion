@@ -102,6 +102,14 @@ internal static class ViewModelTests
         fake.Prop("vf", JsonNode.Parse("[{\"label\":\"novamotion\",\"name\":\"vapoursynth\",\"enabled\":true}]"));
         fake.Prop("estimated-vf-fps", 59.9);
         check(vm.EngineState == EngineState.Active && vm.BadgeText == "25 → 60 fps", $"vm: active engine badge ({vm.BadgeText})");
+        vm.Demo = true;
+        check(vm.ShowDemoLabels && vm.DemoLeftLabel == "Original · 25 fps" && vm.DemoRightLabel == "NOVA Motion · 60 fps" && vm.DemoSideBySide,
+              $"vm: before/after labels ({vm.DemoLeftLabel} | {vm.DemoRightLabel})");
+        vm.DemoSideBySide = false;
+        check(fake.Applied?.DemoMode == "split", "vm: before/after style reaches the engine");
+        vm.DemoSideBySide = true;
+        vm.Demo = false;
+        check(!vm.ShowDemoLabels && fake.Applied?.Demo == false, "vm: labels go with before/after off");
         check(vm.CadenceTicks.Count == 12 && vm.CadenceTicks.Count(t => t.Generated) == 11, "vm: 25 → 60 cadence is 12 frames, 11 generated");
         check(vm.GeneratedShareText.StartsWith("92"), $"vm: generated share text ({vm.GeneratedShareText})");
 

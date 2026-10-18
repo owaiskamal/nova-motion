@@ -11,6 +11,7 @@ fallback chain, demo mode, and mpv's unbounded clip length.
     python tests/engine/test_engine.py engine/novamotion.vpy
 """
 import json, os, sys, tempfile
+from fractions import Fraction
 import vapoursynth as vs
 core = vs.core
 SCRIPT = sys.argv[1]
@@ -59,7 +60,27 @@ check(o.num_frames == 48, "disabled = passthrough")
 o = run({"engine": "rife", "target": "display"})   # no rife plugin here -> falls back
 check(o.fps.numerator == 60, "rife missing falls back to mvtools")
 o = run({"engine": "mvtools", "target": "display", "demo": True})
+check(o.width == 1280 and o.fps.numerator == 60, f"demo side by side: {o.width}x{o.height} {o.fps}")
+o = run({"engine": "mvtools", "target": "display", "demo": True, "demo_mode": "split"})
 check(o.width == 1280 and o.fps.numerator == 60, f"demo split: {o.width}x{o.height} {o.fps}")
+# Side by side shows the same middle part of the picture twice, with a bright bar between
+ramp = core.std.BlankClip(width=640, height=64, format=vs.GRAY8, length=4, fpsnum=24)
+def _paint(n, f):                                         # brightness = x / 3: tells columns apart
+    out = f.copy(); plane = out[0]
+    for y in range(plane.shape[0]):
+        for x in range(plane.shape[1]):
+            plane[y, x] = x // 3
+    return out
+ramp = core.std.ModifyFrame(ramp, ramp, _paint)
+exec_globals = {}
+exec(compile(src_text.split("def build(")[0], SCRIPT, "exec"), exec_globals)
+side = exec_globals["demo_split"](ramp, exec_globals["repeat_to_fps"](ramp, Fraction(24), Fraction(48)), Fraction(24), Fraction(48), "side")
+row = lambda c, x: c.get_frame(0)[0][10, x]
+check(side.width == 640 and abs(row(side, 0) - row(side, 324)) <= 1 and row(side, 320) > 200,
+      f"demo side by side: both halves start at the same column ({row(side, 0)} vs {row(side, 324)}), bar between ({row(side, 320)})")
+split = exec_globals["demo_split"](ramp, ramp, Fraction(24), Fraction(24), "split")
+check(split.width == 640 and row(split, 0) == 0 and row(split, 330) == 330 // 3,
+      f"demo split: left half from the left, right half from the right ({row(split, 330)})")
 o = run({"engine": "mvtools", "target": "display"}, fmt=vs.YUV420P10, w=3840, h=2160, frames=6)
 check(o.format.id == vs.YUV420P10 and o.fps.numerator == 60, "4K 10-bit mvtools")
 o = run({"engine": "mvtools", "target": "display"}, w=720, h=480)
