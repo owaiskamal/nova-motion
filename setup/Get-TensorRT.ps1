@@ -181,30 +181,8 @@ try {
 } catch { Write-Warning "akarin not installed ($_). TensorRT still works; non-whole rate steps cost a little more GPU." }
 
 Step "Pre-building TensorRT engines for 1080p (first time: a few minutes per model)"
-Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
-$vspipe = Join-Path $MpvDir "VSPipe.exe"
-foreach ($m in $Prebuild) {
-    if (-not (Test-Path (Join-Path $OnnxDir "rife_$m.onnx"))) { continue }
-    $script = Join-Path $Cache "prebuild-$m.vpy"
-    @"
-import sys
-sys.path.insert(0, r'$Runtime')
-from fractions import Fraction
-import vapoursynth as vs
-import novamotion_trt
-core = vs.core
-clip = core.std.BlankClip(width=1920, height=1080, format=vs.RGBH, length=8, fpsnum=25, fpsden=1)
-novamotion_trt.interpolate(clip, Fraction(25), Fraction(60), 'rife-$m').set_output()
-"@ | Set-Content -Encoding ASCII $script
-    Info "engine rife $m @1920x1088 ..."
-    $sw = [Diagnostics.Stopwatch]::StartNew()
-    $ErrorActionPreference = "Continue"
-    & $vspipe -e 4 $script NUL 2>&1 | ForEach-Object { Info "$_" }
-    $code = $LASTEXITCODE
-    $ErrorActionPreference = "Stop"
-    if ($code -ne 0) { throw "TensorRT engine build failed for rife $m (see lines above)" }
-    Info ("ready in {0:N0} s" -f $sw.Elapsed.TotalSeconds)
-}
+& (Join-Path $PSScriptRoot "Build-Engines.ps1") -Sizes 1080p -Models $Prebuild
+if ($LASTEXITCODE -ne 0) { throw "TensorRT engine build failed (see lines above)" }
 
 if (-not $KeepDownloads) {
     Info "removing downloaded archives (use -KeepDownloads to keep them)"
@@ -213,5 +191,5 @@ if (-not $KeepDownloads) {
 
 Write-Host ""
 Write-Host "TensorRT ready. In NOVA Motion choose Engine: 'RIFE TensorRT (NVIDIA, fastest)'." -ForegroundColor Green
-Write-Host "Other resolutions (720p, 4K) build their engine once on first play; the player waits a few minutes that one time."
+Write-Host "Other sizes build their engine on first play, or ahead of time: prepare-engines.cmd 720p 1440p 4K"
 Stop-Transcript | Out-Null

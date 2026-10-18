@@ -61,16 +61,22 @@ public sealed class MpvPlayer : IPlayerBackend
         _store = store;
     }
 
+    /// <summary>
+    /// yt-dlp format for online video: best video up to this height, avoiding AV1 (slow to decode
+    /// on many GPUs, and every decoded frame competes with the interpolation for the GPU).
+    /// </summary>
+    public static string YtdlFormat(int maxHeight) =>
+        $"bestvideo[height<=?{maxHeight}][vcodec!*=av01]+bestaudio/bestvideo[height<=?{maxHeight}]+bestaudio/best";
+
     /// <summary>Command-line for mpv. Kept separate so it can be unit tested.</summary>
     public IReadOnlyList<string> BuildArguments(string? target, AppSettings settings)
     {
         var pipePath = OperatingSystem.IsWindows() ? $@"\\.\pipe\{_pipeName}" : Path.Combine(Path.GetTempPath(), _pipeName);
-        var h = settings.OnlineMaxHeight;
         var args = new List<string>
         {
             $"--input-ipc-server={pipePath}",
             $"--script-opts=novamotion-vpy={_runtime.EngineScript},novamotion-config={_store.EngineConfigPath},ytdl_hook-ytdl_path={_runtime.YtDlpExe}",
-            $"--ytdl-format=bestvideo[height<=?{h}][vcodec!*=av01]+bestaudio/bestvideo[height<=?{h}]+bestaudio/best",
+            $"--ytdl-format={YtdlFormat(settings.OnlineMaxHeight)}",
             $"--log-file={Path.Combine(_store.Directory, "mpv.log")}",
         };
         if (WindowHandle is { } wid)

@@ -16,6 +16,8 @@ public interface IUiHost
     string? PickSubtitleFile();
     string? ClipboardText();
     void OpenExternal(string pathOrUrl);
+    /// <summary>Runs a setup script in its own console window, where its progress shows.</summary>
+    void RunInConsole(string script, string arguments);
 }
 
 public enum EngineState { Idle, Off, Opening, Preparing, PreparingLong, Active, Failed, HighFrameRate, NoVideo }

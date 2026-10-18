@@ -52,6 +52,9 @@ public sealed partial class MainViewModel
             _ = SaveAndApplyAsync();
             ShowToast("Profiles reset to the defaults for this PC");
         });
+        PrepareEnginesCommand = new Command(PrepareEngines);
+        UpdateYtDlpCommand = new Command(() => _ = UpdateYtDlpAsync(force: true));
+        SelectQualityNowCommand = new Command(p => { if (p is OptionItem o) _ = SelectQualityNowAsync(o); });
         foreach (var c in EngineCatalog.Targets) Targets.Add(new OptionItem(c));
         foreach (var c in EngineCatalog.MvQualities) MvQualities.Add(new OptionItem(c));
         foreach (var c in EngineCatalog.OnlineHeights) OnlineHeights.Add(new OptionItem(c));
@@ -268,6 +271,69 @@ public sealed partial class MainViewModel
         : "Not installed · run setup-tensorrt.cmd (NVIDIA RTX)";
     public IReadOnlyList<ShortcutItem> Shortcuts { get; } = KeyMap.All.Select(s => new ShortcutItem(s.Keys, s.Description)).ToList();
 
+    // ------------------------------------------------------------------ online
+
+    private string _ytDlpStatus = "";
+    public string YtDlpStatus { get => _ytDlpStatus; private set => Set(ref _ytDlpStatus, value); }
+    public Command UpdateYtDlpCommand { get; private set; } = null!;
+    public Command SelectQualityNowCommand { get; private set; } = null!;
+
+    /// <summary>Checks for a new yt-dlp once a day (or now, when asked). Skipped while a link plays.</summary>
+    public async Task UpdateYtDlpAsync(bool force = false)
+    {
+        if (Runtime is null || (!force && !YtDlp.Due(_settings, _clock()))) return;
+        if (HasMedia && IsOnline) return;
+        YtDlpStatus = "Checking for a new yt-dlp…";
+        var (result, version) = await YtDlp.UpdateAsync(Runtime.YtDlpExe);
+        _settings.YtDlpCheckedUtc = _clock();
+        _store.Save(_settings);
+        YtDlpStatus = result switch
+        {
+            YtDlp.Outcome.Updated => $"Updated to {version} today",
+            YtDlp.Outcome.UpToDate => $"Version {version}, checked today",
+            _ => "Couldn't check for a new version. NOVA Motion will try again tomorrow.",
+        };
+    }
+
+    /// <summary>Changes the online quality and reloads the current link at the same moment.</summary>
+    private async Task SelectQualityNowAsync(OptionItem o)
+    {
+        if (!int.TryParse(o.Value, out var h)) return;
+        _settings.OnlineMaxHeight = h;
+        SyncMotion();
+        _store.Save(_settings);
+        await Send("set_property", "ytdl-format", MpvPlayer.YtdlFormat(h));
+        if (IsOnline && _current is not null && !_state.Idle)
+        {
+            var at = _state.Position;
+            await PlayCurrentAsync(at > 1 ? at : null);
+            ShowToast($"Switching to {o.Label}…");
+        }
+    }
+
+    /// <summary>Common video sizes and whether a TensorRT engine is ready for each.</summary>
+    public ObservableCollection<EngineSizeItem> EngineSizes { get; } = new();
+    public bool HasMissingEngineSizes => EngineSizes.Any(s => !s.Ready);
+    public Command PrepareEnginesCommand { get; private set; } = null!;
+
+    private void RebuildEngineSizes()
+    {
+        EngineSizes.Clear();
+        foreach (var (label, w, h) in TensorRtEngines.CommonSizes)
+            EngineSizes.Add(new EngineSizeItem(label, TensorRtEngines.IsReady(Availability, w, h)));
+        Raise(nameof(HasMissingEngineSizes));
+    }
+
+    private void PrepareEngines()
+    {
+        if (Runtime is null || !Availability.TensorRt) return;
+        var script = Path.Combine(Path.GetDirectoryName(Runtime.Root) ?? Runtime.Root, "prepare-engines.cmd");
+        var missing = EngineSizes.Where(s => !s.Ready).Select(s => s.Label).ToList();
+        if (missing.Count == 0) return;
+        _host.RunInConsole(script, string.Join(" ", missing));
+        ShowToast("Preparing engines in a separate window. This takes a few minutes per size.");
+    }
+
     /// <summary>Called once the GPU is known. First run picks profiles that suit it.</summary>
     public void SetGpu(GpuInfo gpu)
     {
@@ -283,6 +349,7 @@ public sealed partial class MainViewModel
             _store.Save(_settings);
             SyncMotion();
         }
+        _ = UpdateYtDlpAsync();
     }
 
     public void RefreshSystem()
@@ -298,8 +365,10 @@ public sealed partial class MainViewModel
         Problems.Clear();
         if (Runtime is null) Problems.Add("The player files are missing. Run build.cmd once to download them, then restart NOVA Motion.");
         else foreach (var p in Runtime.Problems()) Problems.Add(p);
-        Raise(nameof(Availability), nameof(HasBenchmarks), nameof(HasProblems), nameof(TensorRtText), nameof(CanPlay));
+        RebuildEngineSizes();
+        Raise(nameof(Availability), nameof(HasBenchmarks), nameof(HasProblems), nameof(TensorRtText), nameof(CanPlay), nameof(HasTensorRt));
     }
 
     public bool CanPlay => Runtime is not null && File.Exists(Runtime.MpvExe);
+    public bool HasTensorRt => Availability.TensorRt;
 }

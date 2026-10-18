@@ -269,6 +269,29 @@
                                 </ItemsControl>
                             </StackPanel>
 
+                            <StackPanel Visibility="{Binding IsOnline, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource DrawerTitle}" Text="Quality"/>
+                                <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2" Margin="12,0,0,0">
+                                    <ItemsControl ItemsSource="{Binding OnlineHeights}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <RadioButton Style="{StaticResource Segment}" GroupName="quality" Content="{Binding Label}"
+                                                             IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                                             Command="{Binding DataContext.SelectQualityNowCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                             CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                                <TextBlock Style="{StaticResource Text.Small}" Margin="12,6,0,0" Text="The highest quality to fetch. Changing it reloads at the same moment."
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+
                             <TextBlock Style="{StaticResource DrawerTitle}">
                                 <Run Text="Speed"/>
                                 <Run Text="{Binding SpeedText, Mode=OneWay}" Foreground="{StaticResource Text}"/>

@@ -46,6 +46,8 @@ internal sealed class FakeHost : IUiHost
     public string? PickSubtitleFile() => "/tmp/subs.srt";
     public string? ClipboardText() => Clipboard;
     public void OpenExternal(string pathOrUrl) => Opened.Add(pathOrUrl);
+    public List<string> Ran = new();
+    public void RunInConsole(string script, string arguments) => Ran.Add($"{Path.GetFileName(script)} {arguments}");
 }
 
 internal static class ViewModelTests
@@ -220,6 +222,14 @@ internal static class ViewModelTests
         check(!vm.HasMedia && vm.ToastText.Contains("stopped unexpectedly") && vm.HasToastAction, "vm: player crash returns home with a way to the logs");
         await vm.OpenAsync(new[] { "https://vimeo.com/1" });
         check(fake.Starts == 2, "vm: player restarts after a crash");
+        fake.Prop("idle-active", false);
+        fake.Event("file-loaded");
+        fake.Prop("time-pos", 61);
+        vm.SelectQualityNowCommand.Execute(vm.OnlineHeights.First(o => o.Value == "720"));
+        await Task.Delay(10);
+        check((fake.LastSet("ytdl-format")?[2] as string)?.StartsWith("bestvideo[height<=?720]") == true
+              && fake.LastSet("start")?[2] as string == "61" && vm.Settings.OnlineMaxHeight == 720,
+              "vm: changing quality reloads the link at the same moment");
 
         // ---- clipboard
         await vm.StopAsync();
@@ -264,6 +274,16 @@ internal static class ViewModelTests
                 => 94.0 fps  (real-time with headroom)
             """);
         check(bench.Count == 3 && bench[0].Fps == 81.3 && bench[1].Fps is null && bench[2].Fps == 94, "benchmark log parsed");
+
+        check(YtDlp.ParseUpdate("Current version: stable@2026.09.01\nUpdating to stable@2026.10.10 ...\nUpdated yt-dlp to stable@2026.10.10") == (YtDlp.Outcome.Updated, "2026.10.10"),
+              "yt-dlp: update output parsed");
+        check(YtDlp.ParseUpdate("Latest version: stable@2026.10.10\nyt-dlp is up to date (stable@2026.10.10)") == (YtDlp.Outcome.UpToDate, "2026.10.10"),
+              "yt-dlp: up-to-date output parsed");
+        check(YtDlp.ParseUpdate("ERROR: Unable to download").Result == YtDlp.Outcome.Failed, "yt-dlp: failure detected");
+        var ys = new AppSettings { YtDlpCheckedUtc = now.AddHours(-5) };
+        check(!YtDlp.Due(ys, now) && YtDlp.Due(new AppSettings(), now) && !YtDlp.Due(new AppSettings { AutoUpdateYtDlp = false }, now),
+              "yt-dlp: checked at most once a day, and only when enabled");
+        check(MpvPlayer.YtdlFormat(720).StartsWith("bestvideo[height<=?720][vcodec!*=av01]"), "online format string");
 
         var q = new PlayQueue();
         q.Set(new[] { "a", "b", "c", "d" });

@@ -108,6 +108,20 @@ public partial class MainWindow : Window, IUiHost
         catch (Exception) { }
     }
 
+    public void RunInConsole(string script, string arguments)
+    {
+        if (!File.Exists(script)) { _vm.ShowToast("Couldn't find " + Path.GetFileName(script)); return; }
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe", $"/c \"\"{script}\" {arguments}\"")
+            {
+                UseShellExecute = true,
+                WorkingDirectory = Path.GetDirectoryName(script)!,
+            });
+        }
+        catch (Exception ex) { _vm.ShowToast("Couldn't start the script: " + ex.Message); }
+    }
+
     // ------------------------------------------------------------------ view state
 
     private void OnVmChanged(object? sender, PropertyChangedEventArgs e)

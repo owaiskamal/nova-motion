@@ -26,6 +26,8 @@ jobs:
     name: Windows app build and UI run
     runs-on: windows-latest
     needs: [ui-lint]
+    permissions:
+      contents: write   # to publish screenshots to the ci-screenshots branch
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -70,12 +72,46 @@ jobs:
           if (Test-Path "$out\crash.log") { Get-Content "$out\crash.log" }
           $text = if (Test-Path $log) { Get-Content $log -Raw } else { "" }
           if ($text -match "CRASH|UNHANDLED|ERROR" -or -not (Test-Path "$out\01-home.png")) { exit 1 }
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y | Out-Null }
+          $version = ([xml](Get-Content app/NovaMotion.App/NovaMotion.App.csproj)).Project.PropertyGroup.Version | Select-Object -First 1
+          & $iscc /Q "/DAppVersion=$version" installer\NovaMotion.iss
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          Get-ChildItem dist-installer | Format-Table Name, Length
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NovaMotion-Setup
+          path: dist-installer/*.exe
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ui-screenshots
           path: uitest
           retention-days: 14
+      # Also keep the latest screenshots on a branch of their own (one commit, replaced each run),
+      # so they can be looked at with plain git
+      - name: Publish screenshots to the ci-screenshots branch
+        if: always() && github.event_name == 'push'
+        shell: pwsh
+        run: |
+          if (-not (Test-Path uitest)) { exit 0 }
+          $dir = Join-Path $env:RUNNER_TEMP "shots"
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          Copy-Item uitest\* $dir -Recurse -Force
+          Set-Location $dir
+          "Screenshots from CI run $env:GITHUB_RUN_ID, commit $env:GITHUB_SHA on $env:GITHUB_REF_NAME" | Set-Content README.md
+          git init -q -b ci-screenshots
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "UI screenshots for $env:GITHUB_REF_NAME $env:GITHUB_SHA"
+          git push -q -f "https://x-access-token:$env:GH_TOKEN@github.com/$env:GITHUB_REPOSITORY.git" ci-screenshots
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   engine:
     name: Engine tests (VapourSynth, no GPU)

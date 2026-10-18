@@ -66,4 +66,9 @@ public sealed record ShortcutItem(string Keys, string Description);
 
 public sealed record StatItem(string Label, string Value);
 
+public sealed record EngineSizeItem(string Label, bool Ready)
+{
+    public string Status => Ready ? "Ready" : "Builds on first play";
+}
+
 public sealed record BenchmarkItem(string Engine, string Result, double Fraction, bool RealTime);
