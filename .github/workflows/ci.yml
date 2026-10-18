@@ -54,7 +54,11 @@ jobs:
           if (Test-Path runtime\setup.log) { Copy-Item runtime\setup.log uitest\ }
           if ($code -ne 0) {
             # Annotations are readable through the API even where logs aren't
-            Get-Content runtime\setup.log -Tail 25 | Where-Object { $_.Trim() } | ForEach-Object { Write-Host "::error::$_" }
+            # (GitHub keeps 10 per step, so send the failure itself and a few lines before it)
+            $lines = @(Get-Content runtime\setup.log | Where-Object { $_.Trim() -and $_ -notmatch '^\*+$|^(Windows PowerShell|PowerShell) transcript|^(Start|End) time|^Username|^RunAs|^Configuration|^Machine|^Host Application|^Process ID|^PS(Version|Edition|Compat|Remoting|Serialization)|^BuildVersion|^CLRVersion|^WSManStackVersion' })
+            $i = [Array]::FindIndex([string[]]$lines, [Predicate[string]]{ param($l) $l -match 'SETUP FAILED' })
+            $pick = if ($i -ge 0) { $lines[[Math]::Max(0, $i - 3)..[Math]::Min($lines.Count - 1, $i + 5)] } else { $lines | Select-Object -Last 9 }
+            ($pick -join " | ") -split '(?<=\G.{3500})' | Select-Object -First 3 | ForEach-Object { Write-Host "::error::$_" }
             exit $code
           }
       - name: Copy the engine into the runtime
