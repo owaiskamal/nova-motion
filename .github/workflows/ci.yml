@@ -47,7 +47,16 @@ jobs:
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File setup/Get-Runtime.ps1
+        run: |
+          New-Item -ItemType Directory -Force uitest | Out-Null
+          powershell -NoProfile -ExecutionPolicy Bypass -File setup/Get-Runtime.ps1
+          $code = $LASTEXITCODE
+          if (Test-Path runtime\setup.log) { Copy-Item runtime\setup.log uitest\ }
+          if ($code -ne 0) {
+            # Annotations are readable through the API even where logs aren't
+            Get-Content runtime\setup.log -Tail 25 | Where-Object { $_.Trim() } | ForEach-Object { Write-Host "::error::$_" }
+            exit $code
+          }
       - name: Copy the engine into the runtime
         shell: cmd
         run: |

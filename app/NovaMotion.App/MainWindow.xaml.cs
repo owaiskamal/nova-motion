@@ -53,7 +53,7 @@ public partial class MainWindow : Window, IUiHost
         DragEnter += OnDragEnter;
         DragOver += (_, e) => { e.Effects = DragDropEffects.Copy; e.Handled = true; };
         DragLeave += (_, _) => DropHint.Visibility = Visibility.Collapsed;
-        Drop += (_, e) => OnDrop(e);
+        Drop += (_, e) => HandleDrop(e);
         SetupTray();
     }
 
@@ -66,7 +66,7 @@ public partial class MainWindow : Window, IUiHost
     private async Task OnLoadedAsync()
     {
         _overlay = new PlayerOverlay(_vm) { Owner = this };
-        _overlay.Dropped += OnDrop;
+        _overlay.Dropped += HandleDrop;
         _overlay.KeyPressed += OnKey;
         UpdatePlayerSurface();
         Home.FocusLink();
@@ -252,7 +252,7 @@ public partial class MainWindow : Window, IUiHost
         e.Handled = true;
     }
 
-    private void OnDrop(DragEventArgs e)
+    private void HandleDrop(DragEventArgs e)
     {
         DropHint.Visibility = Visibility.Collapsed;
         var enqueue = e.KeyStates.HasFlag(DragDropKeyStates.ShiftKey);

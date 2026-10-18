@@ -202,7 +202,7 @@ public sealed class VideoHost : HwndHost
 {
     private const int WS_CHILD = 0x40000000, WS_VISIBLE = 0x10000000, WS_CLIPCHILDREN = 0x02000000, WS_CLIPSIBLINGS = 0x04000000;
     private const string ClassName = "NovaMotionVideo";
-    private static WndProc? _proc;   // kept alive for the lifetime of the class
+    private static DefProc? _proc;   // kept alive for the lifetime of the class
     private static bool _registered;
 
     public IntPtr VideoHandle { get; private set; }
@@ -233,7 +233,7 @@ public sealed class VideoHost : HwndHost
         _registered = true;
     }
 
-    private delegate IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+    private delegate IntPtr DefProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct WNDCLASSEX
