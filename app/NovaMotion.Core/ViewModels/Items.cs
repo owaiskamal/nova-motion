@@ -27,6 +27,8 @@ public sealed class RecentItem : Observable
     public bool HasProgress => Progress > 0 && !Finished;
     public string When { get; }
     public string Status { get; }
+    /// <summary>"youtube.com · Today", or just "Today" when there is no origin to show.</summary>
+    public string Meta => string.IsNullOrEmpty(Origin) ? When : $"{Origin}  ·  {When}";
     /// <summary>First letter shown on the tile when there is no picture.</summary>
     public string Initial => Title.FirstOrDefault(char.IsLetterOrDigit) is var c and not '\0' ? char.ToUpperInvariant(c).ToString() : "#";
 }

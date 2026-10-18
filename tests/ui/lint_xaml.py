@@ -105,7 +105,9 @@ for f, t in trees.items():
                 continue
             for anim in trig.iter():
                 target = anim.get("Storyboard.TargetName")
-                if target and named.get(target, "").endswith(("Transform", "Brush")):
+                if target and trig in list(tpl.iter()) and any(local(x.tag) == "ControlTemplate.Triggers" and trig in list(x.iter()) for x in tpl.iter()):
+                    errors.append(f"{os.path.basename(f)}: event trigger in ControlTemplate.Triggers names '{target}'; put the trigger on that element instead")
+                elif target and named.get(target, "").endswith(("Transform", "Brush")):
                     errors.append(f"{os.path.basename(f)}: event-trigger animation targets {named[target]} '{target}'; target the element instead")
 
 # ---- event handlers and names in code-behind

@@ -164,11 +164,7 @@
                                                     </Grid>
                                                     <StackPanel Grid.Column="1" Margin="14,0" VerticalAlignment="Center">
                                                         <TextBlock Style="{StaticResource Text.Strong}" FontWeight="Medium" Text="{Binding Title}"/>
-                                                        <TextBlock Style="{StaticResource Text.Small}" Margin="0,2,0,0">
-                                                            <Run Text="{Binding Origin, Mode=OneWay}"/>
-                                                            <Run Text="  ·  " Foreground="{StaticResource Faint}"/>
-                                                            <Run Text="{Binding When, Mode=OneWay}"/>
-                                                        </TextBlock>
+                                                        <TextBlock Style="{StaticResource Text.Small}" Margin="0,2,0,0" Text="{Binding Meta}"/>
                                                     </StackPanel>
                                                     <TextBlock x:Name="Status" Grid.Column="2" Style="{StaticResource Text.Small}" VerticalAlignment="Center"
                                                                Text="{Binding Status}"/>

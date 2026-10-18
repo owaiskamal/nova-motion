@@ -195,9 +195,13 @@
                             <TextBlock Style="{StaticResource Text.Body}" FontSize="13" Foreground="{StaticResource Nova}" Margin="0,8,0,0"
                                        Text="{Binding EngineSizeHint}" Visibility="{Binding EngineSizeHint, Converter={StaticResource BoolToVis}}"/>
 
-                            <Path Data="{Binding FpsSparkline}" Stroke="{StaticResource Nova}" StrokeThickness="1.6" Stretch="Fill"
-                                  Height="34" Margin="0,16,0,0" StrokeLineJoin="Round"
-                                  Visibility="{Binding EngineActive, Converter={StaticResource BoolToVis}}"/>
+                            <StackPanel Margin="0,18,0,0" Visibility="{Binding EngineActive, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource Text.Small}" Text="Frame rate over the last 45 seconds"/>
+                                <Border Background="{StaticResource Raised}" CornerRadius="8" Padding="10,8" Margin="0,6,0,0">
+                                    <Path Data="{Binding FpsSparkline}" Stroke="{StaticResource Nova}" StrokeThickness="1.5" Stretch="Fill"
+                                          Height="28" StrokeLineJoin="Round"/>
+                                </Border>
+                            </StackPanel>
 
                             <UniformGrid Columns="2" Margin="0,16,0,0">
                                 <StackPanel Margin="0,0,0,12">

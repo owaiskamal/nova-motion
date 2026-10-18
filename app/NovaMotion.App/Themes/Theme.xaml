@@ -741,25 +741,26 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContentControl">
-                    <Grid x:Name="SpinRoot" RenderTransformOrigin="0.5,0.5">
+                    <Grid RenderTransformOrigin="0.5,0.5">
                         <Grid.RenderTransform>
                             <RotateTransform Angle="0"/>
                         </Grid.RenderTransform>
+                        <!-- The trigger lives on the element it turns: storyboards started from
+                             ControlTemplate.Triggers can't resolve names inside the template on load -->
+                        <Grid.Triggers>
+                            <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                         From="0" To="360" Duration="0:0:0.9"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Grid.Triggers>
                         <Ellipse Stroke="#33FFFFFF" StrokeThickness="3"/>
                         <Path Stroke="{StaticResource Nova}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               Stretch="None" Data="M 18,1.5 A 16.5,16.5 0 0 1 34.5,18"/>
                     </Grid>
-                    <ControlTemplate.Triggers>
-                        <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                            <BeginStoryboard>
-                                <Storyboard RepeatBehavior="Forever">
-                                    <!-- Targets the element, not the transform: an event trigger can't find a named transform in a template -->
-                                    <DoubleAnimation Storyboard.TargetName="SpinRoot" Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
-                                                     From="0" To="360" Duration="0:0:0.9"/>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
