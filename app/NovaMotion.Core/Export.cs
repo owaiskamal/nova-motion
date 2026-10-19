@@ -81,6 +81,9 @@ public static class ExportPlan
         var args = new List<string>
         {
             "--no-config",                     // no player scripts or settings: the export is set up here
+            // Started without a console, mpv.exe picks "pseudo-gui" mode, which idles after the last file
+            // instead of exiting; an export must end when the file does
+            "--player-operation-mode=cplayer", "--idle=no", "--force-window=no", "--keep-open=no",
             $"--input-ipc-server={pipePath}",
             $"--log-file={logPath}",
             "--msg-level=all=v",
