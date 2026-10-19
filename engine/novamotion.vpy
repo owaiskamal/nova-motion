@@ -83,10 +83,23 @@ def as_fraction(fps):
     return Fraction(fps).limit_denominator(1001)
 
 
+# Video is made at a handful of rates. A container that reports one slightly off (an mp4 written
+# by some tools reports 25.34 for 25 fps) would give a strange output pattern, so a rate within
+# 2 % of a standard one is taken as that rate.
+STANDARD_RATES = [Fraction(24000, 1001), Fraction(24), Fraction(25), Fraction(30000, 1001), Fraction(30),
+                  Fraction(48), Fraction(50), Fraction(60000, 1001), Fraction(60)]
+
+
+def snap_rate(fps):
+    f = as_fraction(fps)
+    nearest = min(STANDARD_RATES, key=lambda r: abs(float(r) - float(f)))
+    return nearest if abs(float(nearest) - float(f)) / float(nearest) < 0.02 else f
+
+
 def source_fps(clip):
     cfps = globals().get("container_fps") or 0
     if cfps and cfps > 0:
-        return as_fraction(cfps)
+        return snap_rate(cfps)
     if clip.fps_num > 0:
         return Fraction(clip.fps_num, clip.fps_den)
     return Fraction(24000, 1001)

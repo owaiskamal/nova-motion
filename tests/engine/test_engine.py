@@ -55,6 +55,11 @@ o = run({"engine": "mvtools", "target": "display"}, display=59.94)
 check(o.fps.numerator == 60000 and o.fps.denominator == 1001, f"59.94 Hz display -> 60000/1001: {o.fps}")
 o = run({"engine": "mvtools", "target": "display"}, display=0)
 check(o.fps.numerator == 60, f"unknown display assumes 60: {o.fps}")
+o = run({"engine": "mvtools", "target": "display"}, fps=25.33783783783784)
+check(o.fps.numerator == 60 and o.fps.denominator == 1 and abs(o.num_frames - 48 * 60 / 25) < 2,
+      f"a slightly-off container rate (25.34) is taken as 25: {o.fps} {o.num_frames}f")
+o = run({"engine": "mvtools", "target": "display"}, fps=29.97)
+check(abs(o.fps.numerator / o.fps.denominator - 60) < 0.1, f"29.97 still exact: {o.fps}")
 o = run({"enabled": False})
 check(o.num_frames == 48, "disabled = passthrough")
 o = run({"engine": "rife", "target": "display"})   # no rife plugin here -> falls back

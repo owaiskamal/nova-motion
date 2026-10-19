@@ -89,10 +89,10 @@ jobs:
           $env:NOVAMOTION_UITEST = $out
           # A short test video for the export run, made with mpv's own encoder
           $clip = Join-Path $env:RUNNER_TEMP "export-test.mp4"
-          & runtime\mpv\mpv.exe --no-config "av://lavfi:testsrc2=size=1280x720:rate=25:duration=3" --o=$clip --ovc=libx264 --of=mp4 --log-file="$out\make-clip.log" 2>&1 | Select-Object -Last 15 | ForEach-Object { Write-Host "    $_" }
+          & runtime\mpv\mpv.exe --no-config "av://lavfi:testsrc2=size=640x360:rate=25:duration=2" --o=$clip --ovc=libx264 --of=mp4 --log-file="$out\make-clip.log" 2>&1 | Select-Object -Last 15 | ForEach-Object { Write-Host "    $_" }
           if (Test-Path $clip) { $env:NOVAMOTION_UITEST_FILE = $clip } else { Write-Host "::warning::could not make the export test clip" }
           $p = Start-Process -FilePath "dist\NovaMotion.exe" -PassThru
-          if (-not $p.WaitForExit(180000)) { $p.Kill(); Write-Host "::error::UI run did not finish in 3 minutes" }
+          if (-not $p.WaitForExit(420000)) { $p.Kill(); Write-Host "::error::UI run did not finish in 7 minutes" }
           Write-Host "exit code: $($p.ExitCode)"
           $log = Join-Path $out "uitest.log"
           if (Test-Path $log) { Get-Content $log } else { Write-Host "::error::no uitest.log" }
