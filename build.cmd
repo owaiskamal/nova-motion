@@ -23,7 +23,10 @@ if not defined HAS_SDK (
   echo Then run build.cmd again.
   goto :fail
 )
+echo Running the tests...
 dotnet run --project app\NovaMotion.SmokeTest -c Release || (echo Smoke tests failed & goto :fail)
+echo.
+echo Building NOVA Motion into dist\ ... (the first build on a PC downloads .NET packages and can take a few minutes; progress goes to build.log)
 dotnet publish app\NovaMotion.App -c Release -r win-x64 -o dist > build.log 2>&1 || (type build.log & echo. & echo Build failed - log saved to build.log & goto :fail)
 echo.
 echo Done. Start dist\NovaMotion.exe
