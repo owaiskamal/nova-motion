@@ -67,7 +67,7 @@ internal static class ExportTests
         var rt = RuntimeLayout.Find(Path.GetDirectoryName(rtDir))!;
         var args = ExportPlan.MpvArguments(rt, "/v/a b.mkv", "/v/out.mp4", "pipe", "log", o);
         check(args[^1] == "/v/a b.mkv" && args[^2] == "--" && args.Contains("--o=/v/out.mp4") && args.Contains("--no-config") && args.Contains("--idle=no")
-              && args.Contains("--ovc=hevc_nvenc") && args.Any(a => a.StartsWith("--vf=@novamotion:vapoursynth=file=%")),
+              && args.Contains("--ovc=hevc_nvenc") && args.Any(a => a.StartsWith("--vf=lavfi=[tpad=stop_mode=clone:stop=8],@novamotion:vapoursynth=file=%")),
               "export: mpv encodes through the engine, input after --");
         check(ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o with { HardwareEncoder = false }).Contains("--ovc=libx264"), "export: CPU encoder when asked");
         check(ExportPlan.Remaining(0.25, TimeSpan.FromMinutes(3)) == "About 9 min left" && ExportPlan.Remaining(0.0, TimeSpan.FromSeconds(1)) == "Estimating time…",

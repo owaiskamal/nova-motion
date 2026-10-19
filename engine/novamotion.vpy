@@ -263,6 +263,7 @@ def build(clip):
     frames = int(cfg.get("source_frames") or 0)
     if 0 < frames < clip.num_frames:
         clip = clip[:frames]
+        dbg(f"export: source is {frames} frames")
 
     if not cfg.get("enabled", True) or float(src) > float(cfg["max_source_fps"]):
         return clip

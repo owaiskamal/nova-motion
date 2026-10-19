@@ -29,6 +29,8 @@ public sealed record ExportOptions
 public static class ExportPlan
 {
     public static readonly string[] Targets = { "60", "120", "x2" };
+    /// <summary>Source frames repeated after the last one; covers the engine's look-ahead and a miscounted length.</summary>
+    public const int TailPad = 8;
 
     /// <summary>"Match (NOVA Motion 60 fps).mp4" next to the original, never overwriting a file.</summary>
     public static string OutputPath(string input, ExportOptions o, Func<string, bool>? exists = null)
@@ -89,7 +91,10 @@ public static class ExportPlan
             "--msg-level=all=v",
             "--hwdec=auto-copy",
             "--sid=no", "--osd-level=0",
-            $"--vf=@novamotion:vapoursynth=file=%{vpy.Length}%{vpy}:buffered-frames=24:concurrent-frames=auto",
+            // tpad repeats the last frame a few times: mpv's filter stops at the first request past the end
+            // of the input and drops the frames in flight, and the engine looks a few frames ahead. With the
+            // engine trimmed to the real length, the repeats are only ever looked at, never output.
+            $"--vf=lavfi=[tpad=stop_mode=clone:stop={TailPad}],@novamotion:vapoursynth=file=%{vpy.Length}%{vpy}:buffered-frames=24:concurrent-frames=auto",
             $"--o={output}",
             "--of=mp4",
             "--oac=aac", "--oacopts=b=192k",
