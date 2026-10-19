@@ -105,6 +105,7 @@ jobs:
           $exported = Get-ChildItem $env:RUNNER_TEMP -Filter "export-test (NOVA Motion*" -ErrorAction SilentlyContinue | Select-Object -First 1
           if ($exported) {
             $probe = & runtime\mpv\mpv.exe --no-config --vo=null --ao=null --frames=1 --term-playing-msg='fps=${container-fps} frames=${estimated-frame-count} size=${width}x${height}' $exported.FullName 2>&1 | Select-String "fps="
+            & runtime\mpv\mpv.exe --no-config --vo=null --ao=null --untimed "--vf=lavfi=[showinfo]" --msg-level=all=no,ffmpeg=v "--log-file=$out\export-frames.log" $exported.FullName | Out-Null
             Write-Host "exported: $($exported.Name) $probe"
             "exported: $($exported.Name) $probe" | Add-Content $log
             if ("$probe" -notmatch "fps=60") { Write-Host "::error::exported file is not 60 fps: $probe"; exit 1 }
