@@ -81,7 +81,7 @@ internal static class ExportTests
               "export: frames numbered at the output rate after the engine");
         check(FrameRate.Frames(50, new FrameRate(25, 1), new FrameRate(60, 1)) == 120
               && FrameRate.Frames(1000, new FrameRate(24000, 1001), new FrameRate(60, 1)) == 2502
-              && ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o, new FrameRate(60, 1), 120).Contains("--frames=120"),
+              && ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o, new FrameRate(60, 1), 120).Contains("--frames=121"),
               "export: the encoder stops at the engine's real frame count");
         check(ExportPlan.Remaining(0.25, TimeSpan.FromMinutes(3)) == "About 9 min left" && ExportPlan.Remaining(0.0, TimeSpan.FromSeconds(1)) == "Estimating time…",
               $"export: time left ({ExportPlan.Remaining(0.25, TimeSpan.FromMinutes(3))})");

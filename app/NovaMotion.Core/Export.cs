@@ -147,8 +147,9 @@ public static class ExportPlan
             "--of=mp4",
             "--oac=aac", "--oacopts=b=192k",
         };
-        // The engine pads its end with spare frames; stop at the real ones
-        if (frames is > 0) args.Add($"--frames={frames}");
+        // The engine pads its end with spare frames; stop at the real ones. mpv holds the last
+        // frame it counts back from the encoder, so one more (a copy of the last frame) is asked for.
+        if (frames is > 0) args.Add($"--frames={frames + 1}");
         if (o.HardwareEncoder)
         {
             // NVENC HEVC at constant quality: visually lossless at this level, a fraction of the CPU
