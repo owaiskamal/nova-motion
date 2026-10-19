@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
+using System.Linq;
 using NovaMotion.Core.ViewModels;
 
 namespace NovaMotion.App;
@@ -76,6 +77,19 @@ internal static class UiTest
             await Task.Delay(1500);
             Shot(w, "08-home-after-playing");
             State(vm);
+
+            // Enhance & Export: a real export of a short test file through the engine
+            if (Environment.GetEnvironmentVariable("NOVAMOTION_UITEST_FILE") is { Length: > 0 } file && File.Exists(file))
+            {
+                vm.OpenExportCommand.Execute(null);
+                vm.ExportFaster = true;
+                vm.QueueExports(new[] { file });
+                await Task.Delay(1500);
+                Shot(w, "09-export-running");
+                for (var i = 0; i < 360 && vm.Exports.Any(e => e.CanCancel); i++) await Task.Delay(500);
+                foreach (var e in vm.Exports) Note($"export: {e.Status} '{e.Detail}' -> {e.Output}");
+                Shot(w, "10-export-done");
+            }
         }
         catch (Exception ex) { Note("ERROR " + ex); }
         Note("done");

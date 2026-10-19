@@ -48,6 +48,10 @@ public sealed class MpvPlayer : IPlayerBackend
     public event Action? Exited;
 
     public bool IsRunning => _process is { HasExited: false };
+    public int? ExitCode => _process is { HasExited: true } p ? p.ExitCode : null;
+
+    /// <summary>The IPC pipe path mpv is told to listen on.</summary>
+    public string PipePath => OperatingSystem.IsWindows() ? $@"\\.\pipe\{_pipeName}" : Path.Combine(Path.GetTempPath(), _pipeName);
 
     /// <summary>
     /// Window to draw the video into (Win32 HWND). When set, mpv runs embedded with no controls
@@ -71,7 +75,7 @@ public sealed class MpvPlayer : IPlayerBackend
     /// <summary>Command-line for mpv. Kept separate so it can be unit tested.</summary>
     public IReadOnlyList<string> BuildArguments(string? target, AppSettings settings)
     {
-        var pipePath = OperatingSystem.IsWindows() ? $@"\\.\pipe\{_pipeName}" : Path.Combine(Path.GetTempPath(), _pipeName);
+        var pipePath = PipePath;
         var args = new List<string>
         {
             $"--input-ipc-server={pipePath}",
@@ -113,17 +117,33 @@ public sealed class MpvPlayer : IPlayerBackend
         if (IsRunning) { if (target is not null) await LoadAsync(target); return; }
 
         _store.WriteEngineConfig(settings.Active.Engine);
-        var psi = new ProcessStartInfo(_runtime.MpvExe) { UseShellExecute = false, WorkingDirectory = _runtime.MpvDir };
-        foreach (var a in BuildArguments(target, settings)) psi.ArgumentList.Add(a);
-        psi.Environment["NOVAMOTION_ENGINE_CONFIG"] = _store.EngineConfigPath;
-        psi.Environment["NOVAMOTION_ENGINE_STATE"] = _store.EngineStatePath;
+        await StartProcessAsync(BuildArguments(target, settings), new Dictionary<string, string>
+        {
+            ["NOVAMOTION_ENGINE_CONFIG"] = _store.EngineConfigPath,
+            ["NOVAMOTION_ENGINE_STATE"] = _store.EngineStatePath,
+        }, ct);
+        await ObserveAsync(PlayerState.Observed);
+    }
+
+    /// <summary>Starts mpv with exactly these arguments and connects to its IPC pipe (see PipePath).</summary>
+    public async Task StartProcessAsync(IReadOnlyList<string> arguments, IReadOnlyDictionary<string, string> environment,
+                                        CancellationToken ct = default)
+    {
+        var psi = new ProcessStartInfo(_runtime.MpvExe) { UseShellExecute = false, WorkingDirectory = _runtime.MpvDir, CreateNoWindow = true };
+        foreach (var a in arguments) psi.ArgumentList.Add(a);
+        foreach (var (k, v) in environment) psi.Environment[k] = v;
 
         _process = Process.Start(psi) ?? throw new InvalidOperationException("mpv did not start");
         _process.EnableRaisingEvents = true;
         _process.Exited += (_, _) => { Exited?.Invoke(); _ = DisconnectAsync(); };
-
         await ConnectAsync(TimeSpan.FromSeconds(10), ct);
-        await ObserveAsync(PlayerState.Observed);
+    }
+
+    /// <summary>Ends mpv without the polite "quit" (used to cancel an export).</summary>
+    public void Kill()
+    {
+        try { if (_process is { HasExited: false }) _process.Kill(entireProcessTree: true); }
+        catch (InvalidOperationException) { }
     }
 
     /// <summary>Asks mpv to report these properties whenever they change (PropertyChanged).</summary>

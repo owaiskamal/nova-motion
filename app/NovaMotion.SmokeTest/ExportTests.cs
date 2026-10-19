@@ -1,0 +1,100 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Novabit
+using NovaMotion.Core;
+using NovaMotion.Core.ViewModels;
+
+internal sealed class FakeExporter : IExportRunner
+{
+    public readonly List<(string In, string Out, EngineSettings Engine, ExportOptions Options)> Runs = new();
+    public Func<string, string?> Outcome = _ => null;
+    public TaskCompletionSource? Gate;
+
+    public async Task<string?> RunAsync(string input, string output, EngineSettings engine, ExportOptions options,
+                                        IProgress<double> progress, CancellationToken ct)
+    {
+        Runs.Add((input, output, engine, options));
+        progress.Report(0.5);
+        if (Gate is not null)
+        {
+            try { await Gate.Task.WaitAsync(ct); }
+            catch (OperationCanceledException) { return "Cancelled"; }
+        }
+        progress.Report(1);
+        return Outcome(input);
+    }
+}
+
+internal static class ExportTests
+{
+    private static async Task WaitFor(Func<bool> condition)
+    {
+        for (var i = 0; i < 200 && !condition(); i++) await Task.Delay(10);
+    }
+
+    public static async Task RunAsync(Action<bool, string> check)
+    {
+        // ---- plan
+        var o = new ExportOptions { Target = "60" };
+        var taken = new HashSet<string> { Path.Combine("/v", "Match (NOVA Motion 60 fps).mp4") };
+        check(ExportPlan.OutputPath("/v/Match.mkv", o, p => taken.Contains(p)) == Path.Combine("/v", "Match (NOVA Motion 60 fps) (2).mp4"),
+              "export: output goes next to the original and never overwrites");
+        check(ExportPlan.OutputPath("/v/Match.mkv", o with { Target = "x2", OutputFolder = "/out" }, _ => false) == Path.Combine("/out", "Match (NOVA Motion x2).mp4"),
+              "export: output folder and 2x naming");
+        var trt = new EngineAvailability(true, 3, true, true, Array.Empty<string>());
+        var vulkan = new EngineAvailability(false, 3, true, true, Array.Empty<string>());
+        var models = new[] { "rife-v4.22_lite_ensembleFalse", "rife-v4.6_ensembleFalse", "rife-v4.26_ensembleFalse" };
+        var playing = new EngineSettings { Engine = "rife_trt", Demo = true, RtxVsr = true, QualityStep = 2, TrtModel = "auto" };
+        var e = ExportPlan.Engine(playing, o, trt, models);
+        check(e.Engine == "rife_trt" && e.TrtModel == "rife-v4.26" && !e.Demo && !e.RtxVsr && e.QualityStep == 0 && e.Dedup && e.SceneDetect && e.TargetText == "60",
+              "export: best quality uses the newest TensorRT model, no demo/VSR/step-down");
+        e = ExportPlan.Engine(playing, o, vulkan, models);
+        check(e.Engine == "rife" && e.RifeModel == "rife-v4.26_ensembleFalse", $"export: without TensorRT, the newest full Vulkan model ({e.RifeModel})");
+        e = ExportPlan.Engine(playing, o with { Quality = ExportQuality.Faster }, trt, models);
+        check(e.TrtModel == "auto", "export: 'faster' uses the model live playback would");
+        check(ExportPlan.Engine(playing, o, new EngineAvailability(false, 0, true, false, Array.Empty<string>()), Array.Empty<string>()).Engine == "mvtools",
+              "export: MVTools when no RIFE is installed");
+        var rtDir = Path.Combine(Path.GetTempPath(), "nm-ex-" + Guid.NewGuid().ToString("N")[..6], "runtime");
+        Directory.CreateDirectory(rtDir);
+        File.WriteAllText(Path.Combine(rtDir, "novamotion.vpy"), "");
+        var rt = RuntimeLayout.Find(Path.GetDirectoryName(rtDir))!;
+        var args = ExportPlan.MpvArguments(rt, "/v/a b.mkv", "/v/out.mp4", "pipe", "log", o);
+        check(args[^1] == "/v/a b.mkv" && args[^2] == "--" && args.Contains("--o=/v/out.mp4") && args.Contains("--no-config")
+              && args.Contains("--ovc=hevc_nvenc") && args.Any(a => a.StartsWith("--vf=@novamotion:vapoursynth=file=%")),
+              "export: mpv encodes through the engine, input after --");
+        check(ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o with { HardwareEncoder = false }).Contains("--ovc=libx264"), "export: CPU encoder when asked");
+        check(ExportPlan.Remaining(0.25, TimeSpan.FromMinutes(3)) == "About 9 min left" && ExportPlan.Remaining(0.0, TimeSpan.FromSeconds(1)) == "Estimating time…",
+              $"export: time left ({ExportPlan.Remaining(0.25, TimeSpan.FromMinutes(3))})");
+
+        // ---- queue in the view model
+        var dir = Path.Combine(Path.GetTempPath(), "nm-exvm-" + Guid.NewGuid().ToString("N")[..6]);
+        var store = new SettingsStore(dir);
+        var fake = new FakeBackend();
+        var host = new FakeHost();
+        var exporter = new FakeExporter { Gate = new TaskCompletionSource() };
+        var vm = new MainViewModel(host, store, rt, () => fake, null, exporter);
+        vm.SetGpu(new GpuInfo(new[] { "NVIDIA GeForce GTX 1650" }));
+        vm.SelectExportTargetCommand.Execute(vm.ExportTargets.First(t => t.Value == "120"));
+        vm.QueueExports(new[] { "/v/one.mkv", "/v/two.mkv", "https://youtube.com/watch?v=x" });
+        await WaitFor(() => exporter.Runs.Count == 1);
+        check(vm.Exports.Count == 2 && vm.Exports[0].IsRunning && vm.Exports[1].Status == ExportStatus.Waiting,
+              "export: files run one at a time; links are left out");
+        check(exporter.Runs.Count == 1 && exporter.Runs[0].Options.Target == "120" && exporter.Runs[0].Options.HardwareEncoder,
+              "export: chosen frame rate and the NVIDIA encoder on a GTX card");
+        check(Math.Abs(vm.Exports[0].Progress - 0.5) < 1e-9 && vm.Exports[0].PercentText.StartsWith("50"), "export: progress shown");
+        vm.CancelExportCommand.Execute(vm.Exports[1]);
+        check(vm.Exports[1].Status == ExportStatus.Cancelled, "export: a waiting export can be cancelled");
+        exporter.Outcome = _ => null;
+        exporter.Gate.SetResult();
+        await WaitFor(() => vm.Exports[0].IsDone);
+        check(vm.Exports[0].IsDone && vm.Exports[0].Detail.StartsWith("Saved as") && exporter.Runs.Count == 1,
+              "export: finished, and the cancelled one never ran");
+        exporter.Gate = null;
+        exporter.Outcome = _ => "Out of video memory";
+        vm.QueueExports(new[] { "/v/three.mkv" });
+        await WaitFor(() => vm.Exports[^1].IsFailed);
+        check(vm.Exports[^1].IsFailed && vm.Exports[^1].Detail == "Out of video memory", "export: a failure says why");
+        vm.ClearFinishedExportsCommand.Execute(null);
+        check(!vm.HasExports, "export: clear finished");
+        Directory.Delete(dir, true);
+    }
+}

@@ -50,6 +50,7 @@ public sealed class RuntimeLayout
 public sealed record GpuInfo(IReadOnlyList<string> Names)
 {
     public string Primary => Names.FirstOrDefault(IsDiscrete) ?? Names.FirstOrDefault() ?? "Unknown GPU";
+    public bool IsNvidia => Names.Any(n => n.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase));
     public bool IsNvidiaRtx => Names.Any(n => n.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)
                                              && n.Contains("RTX", StringComparison.OrdinalIgnoreCase));
     public bool IsIntegratedOnly => Names.Count > 0 && !Names.Any(IsDiscrete);

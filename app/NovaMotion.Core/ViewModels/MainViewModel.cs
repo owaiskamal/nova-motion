@@ -54,8 +54,9 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
     private double _lastShownPosition = -1;
 
     public MainViewModel(IUiHost host, SettingsStore store, RuntimeLayout? runtime,
-                         Func<IPlayerBackend> createBackend, Func<DateTime>? clock = null)
+                         Func<IPlayerBackend> createBackend, Func<DateTime>? clock = null, IExportRunner? exporter = null)
     {
+        _exporter = exporter ?? (runtime is null ? null : new ExportRunner(runtime, store));
         _host = host;
         _store = store;
         Runtime = runtime;
@@ -92,7 +93,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         RemoveQueueItemCommand = new Command(p => { if (p is QueueItem q && !q.IsCurrent) _queue.RemoveAt(q.Index); });
         ToggleDrawerCommand = new Command(p => ToggleDrawer(p as string));
         CloseDrawerCommand = new Command(() => ActiveDrawer = Drawer.None);
-        OpenSettingsCommand = new Command(() => { RefreshSystem(); IsSettingsOpen = true; });
+        OpenSettingsCommand = new Command(() => { RefreshSystem(); IsExportOpen = false; IsSettingsOpen = true; });
         CloseSettingsCommand = new Command(() => IsSettingsOpen = false);
         ScreenshotCommand = new Command(() => _ = ScreenshotAsync());
         ToastActionCommand = new Command(() => { var a = _toastAction; HideToast(); a?.Invoke(); });
@@ -100,6 +101,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         OpenProjectPageCommand = new Command(() => _host.OpenExternal(ProjectUrl));
 
         InitMotion();
+        InitExport();
         RefreshRecent();
         RefreshSystem();
     }
@@ -193,6 +195,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         if (list.Count == 1 && !MediaSource.IsOnline(list[0]) && _settings.AutoQueueFolder && File.Exists(list[0]))
             list = PlayQueue.FolderSequence(list[0]).ToList();
         IsSettingsOpen = false;
+        IsExportOpen = false;
         TargetText = "";
         _queue.Set(list);
         await PlayCurrentAsync(start);

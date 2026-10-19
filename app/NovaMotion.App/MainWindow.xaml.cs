@@ -134,6 +134,7 @@ public partial class MainWindow : Window, IUiHost
         {
             case nameof(MainViewModel.HasMedia):
             case nameof(MainViewModel.IsSettingsOpen):
+            case nameof(MainViewModel.IsExportOpen):
                 UpdatePlayerSurface();
                 break;
             case nameof(MainViewModel.IsFullscreen):
@@ -149,7 +150,7 @@ public partial class MainWindow : Window, IUiHost
                 });
                 break;
             case nameof(MainViewModel.ToastVisible):
-                HomeToast.Visibility = _vm.ToastVisible && (!_vm.HasMedia || _vm.IsSettingsOpen) ? Visibility.Visible : Visibility.Collapsed;
+                HomeToast.Visibility = _vm.ToastVisible && (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsExportOpen) ? Visibility.Visible : Visibility.Collapsed;
                 break;
         }
     }
@@ -157,7 +158,7 @@ public partial class MainWindow : Window, IUiHost
     /// <summary>The video window and its overlay show only while a video plays and no page covers it.</summary>
     private void UpdatePlayerSurface()
     {
-        var show = _vm.HasMedia && !_vm.IsSettingsOpen;
+        var show = _vm.HasMedia && !_vm.IsSettingsOpen && !_vm.IsExportOpen;
         Video.Visibility = show ? Visibility.Visible : Visibility.Hidden;
         if (_overlay is null) return;
         if (show && IsVisible && WindowState != WindowState.Minimized)
@@ -238,7 +239,7 @@ public partial class MainWindow : Window, IUiHost
 
     private void OnKey(KeyEventArgs e)
     {
-        if (!_vm.HasMedia || _vm.IsSettingsOpen) return;
+        if (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsExportOpen) return;
         if (Keyboard.FocusedElement is TextBox) return;
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         var mods = Keyboard.Modifiers;

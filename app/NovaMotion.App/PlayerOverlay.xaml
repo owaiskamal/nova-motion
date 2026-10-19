@@ -151,6 +151,8 @@
                                 <TextBlock Style="{StaticResource GoldWhenActive}" Text="{Binding BadgeText}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE74E;" Command="{Binding ExportCurrentCommand}"
+                                ToolTip="Export a smooth copy of this video"/>
                         <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE7F0;" Command="{Binding ToggleDrawerCommand}" CommandParameter="tracks"
                                 ToolTip="Subtitles, audio and speed"/>
                         <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE8FD;" Command="{Binding ToggleDrawerCommand}" CommandParameter="queue"

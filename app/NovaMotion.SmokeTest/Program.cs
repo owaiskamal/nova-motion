@@ -96,5 +96,6 @@ Check(mpvArgs.Any(a => a.StartsWith("--ytdl-format=bestvideo[height<=?1080]")), 
 
 Directory.Delete(dir, true);
 await ViewModelTests.RunAsync(Check);
+await ExportTests.RunAsync(Check);
 Console.WriteLine(failures == 0 ? "\nALL PASSED" : $"\n{failures} FAILED");
 return failures == 0 ? 0 : 1;

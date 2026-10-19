@@ -50,6 +50,7 @@
                 </Button>
 
                 <StackPanel Grid.Column="3" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button Style="{StaticResource Btn.Caption}" Content="&#xE74E;" FontSize="14" Command="{Binding OpenExportCommand}" ToolTip="Enhance &amp; Export"/>
                     <Button Style="{StaticResource Btn.Caption}" Content="&#xE713;" FontSize="14" Command="{Binding OpenSettingsCommand}" ToolTip="Settings"/>
                     <Border Width="1" Height="16" Background="{StaticResource Line}" Margin="6,0"/>
                     <Button Style="{StaticResource Btn.Caption}" Content="&#xE921;" Click="Minimize_Click" ToolTip="Minimise"/>
@@ -67,6 +68,7 @@
 
                 <v:HomeView x:Name="Home" Visibility="{Binding HasMedia, Converter={StaticResource InvBoolToVis}}"/>
                 <v:SettingsView x:Name="SettingsPage" Visibility="{Binding IsSettingsOpen, Converter={StaticResource BoolToVis}}"/>
+                <v:ExportView x:Name="ExportPage" Visibility="{Binding IsExportOpen, Converter={StaticResource BoolToVis}}"/>
 
                 <!-- Drop target highlight -->
                 <Border x:Name="DropHint" Visibility="Collapsed" Margin="16" CornerRadius="16" BorderThickness="2"

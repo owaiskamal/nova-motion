@@ -18,9 +18,10 @@
                            Margin="0,14,0,28"
                            Text="Open a file, or paste a link from YouTube and 1,000+ other sites. NOVA Motion generates the in-between frames while you watch."/>
 
-                <Grid MaxWidth="860" HorizontalAlignment="Left">
+                <Grid MaxWidth="960" HorizontalAlignment="Left">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
@@ -29,6 +30,13 @@
                              AutomationProperties.Name="Video link or file path"/>
                     <Button Grid.Column="1" Style="{StaticResource Btn.Primary}" Height="52" Padding="26,0" Margin="10,0,0,0"
                             Command="{Binding PlayCommand}" Content="Play"/>
+                    <Button Grid.Column="3" Style="{StaticResource Btn.Secondary}" Height="52" Margin="10,0,0,0"
+                            Command="{Binding OpenExportCommand}" ToolTip="Save a smooth copy of a video file">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE74E;" Margin="0,0,10,0"/>
+                            <TextBlock Text="Export" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button Grid.Column="2" Style="{StaticResource Btn.Secondary}" Height="52" Margin="10,0,0,0"
                             Command="{Binding OpenFilesCommand}">
                         <StackPanel Orientation="Horizontal">

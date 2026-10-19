@@ -87,6 +87,10 @@ jobs:
           $out = Join-Path $PWD "uitest"
           New-Item -ItemType Directory -Force $out | Out-Null
           $env:NOVAMOTION_UITEST = $out
+          # A short test video for the export run, made with mpv's own encoder
+          $clip = Join-Path $env:RUNNER_TEMP "export-test.mp4"
+          & runtime\mpv\mpv.exe --no-config "av://lavfi:testsrc2=size=1280x720:rate=25:duration=3" --o=$clip --ovc=libx264 --of=mp4 --really-quiet
+          if (Test-Path $clip) { $env:NOVAMOTION_UITEST_FILE = $clip } else { Write-Host "::warning::could not make the export test clip" }
           $p = Start-Process -FilePath "dist\NovaMotion.exe" -PassThru
           if (-not $p.WaitForExit(180000)) { $p.Kill(); Write-Host "::error::UI run did not finish in 3 minutes" }
           Write-Host "exit code: $($p.ExitCode)"
@@ -96,6 +100,14 @@ jobs:
           $appdata = Join-Path $env:APPDATA "NovaMotion"
           if (Test-Path $appdata) { Copy-Item "$appdata\*.log" $out -ErrorAction SilentlyContinue }
           if (Test-Path "$out\crash.log") { Get-Content "$out\crash.log" }
+          # Check the exported copy: it must exist and play at 60 fps
+          $exported = Get-ChildItem $env:RUNNER_TEMP -Filter "export-test (NOVA Motion*" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($exported) {
+            $probe = & runtime\mpv\mpv.exe --no-config --vo=null --ao=null --frames=1 --term-playing-msg='fps=${container-fps} frames=${estimated-frame-count} size=${width}x${height}' $exported.FullName 2>&1 | Select-String "fps="
+            Write-Host "exported: $($exported.Name) $probe"
+            "exported: $($exported.Name) $probe" | Add-Content $log
+            if ("$probe" -notmatch "fps=60") { Write-Host "::error::exported file is not 60 fps: $probe"; exit 1 }
+          } elseif ($env:NOVAMOTION_UITEST_FILE) { Write-Host "::error::no exported file"; exit 1 }
           $text = if (Test-Path $log) { Get-Content $log -Raw } else { "" }
           if ($text -match "CRASH|UNHANDLED|ERROR" -or -not (Test-Path "$out\01-home.png")) { exit 1 }
       - name: Build the installer
