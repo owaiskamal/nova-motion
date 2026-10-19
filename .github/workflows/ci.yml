@@ -108,6 +108,8 @@ jobs:
             Write-Host "exported: $($exported.Name) $probe"
             "exported: $($exported.Name) $probe" | Add-Content $log
             if ("$probe" -notmatch "fps=60") { Write-Host "::error::exported file is not 60 fps: $probe"; exit 1 }
+            # 2 s at 25 fps = 50 frames -> 120 at 60 fps; none may go missing at the end
+            if ("$probe" -match "frames=(\d+)" -and [int]$Matches[1] -lt 119) { Write-Host "::error::exported file is short: $probe (expected 120 frames)"; exit 1 }
           } elseif ($env:NOVAMOTION_UITEST_FILE) { Write-Host "::error::no exported file"; exit 1 }
           $text = if (Test-Path $log) { Get-Content $log -Raw } else { "" }
           if ($text -match "CRASH|UNHANDLED|ERROR" -or -not (Test-Path "$out\01-home.png")) { exit 1 }

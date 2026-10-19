@@ -257,6 +257,12 @@ def build(clip):
         f"host={'mpv' if 'video_in_dw' in globals() else 'other'}")
     src = source_fps(clip)
     clip = core.std.AssumeFPS(clip, fpsnum=src.numerator, fpsden=src.denominator)
+    # Exports know the source length. mpv's input clip is open-ended, and a frame asked for past the
+    # end of the file is an error that ends the output early; with the real length, frames near the
+    # end look ahead to the last real frame instead, and every output frame is made.
+    frames = int(cfg.get("source_frames") or 0)
+    if 0 < frames < clip.num_frames:
+        clip = clip[:frames]
 
     if not cfg.get("enabled", True) or float(src) > float(cfg["max_source_fps"]):
         return clip

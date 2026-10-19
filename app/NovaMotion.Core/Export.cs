@@ -145,7 +145,9 @@ public sealed class ExportRunner : IExportRunner
         var id = Guid.NewGuid().ToString("N")[..8];
         var cfg = Path.Combine(dir, $"engine-{id}.json");
         var log = Path.Combine(dir, $"export-{id}.log");
-        File.WriteAllText(cfg, JsonSerializer.Serialize(engine, Json.Options));
+        var probed = engine.Clone();
+        probed.SourceFrames = await CountFramesAsync(_runtime.MpvExe, input, ct);
+        File.WriteAllText(cfg, JsonSerializer.Serialize(probed, Json.Options));
 
         var mpv = new MpvPlayer(_runtime, _store);
         var exited = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -187,6 +189,40 @@ public sealed class ExportRunner : IExportRunner
         }
         TryDelete(output);
         return Reason(log);
+    }
+
+    /// <summary>The source's frame count from its container (null when unknown). Takes about a second.</summary>
+    public static async Task<int?> CountFramesAsync(string mpvExe, string input, CancellationToken ct)
+    {
+        if (!File.Exists(mpvExe)) return null;
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo(mpvExe)
+            {
+                RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
+            };
+            foreach (var a in new[] { "--no-config", "--player-operation-mode=cplayer", "--idle=no", "--vo=null", "--ao=null",
+                                      "--frames=1", "--term-playing-msg=NMFRAMES ${=estimated-frame-count}", "--", input })
+                psi.ArgumentList.Add(a);
+            using var p = System.Diagnostics.Process.Start(psi)!;
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromSeconds(30));
+            var stderr = p.StandardError.ReadToEndAsync(timeout.Token);
+            var output = await p.StandardOutput.ReadToEndAsync(timeout.Token) + await stderr;
+            await p.WaitForExitAsync(timeout.Token);
+            return ParseFrameCount(output);
+        }
+        catch (Exception ex) when (ex is OperationCanceledException or System.ComponentModel.Win32Exception or IOException or InvalidOperationException)
+        {
+            ct.ThrowIfCancellationRequested();
+            return null;
+        }
+    }
+
+    public static int? ParseFrameCount(string output)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(output, @"NMFRAMES (\d+)");
+        return m.Success && int.TryParse(m.Groups[1].Value, out var n) && n > 0 ? n : null;
     }
 
     /// <summary>The most useful line of mpv's log for a failed export.</summary>

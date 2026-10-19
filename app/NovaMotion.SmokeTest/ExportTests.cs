@@ -33,6 +33,12 @@ internal static class ExportTests
 
     public static async Task RunAsync(Action<bool, string> check)
     {
+        check(ExportRunner.ParseFrameCount("Playing: x.mp4\nNMFRAMES 1440\nExiting") == 1440
+              && ExportRunner.ParseFrameCount("NMFRAMES ") is null && ExportRunner.ParseFrameCount("NMFRAMES 0") is null,
+              "export: frame count read from mpv's probe");
+        check(!System.Text.Json.JsonSerializer.Serialize(new EngineSettings()).Contains("source_frames")
+              && System.Text.Json.JsonSerializer.Serialize(new EngineSettings { SourceFrames = 50 }).Contains("\"source_frames\":50"),
+              "export: source_frames only in export engine configs");
         // ---- plan
         var o = new ExportOptions { Target = "60" };
         var v = Path.Combine(Path.GetTempPath(), "v");          // real paths on every OS (Windows rewrites "/v")

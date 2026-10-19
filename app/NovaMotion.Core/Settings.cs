@@ -17,6 +17,9 @@ public sealed class EngineSettings
     /// <summary>TensorRT model: "auto" picks the best one this PC sustains (see tune.cmd), or e.g. "rife-v4.26".</summary>
     [JsonPropertyName("trt_model")]      public string TrtModel { get; set; } = "auto";
     /// <summary>"entry" on GTX-class cards: the engine starts from its lightest model until tuned.</summary>
+    /// <summary>Exports only: how many frames the source has, so the engine knows where it ends.</summary>
+    [JsonPropertyName("source_frames"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? SourceFrames { get; set; }
     [JsonPropertyName("gpu_class")]      public string GpuClass { get; set; } = "";
     /// <summary>Set by the player while frames drop: use this many models lighter. Reset for every video.</summary>
     [JsonPropertyName("quality_step")]   public int QualityStep { get; set; }
