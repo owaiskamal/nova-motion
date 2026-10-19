@@ -35,10 +35,12 @@ internal static class ExportTests
     {
         // ---- plan
         var o = new ExportOptions { Target = "60" };
-        var taken = new HashSet<string> { Path.Combine("/v", "Match (NOVA Motion 60 fps).mp4") };
-        check(ExportPlan.OutputPath("/v/Match.mkv", o, p => taken.Contains(p)) == Path.Combine("/v", "Match (NOVA Motion 60 fps) (2).mp4"),
+        var v = Path.Combine(Path.GetTempPath(), "v");          // real paths on every OS (Windows rewrites "/v")
+        var outDir = Path.Combine(Path.GetTempPath(), "out");
+        var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { Path.Combine(v, "Match (NOVA Motion 60 fps).mp4") };
+        check(ExportPlan.OutputPath(Path.Combine(v, "Match.mkv"), o, p => taken.Contains(p)) == Path.Combine(v, "Match (NOVA Motion 60 fps) (2).mp4"),
               "export: output goes next to the original and never overwrites");
-        check(ExportPlan.OutputPath("/v/Match.mkv", o with { Target = "x2", OutputFolder = "/out" }, _ => false) == Path.Combine("/out", "Match (NOVA Motion x2).mp4"),
+        check(ExportPlan.OutputPath(Path.Combine(v, "Match.mkv"), o with { Target = "x2", OutputFolder = outDir }, _ => false) == Path.Combine(outDir, "Match (NOVA Motion x2).mp4"),
               "export: output folder and 2x naming");
         var trt = new EngineAvailability(true, 3, true, true, Array.Empty<string>());
         var vulkan = new EngineAvailability(false, 3, true, true, Array.Empty<string>());
@@ -74,7 +76,7 @@ internal static class ExportTests
         var vm = new MainViewModel(host, store, rt, () => fake, null, exporter);
         vm.SetGpu(new GpuInfo(new[] { "NVIDIA GeForce GTX 1650" }));
         vm.SelectExportTargetCommand.Execute(vm.ExportTargets.First(t => t.Value == "120"));
-        vm.QueueExports(new[] { "/v/one.mkv", "/v/two.mkv", "https://youtube.com/watch?v=x" });
+        vm.QueueExports(new[] { Path.Combine(v, "one.mkv"), Path.Combine(v, "two.mkv"), "https://youtube.com/watch?v=x" });
         await WaitFor(() => exporter.Runs.Count == 1);
         check(vm.Exports.Count == 2 && vm.Exports[0].IsRunning && vm.Exports[1].Status == ExportStatus.Waiting,
               "export: files run one at a time; links are left out");
@@ -90,7 +92,7 @@ internal static class ExportTests
               "export: finished, and the cancelled one never ran");
         exporter.Gate = null;
         exporter.Outcome = _ => "Out of video memory";
-        vm.QueueExports(new[] { "/v/three.mkv" });
+        vm.QueueExports(new[] { Path.Combine(v, "three.mkv") });
         await WaitFor(() => vm.Exports[^1].IsFailed);
         check(vm.Exports[^1].IsFailed && vm.Exports[^1].Detail == "Out of video memory", "export: a failure says why");
         vm.ClearFinishedExportsCommand.Execute(null);
