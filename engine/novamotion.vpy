@@ -192,8 +192,27 @@ def interpolate_mvtools(clip, cfg, src, dst):
     common = dict(blksize=blk, overlap=blk // 2, search=search, truemotion=truemotion)
     bw = core.mv.Analyse(sup, isb=True, **common)
     fw = core.mv.Analyse(sup, isb=False, **common)
-    return core.mv.FlowFPS(clip, sup, bw, fw, num=dst.numerator, den=dst.denominator,
-                           mask=2, ml=100)
+    # FlowFPS reads the first vector frame while it is created. Inside mpv that is before the
+    # first real frame exists, so mpv hands back a black placeholder; with caching on, that black
+    # frame was kept and the video started black (3 frames, then a fade in). No caching while
+    # creating, so nothing made from the placeholder stays.
+    nodes = [clip, sup, bw, fw]
+    set_cache(nodes, 0)
+    out = core.mv.FlowFPS(clip, sup, bw, fw, num=dst.numerator, den=dst.denominator, mask=2, ml=100)
+    set_cache(nodes, -1)
+    return out
+
+
+def set_cache(nodes, mode):
+    """0: no frame cache, -1: VapourSynth decides (the default)."""
+    f = getattr(core.std, "SetVideoCache", None)
+    if f is None:
+        return
+    for n in nodes:
+        try:
+            f(n, mode)
+        except vs.Error:
+            pass
 
 
 def repeat_to_fps(clip, src, dst):
