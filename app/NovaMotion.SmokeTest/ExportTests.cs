@@ -33,9 +33,16 @@ internal static class ExportTests
 
     public static async Task RunAsync(Action<bool, string> check)
     {
-        check(ExportRunner.ParseFrameCount("Playing: x.mp4\nNMFRAMES 1440\nExiting") == 1440
-              && ExportRunner.ParseFrameCount("NMFRAMES ") is null && ExportRunner.ParseFrameCount("NMFRAMES 0") is null,
-              "export: frame count read from mpv's probe");
+        check(ExportRunner.ParseProbe("Playing: x.mp4\nNMPROBE 1440 23.976024\nExiting") == new SourceInfo(1440, 23.976024)
+              && ExportRunner.ParseProbe("NMPROBE  ") == new SourceInfo(null, null), "export: frame count and rate read from mpv's probe");
+        var e60 = new EngineSettings { TargetText = "60" };
+        check(FrameRate.Output(e60, 25.510204) == new FrameRate(60, 1) && FrameRate.Output(e60, 23.976) == new FrameRate(60, 1)
+              && FrameRate.Output(new EngineSettings { TargetText = "x2" }, 23.976023) == new FrameRate(48000, 1001)
+              && FrameRate.Output(new EngineSettings { TargetText = "x2" }, 25.34) == new FrameRate(50, 1)
+              && FrameRate.Output(e60, 59.94) == new FrameRate(60000, 1001)
+              && FrameRate.Output(new EngineSettings { TargetText = "60", Enabled = false }, 24) == new FrameRate(24, 1),
+              "export: output rate follows the engine's rules (snap, x2, no change at 60)");
+
         check(!System.Text.Json.JsonSerializer.Serialize(new EngineSettings()).Contains("source_frames")
               && System.Text.Json.JsonSerializer.Serialize(new EngineSettings { SourceFrames = 50 }).Contains("\"source_frames\":50"),
               "export: source_frames only in export engine configs");
@@ -70,6 +77,8 @@ internal static class ExportTests
               && args.Contains("--ovc=hevc_nvenc") && args.Any(a => a.StartsWith("--vf=lavfi=[tpad=stop_mode=clone:stop=8],@novamotion:vapoursynth=file=%")),
               "export: mpv encodes through the engine, input after --");
         check(ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o with { HardwareEncoder = false }).Contains("--ovc=libx264"), "export: CPU encoder when asked");
+        check(ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o, new FrameRate(60000, 1001)).Any(x => x.EndsWith(",lavfi=[setpts=N*1001/(60000*TB)]")),
+              "export: frames numbered at the output rate after the engine");
         check(ExportPlan.Remaining(0.25, TimeSpan.FromMinutes(3)) == "About 9 min left" && ExportPlan.Remaining(0.0, TimeSpan.FromSeconds(1)) == "Estimating time…",
               $"export: time left ({ExportPlan.Remaining(0.25, TimeSpan.FromMinutes(3))})");
 
