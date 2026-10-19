@@ -112,7 +112,9 @@ jobs:
             $first = Select-String -Path "$out\export-frames.log" -Pattern "n:\s*0 .*mean:\[(\d+)" | Select-Object -First 1
             if ($first -and [int]$first.Matches[0].Groups[1].Value -lt 30) { Write-Host "::error::exported file starts with a black frame"; exit 1 }
             # 2 s at 25 fps = 50 frames -> 120 at 60 fps; none may go missing at the end
-            if ("$probe" -match "frames=(\d+)" -and [int]$Matches[1] -ne 120) { Write-Host "::error::exported file is short: $probe (expected 120 frames)"; exit 1 }
+            $decoded = (Select-String -Path "$out\export-frames.log" -Pattern "pts_time:").Count
+            "decoded frames: $decoded" | Add-Content $log
+            if ($decoded -ne 120) { Write-Host "::error::exported file has $decoded frames, expected 120"; exit 1 }
           } elseif ($env:NOVAMOTION_UITEST_FILE) { Write-Host "::error::no exported file"; exit 1 }
           $text = if (Test-Path $log) { Get-Content $log -Raw } else { "" }
           if ($text -match "CRASH|UNHANDLED|ERROR" -or -not (Test-Path "$out\01-home.png")) { exit 1 }
