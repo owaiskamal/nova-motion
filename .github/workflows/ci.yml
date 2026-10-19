@@ -99,6 +99,7 @@ jobs:
           if (Test-Path runtime\versions.json) { Copy-Item runtime\versions.json $out }
           $appdata = Join-Path $env:APPDATA "NovaMotion"
           if (Test-Path $appdata) { Copy-Item "$appdata\*.log" $out -ErrorAction SilentlyContinue }
+          if (Test-Path "$appdata\exports") { Copy-Item "$appdata\exports\*" $out -ErrorAction SilentlyContinue }
           if (Test-Path "$out\crash.log") { Get-Content "$out\crash.log" }
           # Check the exported copy: it must exist and play at 60 fps
           $exported = Get-ChildItem $env:RUNNER_TEMP -Filter "export-test (NOVA Motion*" -ErrorAction SilentlyContinue | Select-Object -First 1

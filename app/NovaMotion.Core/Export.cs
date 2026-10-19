@@ -83,6 +83,7 @@ public static class ExportPlan
             "--no-config",                     // no player scripts or settings: the export is set up here
             $"--input-ipc-server={pipePath}",
             $"--log-file={logPath}",
+            "--msg-level=all=v",
             "--hwdec=auto-copy",
             "--sid=no", "--osd-level=0",
             $"--vf=@novamotion:vapoursynth=file=%{vpy.Length}%{vpy}:buffered-frames=24:concurrent-frames=auto",
@@ -178,7 +179,7 @@ public sealed class ExportRunner : IExportRunner
         if (mpv.ExitCode == 0 && File.Exists(output) && new FileInfo(output).Length > 1024)
         {
             progress.Report(1);
-            TryDelete(log);
+            if (Environment.GetEnvironmentVariable("NOVAMOTION_UITEST") is null) TryDelete(log);
             return null;
         }
         TryDelete(output);
