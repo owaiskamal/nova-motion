@@ -86,7 +86,7 @@ def as_fraction(fps):
 
 # Video is made at a handful of rates. A container that reports one slightly off (an mp4 written
 # by some tools reports 25.34 for 25 fps) would give a strange output pattern, so a rate within
-# 2 % of a standard one is taken as that rate.
+# 2.5 % of a standard one is taken as that rate.
 STANDARD_RATES = [Fraction(24000, 1001), Fraction(24), Fraction(25), Fraction(30000, 1001), Fraction(30),
                   Fraction(48), Fraction(50), Fraction(60000, 1001), Fraction(60)]
 
@@ -94,7 +94,7 @@ STANDARD_RATES = [Fraction(24000, 1001), Fraction(24), Fraction(25), Fraction(30
 def snap_rate(fps):
     f = as_fraction(fps)
     nearest = min(STANDARD_RATES, key=lambda r: abs(float(r) - float(f)))
-    return nearest if abs(float(nearest) - float(f)) / float(nearest) < 0.02 else f
+    return nearest if abs(float(nearest) - float(f)) / float(nearest) < 0.025 else f
 
 
 def source_fps(clip):
@@ -250,7 +250,20 @@ def demo_split(original, smooth, src, dst, mode="side"):
     return core.std.SetFrameProps(both, _DurationNum=dst.denominator, _DurationDen=dst.numerator)
 
 
+# Exports: copies of the last frame after the real end. mpv asks for a frame or two past the end of
+# the engine's clip, and a failed request switches the filter off (the rest of the input then goes
+# through unprocessed). The app stops the encoder at the real frame count, so these are never kept.
+EXPORT_TAIL = 96
+
+
 def build(clip):
+    out = build_engine(clip)
+    if int(load_settings().get("source_frames") or 0) > 0:
+        out = out + out[out.num_frames - 1] * EXPORT_TAIL
+    return out
+
+
+def build_engine(clip):
     cfg = load_settings()
     dbg(f"--- start: {clip.width}x{clip.height} {clip.format.name} container_fps={globals().get('container_fps')} "
         f"display_fps={globals().get('display_fps')} engine={cfg['engine']} target={cfg['target']} "

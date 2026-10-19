@@ -45,12 +45,12 @@ public sealed record FrameRate(long Num, long Den)
         return new((long)Math.Round(fps * 1001), 1001);
     }
 
-    /// <summary>snap_rate in novamotion.vpy: a rate within 2 % of a standard one is that rate.</summary>
+    /// <summary>snap_rate in novamotion.vpy: a rate within 2.5 % of a standard one is that rate.</summary>
     public static FrameRate Snap(double fps)
     {
         var f = Of(fps);
         var nearest = Standard.MinBy(r => Math.Abs(r.Value - f.Value))!;
-        return Math.Abs(nearest.Value - f.Value) / nearest.Value < 0.02 ? nearest : f;
+        return Math.Abs(nearest.Value - f.Value) / nearest.Value < 0.025 ? nearest : f;
     }
 
     /// <summary>The engine's output rate for an export (no display involved), as in build() and target_fps.</summary>
@@ -64,6 +64,10 @@ public sealed record FrameRate(long Num, long Den)
                        : new(60, 1);
         return want.Value < src.Value * 1.1 ? src : want;
     }
+
+    /// <summary>How many frames the engine makes from <paramref name="sourceFrames"/> at <paramref name="src"/>.</summary>
+    public static long Frames(long sourceFrames, FrameRate src, FrameRate dst) =>
+        sourceFrames * dst.Num * src.Den / (dst.Den * src.Num);
 }
 
 /// <summary>How an export is set up: engine settings, output file, and the mpv command line.</summary>
@@ -118,7 +122,7 @@ public static class ExportPlan
 
     /// <summary>mpv in encoding mode: decode, run the engine, encode. No window, no audio device.</summary>
     public static IReadOnlyList<string> MpvArguments(RuntimeLayout rt, string input, string output, string pipePath,
-                                                     string logPath, ExportOptions o, FrameRate? rate = null)
+                                                     string logPath, ExportOptions o, FrameRate? rate = null, long? frames = null)
     {
         var vpy = rt.EngineScript;
         // mpv times the last few engine frames by the input frames they came after; numbering every
@@ -143,6 +147,8 @@ public static class ExportPlan
             "--of=mp4",
             "--oac=aac", "--oacopts=b=192k",
         };
+        // The engine pads its end with spare frames; stop at the real ones
+        if (frames is > 0) args.Add($"--frames={frames}");
         if (o.HardwareEncoder)
         {
             // NVENC HEVC at constant quality: visually lossless at this level, a fraction of the CPU
@@ -199,13 +205,14 @@ public sealed class ExportRunner : IExportRunner
         probed.SourceFrames = source.Frames;
         File.WriteAllText(cfg, JsonSerializer.Serialize(probed, Json.Options));
         var rate = source.Fps is { } fps ? FrameRate.Output(probed, fps) : null;
+        long? frames = rate is not null && source.Frames is { } n ? FrameRate.Frames(n, FrameRate.Snap(source.Fps!.Value), rate) : null;
 
         var mpv = new MpvPlayer(_runtime, _store);
         var exited = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         mpv.Exited += () => exited.TrySetResult();
         try
         {
-            await mpv.StartProcessAsync(ExportPlan.MpvArguments(_runtime, input, output, mpv.PipePath, log, options, rate),
+            await mpv.StartProcessAsync(ExportPlan.MpvArguments(_runtime, input, output, mpv.PipePath, log, options, rate, frames),
                 new Dictionary<string, string> { ["NOVAMOTION_ENGINE_CONFIG"] = cfg }, ct);
             double duration = 0;
             while (!exited.Task.IsCompleted)

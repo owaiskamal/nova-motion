@@ -36,7 +36,7 @@ internal static class ExportTests
         check(ExportRunner.ParseProbe("Playing: x.mp4\nNMPROBE 1440 23.976024\nExiting") == new SourceInfo(1440, 23.976024)
               && ExportRunner.ParseProbe("NMPROBE  ") == new SourceInfo(null, null), "export: frame count and rate read from mpv's probe");
         var e60 = new EngineSettings { TargetText = "60" };
-        check(FrameRate.Output(e60, 25.510204) == new FrameRate(60, 1) && FrameRate.Output(e60, 23.976) == new FrameRate(60, 1)
+        check(FrameRate.Output(e60, 25.510204) == new FrameRate(60, 1) && FrameRate.Snap(25.510204) == new FrameRate(25, 1) && FrameRate.Output(e60, 23.976) == new FrameRate(60, 1)
               && FrameRate.Output(new EngineSettings { TargetText = "x2" }, 23.976023) == new FrameRate(48000, 1001)
               && FrameRate.Output(new EngineSettings { TargetText = "x2" }, 25.34) == new FrameRate(50, 1)
               && FrameRate.Output(e60, 59.94) == new FrameRate(60000, 1001)
@@ -79,6 +79,10 @@ internal static class ExportTests
         check(ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o with { HardwareEncoder = false }).Contains("--ovc=libx264"), "export: CPU encoder when asked");
         check(ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o, new FrameRate(60000, 1001)).Any(x => x.EndsWith(",lavfi=[setpts=N*1001/(60000*TB)]")),
               "export: frames numbered at the output rate after the engine");
+        check(FrameRate.Frames(50, new FrameRate(25, 1), new FrameRate(60, 1)) == 120
+              && FrameRate.Frames(1000, new FrameRate(24000, 1001), new FrameRate(60, 1)) == 2502
+              && ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o, new FrameRate(60, 1), 120).Contains("--frames=120"),
+              "export: the encoder stops at the engine's real frame count");
         check(ExportPlan.Remaining(0.25, TimeSpan.FromMinutes(3)) == "About 9 min left" && ExportPlan.Remaining(0.0, TimeSpan.FromSeconds(1)) == "Estimating time…",
               $"export: time left ({ExportPlan.Remaining(0.25, TimeSpan.FromMinutes(3))})");
 

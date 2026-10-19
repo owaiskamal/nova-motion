@@ -256,7 +256,7 @@ check(os.path.isfile(man) and "320x192" in _json.load(open(man)) and "1280x768" 
       f"trt: engine manifest records each padded size ({sorted(_json.load(open(man))) if os.path.isfile(man) else 'missing'})")
 
 o = run({"engine": "mvtools", "target": 60, "source_frames": 40}, fps=24, frames=48)
-check(o.num_frames == 100, f"export: the engine stops at the source's real length (40 frames at 24 -> 60 = 100, got {o.num_frames})")
+check(o.num_frames == 100 + 96, f"export: the engine stops at the source's real length, then pads (40 frames at 24 -> 60 = 100 + 96, got {o.num_frames})")
 o = run({"engine": "mvtools", "target": 60, "source_frames": 0}, fps=24, frames=48)
 check(o.num_frames == 120, f"export: no source_frames keeps the clip's own length ({o.num_frames})")
 
