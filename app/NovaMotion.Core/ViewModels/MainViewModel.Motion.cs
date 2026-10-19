@@ -54,6 +54,7 @@ public sealed partial class MainViewModel
         });
         PrepareEnginesCommand = new Command(PrepareEngines);
         TuneCommand = new Command(Tune);
+        DismissTunePromptCommand = new Command(DismissTunePrompt);
         UpdateYtDlpCommand = new Command(() => _ = UpdateYtDlpAsync(force: true));
         SelectQualityNowCommand = new Command(p => { if (p is OptionItem o) _ = SelectQualityNowAsync(o); });
         foreach (var c in EngineCatalog.Targets) Targets.Add(new OptionItem(c));
@@ -390,12 +391,36 @@ public sealed partial class MainViewModel
             }
         }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { }
-        Raise(nameof(HasTuning), nameof(TuningText));
+        Raise(nameof(HasTuning), nameof(TuningText), nameof(ShowTunePrompt), nameof(ShowGpuAdvice));
+    }
+
+    /// <summary>The Home card that offers tuning: TensorRT is installed, nothing measured yet.</summary>
+    public bool ShowTunePrompt => Availability.TensorRt && !HasTuning && !_settings.TunePromptDismissed;
+    public Command DismissTunePromptCommand { get; private set; } = null!;
+    /// <summary>The advice line under the card name: entry and integrated graphics, when the tune card isn't saying it.</summary>
+    public bool ShowGpuAdvice => (_gpu?.Tier is GpuTier.Entry or GpuTier.Integrated) && !ShowTunePrompt;
+
+    /// <summary>A line about what this card can do, for Home and Settings.</summary>
+    public string GpuAdvice => _gpu?.Tier switch
+    {
+        GpuTier.Entry => Availability.TensorRt
+            ? "Your graphics card is entry-level, so NOVA Motion starts with the light AI model at 60 fps. Tuning finds out what it can really do."
+            : "Your graphics card is entry-level, so NOVA Motion uses the light AI model at 60 fps. If playback stutters, choose Light in the player.",
+        GpuTier.Integrated => "No graphics card was found, so NOVA Motion uses MVTools, which runs on any PC.",
+        _ => "Tuning measures each AI model on this PC (about 10 minutes), then NOVA Motion uses the best one that keeps up.",
+    };
+
+    private void DismissTunePrompt()
+    {
+        _settings.TunePromptDismissed = true;
+        _store.Save(_settings);
+        Raise(nameof(ShowTunePrompt), nameof(ShowGpuAdvice));
     }
 
     private void Tune()
     {
         if (Runtime is null || !Availability.TensorRt) return;
+        if (!_settings.TunePromptDismissed) DismissTunePrompt();
         var script = Path.Combine(Path.GetDirectoryName(Runtime.Root) ?? Runtime.Root, "tune.cmd");
         _host.RunInConsole(script, "");
         ShowToast("Tuning in a separate window. Close other GPU-heavy apps meanwhile.");
@@ -476,9 +501,18 @@ public sealed partial class MainViewModel
             _settings = AppSettings.CreateDefaults(gpu);
             _settings.Volume = volume;
             _settings.FirstRunDone = true;
-            _store.Save(_settings);
-            SyncMotion();
         }
+        else if (_settings.DefaultsVersion < AppSettings.CurrentDefaults)
+        {
+            // Settings made before entry cards had defaults of their own asked them for too much
+            if (gpu.Tier == GpuTier.Entry) _settings.ApplyGpuDefaults(gpu);
+            _settings.DefaultsVersion = AppSettings.CurrentDefaults;
+        }
+        _settings.MarkGpu(gpu);
+        _store.Save(_settings);
+        SyncMotion();
+        RebuildChoices();
+        Raise(nameof(ShowTunePrompt), nameof(GpuAdvice), nameof(ShowGpuAdvice));
         _ = UpdateYtDlpAsync();
     }
 
@@ -497,7 +531,7 @@ public sealed partial class MainViewModel
         else foreach (var p in Runtime.Problems()) Problems.Add(p);
         RebuildEngineSizes();
         RefreshTuning();
-        Raise(nameof(Availability), nameof(HasBenchmarks), nameof(HasProblems), nameof(TensorRtText), nameof(CanPlay), nameof(HasTensorRt));
+        Raise(nameof(Availability), nameof(HasBenchmarks), nameof(HasProblems), nameof(TensorRtText), nameof(CanPlay), nameof(HasTensorRt), nameof(ShowTunePrompt), nameof(GpuAdvice), nameof(ShowGpuAdvice));
     }
 
     public bool CanPlay => Runtime is not null && File.Exists(Runtime.MpvExe);

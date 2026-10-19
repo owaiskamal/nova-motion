@@ -2,7 +2,7 @@
 # Copyright (C) 2026 Novabit
 <#
 .SYNOPSIS
-  Optional: adds the RIFE TensorRT engine (NVIDIA RTX) to the NOVA Motion runtime.
+  Optional: adds the RIFE TensorRT engine (NVIDIA RTX or GTX 16 series) to the NOVA Motion runtime.
 
 .DESCRIPTION
   Downloads vs-mlrt (MIT/GPL; bundles NVIDIA TensorRT + CUDA runtime, ~2-3 GB),

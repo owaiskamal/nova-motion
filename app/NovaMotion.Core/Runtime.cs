@@ -47,6 +47,8 @@ public sealed class RuntimeLayout
     }
 }
 
+public enum GpuTier { Unknown, Integrated, Entry, Performance }
+
 public sealed record GpuInfo(IReadOnlyList<string> Names)
 {
     public string Primary => Names.FirstOrDefault(IsDiscrete) ?? Names.FirstOrDefault() ?? "Unknown GPU";
@@ -54,6 +56,25 @@ public sealed record GpuInfo(IReadOnlyList<string> Names)
     public bool IsNvidiaRtx => Names.Any(n => n.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)
                                              && n.Contains("RTX", StringComparison.OrdinalIgnoreCase));
     public bool IsIntegratedOnly => Names.Count > 0 && !Names.Any(IsDiscrete);
+
+    /// <summary>TensorRT needs an NVIDIA Turing card or newer: every RTX, and the GTX 16 series.</summary>
+    public bool SupportsTensorRt => Names.Any(n => n.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)
+        && (n.Contains("RTX", StringComparison.OrdinalIgnoreCase) || GtxSixteen.IsMatch(n)));
+
+    private static readonly System.Text.RegularExpressions.Regex GtxSixteen =
+        new(@"GTX\s*16\d\d", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    // Cards that run RIFE, but not every model at 1080p: GTX, MX, the smallest RTX laptop chips,
+    // entry Radeon and Arc. They get the light models and a 60 fps target until tuned.
+    private static readonly System.Text.RegularExpressions.Regex EntryCard = new(
+        @"GTX|\bMX\s*\d|RTX\s*(2050|3050)|Radeon\s*RX\s*(5[0-6]\d|6[45]\d\d|7600)|Arc\s*A3",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    public GpuTier Tier =>
+        Names.Count == 0 ? GpuTier.Unknown
+        : IsIntegratedOnly ? GpuTier.Integrated
+        : EntryCard.IsMatch(Primary) ? GpuTier.Entry
+        : GpuTier.Performance;
 
     private static bool IsDiscrete(string n) =>
         n.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)

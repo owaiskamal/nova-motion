@@ -264,6 +264,8 @@ check(ch("auto", 1920, 1088, Fraction(25), Fraction(60), 0, fast_pc)[0] == "v4_6
 check(ch("auto", 1920, 1088, Fraction(25), Fraction(60), 0, slow_pc)[0] == "v4_22_lite", "tune: a PC that can't keep up at 25 -> 60 gets the lite model")
 check(ch("auto", 1280, 768, Fraction(25), Fraction(60), 0, slow_pc)[0] == "v4_6", "tune: the same PC keeps the full model at 720p (fewer pixels)")
 check(ch("auto", 1920, 1088, Fraction(25), Fraction(60), 1, fast_pc)[0] == "v4_22_lite", "tune: a step down from the player picks the next lighter model")
+check(ch("auto", 1920, 1088, Fraction(25), Fraction(60), 0, {}, gpu_class="entry")[0] == novamotion_trt.installed_models()[-1],
+      "tune: an untuned GTX-class card starts from the lightest installed model")
 check(ch("rife-v4.22_lite", 1920, 1088, Fraction(25), Fraction(60), 0, fast_pc)[0] == "v4_22_lite", "tune: a model chosen in settings wins")
 check(abs(novamotion_trt.inferences_per_second(Fraction(25), Fraction(60)) - 55) < 1e-9
       and abs(novamotion_trt.inferences_per_second(Fraction(24), Fraction(60)) - 48) < 1e-9, "tune: 25 -> 60 needs 55 AI frames a second, 24 -> 60 needs 48")

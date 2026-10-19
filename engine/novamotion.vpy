@@ -50,6 +50,7 @@ DEFAULTS = {
     "quality_step": 0,           # set by the player when frames drop: go this many models lighter
     "trt_streams": None,         # TensorRT streams; None: the tuned value
     "rife_gpu": 0,
+    "gpu_class": "",                         # "entry" on GTX-class cards: start light until tuned
     "rife_threads": 4,
     "scene_detect": True,
     "dedup": True,               # repeated frames in the video: blend across them, not to a stop
@@ -140,7 +141,8 @@ def interpolate_rife_trt(clip, cfg, src, dst):
     rgb = core.resize.Bicubic(clip, format=vs.RGBH, matrix_in_s=matrix)
     smooth = novamotion_trt.interpolate(rgb, src, dst, cfg.get("trt_model", "auto"), cfg["rife_gpu"],
                                          bool(cfg["scene_detect"]), bool(cfg.get("dedup", True)),
-                                         int(cfg.get("quality_step") or 0), cfg.get("trt_streams"))
+                                         int(cfg.get("quality_step") or 0), cfg.get("trt_streams"),
+                                         cfg.get("gpu_class") or "")
     # Bilinear for the chroma step back to 4:2:0: same look as bicubic at this size, and
     # cheaper on the CPU for every one of the 60 output frames a second
     return core.resize.Bilinear(smooth, format=clip.format.id, matrix_s=matrix, dither_type="ordered")

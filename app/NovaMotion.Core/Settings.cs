@@ -16,6 +16,8 @@ public sealed class EngineSettings
     [JsonPropertyName("rife_gpu")]       public int RifeGpu { get; set; }
     /// <summary>TensorRT model: "auto" picks the best one this PC sustains (see tune.cmd), or e.g. "rife-v4.26".</summary>
     [JsonPropertyName("trt_model")]      public string TrtModel { get; set; } = "auto";
+    /// <summary>"entry" on GTX-class cards: the engine starts from its lightest model until tuned.</summary>
+    [JsonPropertyName("gpu_class")]      public string GpuClass { get; set; } = "";
     /// <summary>Set by the player while frames drop: use this many models lighter. Reset for every video.</summary>
     [JsonPropertyName("quality_step")]   public int QualityStep { get; set; }
     [JsonPropertyName("rife_threads")]   public int RifeThreads { get; set; } = 4;
@@ -66,27 +68,56 @@ public sealed class AppSettings
     public DateTime? YtDlpCheckedUtc { get; set; }
     public double Volume { get; set; } = 100;
     public bool FirstRunDone { get; set; }
+    /// <summary>Which version of the GPU-based defaults these settings were made with.</summary>
+    public int DefaultsVersion { get; set; }
+    public const int CurrentDefaults = 2;
+    /// <summary>The "tune for this PC" card on Home was closed.</summary>
+    public bool TunePromptDismissed { get; set; }
 
     public Profile Active =>
         Profiles.FirstOrDefault(p => p.Name == ActiveProfile) ?? Profiles.FirstOrDefault() ?? new Profile();
 
     public static AppSettings CreateDefaults(GpuInfo? gpu = null)
     {
-        var weak = gpu?.IsIntegratedOnly == true;
-        // RTX cards get the TensorRT engine; it falls back to Vulkan RIFE if TensorRT isn't installed
-        var rife = gpu?.IsNvidiaRtx == true ? "rife_trt" : "rife";
-        var s = new AppSettings
-        {
-            ActiveProfile = weak ? "Light (any GPU)" : "Balanced",
-            Profiles =
-            {
-                new Profile { Name = "Balanced",        Engine = new EngineSettings { Engine = rife, TargetText = "display" } },
-                new Profile { Name = "Max quality",     Engine = new EngineSettings { Engine = rife, TargetText = "display", RifeThreads = 6 } },
-                new Profile { Name = "Light (any GPU)", Engine = new EngineSettings { Engine = "mvtools", MvQuality = "fast", TargetText = "60" } },
-                new Profile { Name = "Anime",           Engine = new EngineSettings { Engine = rife, TargetText = "x2", SceneDetect = true, RifeModel = "rife-v4.22_lite_ensembleFalse" } },
-            },
-        };
+        var s = new AppSettings { DefaultsVersion = CurrentDefaults };
+        s.ApplyGpuDefaults(gpu);
         return s;
+    }
+
+    /// <summary>Profiles that suit the graphics card. Other settings are left alone.</summary>
+    public void ApplyGpuDefaults(GpuInfo? gpu)
+    {
+        var tier = gpu?.Tier ?? GpuTier.Unknown;
+        // TensorRT on cards that have it; it falls back to Vulkan RIFE if TensorRT isn't installed
+        var rife = gpu?.SupportsTensorRt == true ? "rife_trt" : "rife";
+        const string lite = "rife-v4.22_lite_ensembleFalse";
+        Profiles.Clear();
+        if (tier == GpuTier.Entry)
+        {
+            // A GTX 1650 makes about 40 light-model frames a second at 1080p: enough for 60 fps
+            // from film, not for 144 Hz. So 60 fps and the light model, and MVTools as the safe choice.
+            Profiles.Add(new Profile { Name = "Balanced",        Engine = new EngineSettings { Engine = rife, TargetText = "60", RifeModel = lite, RifeThreads = 2 } });
+            Profiles.Add(new Profile { Name = "Max quality",     Engine = new EngineSettings { Engine = rife, TargetText = "60", RifeThreads = 3 } });
+            Profiles.Add(new Profile { Name = "Light (any GPU)", Engine = new EngineSettings { Engine = "mvtools", MvQuality = "balanced", TargetText = "60" } });
+            Profiles.Add(new Profile { Name = "Anime",           Engine = new EngineSettings { Engine = rife, TargetText = "x2", SceneDetect = true, RifeModel = lite, RifeThreads = 2 } });
+        }
+        else
+        {
+            Profiles.Add(new Profile { Name = "Balanced",        Engine = new EngineSettings { Engine = rife, TargetText = "display" } });
+            Profiles.Add(new Profile { Name = "Max quality",     Engine = new EngineSettings { Engine = rife, TargetText = "display", RifeThreads = 6 } });
+            Profiles.Add(new Profile { Name = "Light (any GPU)", Engine = new EngineSettings { Engine = "mvtools", MvQuality = "fast", TargetText = "60" } });
+            Profiles.Add(new Profile { Name = "Anime",           Engine = new EngineSettings { Engine = rife, TargetText = "x2", SceneDetect = true, RifeModel = lite } });
+        }
+        ActiveProfile = tier == GpuTier.Integrated ? "Light (any GPU)" : "Balanced";
+        MarkGpu(gpu);
+        DefaultsVersion = CurrentDefaults;
+    }
+
+    /// <summary>Tells every profile's engine what class of card it runs on.</summary>
+    public void MarkGpu(GpuInfo? gpu)
+    {
+        var cls = gpu?.Tier switch { GpuTier.Entry => "entry", GpuTier.Integrated => "integrated", _ => "" };
+        foreach (var p in Profiles) p.Engine.GpuClass = cls;
     }
 }
 

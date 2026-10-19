@@ -106,7 +106,7 @@ def inferences_per_second(src, dst):
     return float(dst) * (p - 1) / p
 
 
-def choose_model(requested, width, height, src, dst, step=0, tuning=None):
+def choose_model(requested, width, height, src, dst, step=0, tuning=None, gpu_class=""):
     """(model name, why). requested: 'auto' or a model such as 'rife-v4.26'. step: how many
     steps lighter than the best fit to go (the player asks for this when frames drop)."""
     from vsmlrt import RIFEModel
@@ -116,7 +116,8 @@ def choose_model(requested, width, height, src, dst, step=0, tuning=None):
     tuning = load_tuning() if tuning is None else tuning
     measured = (tuning.get("sizes") or {}).get(f"{TUNED_SIZE[0]}x{TUNED_SIZE[1]}", {})
     if not measured:
-        base = "v4_6" if "v4_6" in models else models[0]
+        # Untuned: v4.6 suits most RTX cards; GTX-class cards start from the lightest model
+        base = models[-1] if gpu_class == "entry" else ("v4_6" if "v4_6" in models else models[0])
         light = models[min(models.index(base) + step, len(models) - 1)]
         return light, "default (run Tune for this PC to pick automatically)"
     # Measured at 25 -> 60 (11 of every 12 frames inferred); scale to this video's size and rate
@@ -295,7 +296,8 @@ def plan(n, p, q, info):
     return i, i + 1, 2 * k, k == 0
 
 
-def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=True, step=0, streams=None):
+def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=True, step=0, streams=None,
+                gpu_class=""):
     """rgbh: RGBH clip at src fps. Returns RGBH at dst fps (same size).
 
     Built on vsmlrt.RIFEMerge rather than vsmlrt.RIFE: RIFE() precomputes a table entry for
@@ -314,7 +316,7 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
     ratio = Fraction(dst) / Fraction(src)
     p, q = ratio.numerator, ratio.denominator
     from vsmlrt import RIFEModel
-    chosen, why = choose_model(model_name, clip.width, clip.height, src, dst, step)
+    chosen, why = choose_model(model_name, clip.width, clip.height, src, dst, step, gpu_class=gpu_class)
     model = getattr(RIFEModel, chosen)
     write_state(engine="rife_trt", model=chosen, why=why, width=w, height=h, src=float(src), dst=float(dst))
     last = clip.num_frames - 1

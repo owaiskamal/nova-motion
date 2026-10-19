@@ -195,9 +195,27 @@
                 <!-- ================================================ this PC -->
                 <Border Grid.Column="2" Style="{StaticResource Panel}" VerticalAlignment="Top">
                     <StackPanel>
+                        <!-- First run with TensorRT: offer to measure this PC once -->
+                        <Border Background="{StaticResource NovaSoft}" BorderBrush="{StaticResource Nova}" BorderThickness="1"
+                                CornerRadius="12" Padding="16,14" Margin="0,0,0,20"
+                                Visibility="{Binding ShowTunePrompt, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Icon}" Width="26" Height="26" FontSize="9" Content="&#xE711;"
+                                            ToolTip="Not now" Margin="8,-4,-6,0" VerticalAlignment="Top" Command="{Binding DismissTunePromptCommand}"/>
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE945;" FontSize="15" Foreground="{StaticResource Nova}" Margin="0,1,10,0" VerticalAlignment="Top"/>
+                                    <TextBlock Style="{StaticResource Text.Strong}" Text="Tune NOVA Motion for this PC" TextWrapping="Wrap"/>
+                                </DockPanel>
+                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="25,6,0,12" Text="{Binding GpuAdvice}"/>
+                                <Button Style="{StaticResource Btn.Primary}" Height="34" Padding="16,0" HorizontalAlignment="Left" Margin="25,0,0,0"
+                                        Content="Tune now · about 10 min" Command="{Binding TuneCommand}"/>
+                            </StackPanel>
+                        </Border>
                         <TextBlock Style="{StaticResource Text.Section}" Text="This PC"/>
                         <TextBlock Style="{StaticResource Text.Small}" Text="Graphics"/>
                         <TextBlock Style="{StaticResource Text.Body}" Margin="0,2,0,14" Text="{Binding GpuName}"/>
+                        <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="0,-8,0,14" Text="{Binding GpuAdvice}"
+                                   Visibility="{Binding ShowGpuAdvice, Converter={StaticResource BoolToVis}}"/>
                         <TextBlock Style="{StaticResource Text.Small}" Text="Smoothing"/>
                         <TextBlock Style="{StaticResource Text.Body}" Margin="0,2,0,14">
                             <Run Text="{Binding ActiveProfileName, Mode=OneWay}"/>
