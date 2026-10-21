@@ -352,6 +352,9 @@ public sealed partial class MainViewModel
             var model = TrackInfo.Str(json?["model"]);
             if (model is null || TrackInfo.Str(json?["engine"]) != Eng.Engine) { ModelText = ""; return; }
             var name = EngineCatalog.ModelName("rife-" + model.Replace('_', '.').Replace(".lite", "_lite"));
+            // On cards that can't run the AI at full size: e.g. "· AI at 960×540"
+            if (TrackInfo.Dbl(json?["scale"]) is > 0 and < 1 && TrackInfo.Dbl(json?["ai_width"]) is > 0 and var aw && TrackInfo.Dbl(json?["ai_height"]) is > 0 and var ah)
+                name += $" · AI at {aw:0}×{ah:0}";
             ModelText = Eng.TrtModel == "auto"
                 ? name + (Eng.QualityStep > 0 ? " (lighter, to stay smooth)" : " (picked for this PC)")
                 : name;

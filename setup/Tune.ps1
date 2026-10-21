@@ -58,7 +58,7 @@ exec(compile(open(r'$vpy', encoding='utf-8').read(), r'$vpy', 'exec'), g)
 
 function Measure-Engine([string]$Model, $Streams, [int]$Count = 0) {
     $cfg = Join-Path $Work "engine.json"
-    $c = [ordered]@{ enabled = $true; engine = "rife_trt"; target = 60; trt_model = "rife-$Model";
+    $c = [ordered]@{ enabled = $true; engine = "rife_trt"; target = 60; trt_model = "rife-$Model"; ai_scale = 1;
                      scene_detect = $true; dedup = $true; demo = $false }
     if ($Streams) { $c.trt_streams = $Streams }
     $c | ConvertTo-Json | Set-Content -Encoding ASCII $cfg

@@ -20,6 +20,8 @@ public sealed class EngineSettings
     /// <summary>Exports only: how many frames the source has, so the engine knows where it ends.</summary>
     [JsonPropertyName("source_frames"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? SourceFrames { get; set; }
+    /// <summary>TensorRT: run the AI on a smaller copy ("1", "0.75", "0.5") or "auto" from tuning.</summary>
+    [JsonPropertyName("ai_scale")]       public string AiScale { get; set; } = "auto";
     [JsonPropertyName("gpu_class")]      public string GpuClass { get; set; } = "";
     /// <summary>Set by the player while frames drop: use this many models lighter. Reset for every video.</summary>
     [JsonPropertyName("quality_step")]   public int QualityStep { get; set; }

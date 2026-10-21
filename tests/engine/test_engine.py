@@ -167,6 +167,17 @@ b = [c for c in calls if c[0] == "backend"][0][1]
 check(b["fp16"] and b["output_format"] == 1 and b["num_streams"] == 2 and b["engine_folder"] == novamotion_trt.ENGINE_DIR,
       "trt: fp16 in and out, 2 streams by default, cached engines")
 
+calls.clear()
+o = run({"engine": "rife_trt", "target": "display", "ai_scale": 0.5}, frames=10)
+m = [c for c in calls if c[0] == "merge"]
+check(m and m[0][1:3] == (640, 384) and o.width == 1280 and o.height == 720 and o.get_frame(1).width == 1280,
+      f"trt: half-size AI (640x360, padded 640x384), output stays 1280x720: {m[:1]} {o.width}x{o.height}")
+st = json.load(open(os.environ["NOVAMOTION_ENGINE_STATE"])) if os.environ.get("NOVAMOTION_ENGINE_STATE") else {}
+calls.clear()
+o = run({"engine": "rife_trt", "target": "display", "gpu_class": "entry"}, frames=10)
+m = [c for c in calls if c[0] == "merge"]
+check(m and m[0][1:3] == (640, 384), f"trt: an untuned GTX-class card starts at half size ({m[:1]})")
+
 o = run({"engine": "rife_trt", "target": "display"}, fps=25.0, display=60, frames=60)
 durs = {Fraction(o.get_frame(n).props["_DurationNum"], o.get_frame(n).props["_DurationDen"]) for n in range(24)}
 check(durs == {Fraction(1, 60)}, f"trt 25 -> 60: every frame lasts 1/60 s, copied ones too ({sorted(durs)})")
@@ -271,6 +282,20 @@ check(ch("auto", 1280, 768, Fraction(25), Fraction(60), 0, slow_pc)[0] == "v4_6"
 check(ch("auto", 1920, 1088, Fraction(25), Fraction(60), 1, fast_pc)[0] == "v4_22_lite", "tune: a step down from the player picks the next lighter model")
 check(ch("auto", 1920, 1088, Fraction(25), Fraction(60), 0, {}, gpu_class="entry")[0] == novamotion_trt.installed_models()[-1],
       "tune: an untuned GTX-class card starts from the lightest installed model")
+cp = novamotion_trt.choose_plan
+gtx = {"sizes": {"1920x1088": {"v4_6": 19.0, "v4_22_lite": 30.0}}}
+check(cp("auto", 1920, 1080, Fraction(24), Fraction(60), 0, gtx)[:2] == ("v4_6", 0.5),
+      f"plan: a GTX 1650 (19/s full size) runs v4.6 at half size for 24 -> 60 ({cp('auto', 1920, 1080, Fraction(24), Fraction(60), 0, gtx)})")
+check(cp("auto", 1920, 1080, Fraction(24000, 1001), Fraction(60), 0, gtx)[:2] == ("v4_22_lite", 0.5),
+      "plan: 23.976 -> 60 infers almost every frame, so the same card takes the lite model")
+check(cp("auto", 1280, 720, Fraction(24000, 1001), Fraction(60), 0, gtx)[:2] == ("v4_22_lite", 0.75),
+      f"plan: the same card at 720p keeps more size with the lite model ({cp('auto', 1280, 720, Fraction(24000, 1001), Fraction(60), 0, gtx)[:2]})")
+check(cp("auto", 1920, 1080, Fraction(25), Fraction(60), 0, fast_pc)[:2] == ("v4_6", 1.0), "plan: a fast PC stays at full size")
+check(cp("auto", 1920, 1080, Fraction(24), Fraction(60), 1, gtx)[:2] == ("v4_22_lite", 0.5),
+      "plan: a step down picks a cheaper option (lite at half size)")
+check(cp("auto", 1920, 1080, Fraction(25), Fraction(60), 0, gtx, ai_scale="1")[1] == 1.0, "plan: a size set in settings wins")
+check(cp("auto", 1920, 1080, Fraction(25), Fraction(60), 0, {}, gpu_class="entry")[1] == 0.5
+      and cp("auto", 1920, 1080, Fraction(25), Fraction(60), 0, {})[1] == 1.0, "plan: untuned, GTX starts at half size, RTX at full")
 check(ch("rife-v4.22_lite", 1920, 1088, Fraction(25), Fraction(60), 0, fast_pc)[0] == "v4_22_lite", "tune: a model chosen in settings wins")
 check(abs(novamotion_trt.inferences_per_second(Fraction(25), Fraction(60)) - 55) < 1e-9
       and abs(novamotion_trt.inferences_per_second(Fraction(24), Fraction(60)) - 48) < 1e-9, "tune: 25 -> 60 needs 55 AI frames a second, 24 -> 60 needs 48")

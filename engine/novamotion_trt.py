@@ -106,32 +106,66 @@ def inferences_per_second(src, dst):
     return float(dst) * (p - 1) / p
 
 
+# The AI can run on a smaller copy of the video. Only the in-between frames come from it (scaled
+# back up, which motion hides well); every real frame stays at full resolution. A GTX 1650 makes
+# about 19 full-size frames a second at 1080p, against 48 needed for 24 -> 60; at half size, 4x more.
+AI_SCALES = [1.0, 0.75, 0.5]
+
+
 def choose_model(requested, width, height, src, dst, step=0, tuning=None, gpu_class=""):
-    """(model name, why). requested: 'auto' or a model such as 'rife-v4.26'. step: how many
-    steps lighter than the best fit to go (the player asks for this when frames drop)."""
-    from vsmlrt import RIFEModel
-    if requested and requested != "auto":
-        return installed_model(requested).name, "chosen in settings"
-    models = installed_models() or ["v4_6"]
+    """(model name, why) at full resolution. See choose_plan."""
+    model, _, why = choose_plan(requested, width, height, src, dst, step, tuning, gpu_class, scales=[1.0])
+    return model, why
+
+
+def choose_plan(requested, width, height, src, dst, step=0, tuning=None, gpu_class="", ai_scale="auto",
+                scales=None):
+    """(model name, AI size scale, why).
+
+    requested: 'auto' or a model such as 'rife-v4.26'. ai_scale: 'auto' or a number.
+    step: how many steps lighter than the best fit to go (the player asks when frames drop).
+    With measurements, the best option that keeps up wins, full size before a better model at a
+    smaller size. Without, RTX starts at v4.6 full size, GTX-class cards at the lightest model
+    and half size."""
+    fixed = None if ai_scale in (None, "", "auto") else float(ai_scale)
+    scales = [fixed] if fixed else (scales or AI_SCALES)
+    manual = bool(requested and requested != "auto")
+    models = [installed_model(requested).name] if manual else (installed_models() or ["v4_6"])
     tuning = load_tuning() if tuning is None else tuning
     measured = (tuning.get("sizes") or {}).get(f"{TUNED_SIZE[0]}x{TUNED_SIZE[1]}", {})
+    label = "chosen in settings" if manual else None
+
     if not measured:
-        # Untuned: v4.6 suits most RTX cards; GTX-class cards start from the lightest model
-        base = models[-1] if gpu_class == "entry" else ("v4_6" if "v4_6" in models else models[0])
-        light = models[min(models.index(base) + step, len(models) - 1)]
-        return light, "default (run Tune for this PC to pick automatically)"
+        if gpu_class == "entry":
+            ladder = [(models[-1], sc) for sc in scales if sc <= 0.5] or [(models[-1], scales[-1])]
+        else:
+            base = "v4_6" if "v4_6" in models else models[0]
+            ladder = [(m, scales[0]) for m in models[models.index(base):]] + [(models[-1], sc) for sc in scales[1:]]
+        m, sc = ladder[min(step, len(ladder) - 1)]
+        return m, sc, label or "default (run Tune for this PC to pick automatically)"
+
     # Measured at 25 -> 60 (11 of every 12 frames inferred); scale to this video's size and rate
-    per_pixel = (TUNED_SIZE[0] * TUNED_SIZE[1]) / float(width * height)
     need = inferences_per_second(src, dst) * HEADROOM
-    capacity = {m: measured[m] * (11 / 12) * per_pixel for m in models if m in measured}
+    capacity = {}
+    for sc in scales:
+        per_pixel = (TUNED_SIZE[0] * TUNED_SIZE[1]) / (max(1, width * height) * sc * sc)
+        for m in models:
+            if m in measured:
+                capacity[(m, sc)] = measured[m] * (11 / 12) * per_pixel
     if not capacity:
-        return models[0], "no measurement for the installed models"
-    fits = [m for m in models if capacity.get(m, 0) >= need]
+        return models[0], scales[0], label or "no measurement for the installed models"
+    options = [(m, sc) for sc in scales for m in models if (m, sc) in capacity]   # best first
+    fits = [o for o in options if capacity[o] >= need]
     if fits:
-        pick = fits[min(step, len(fits) - 1)]
-        return pick, f"needs {need:.0f}/s with headroom, {pick} manages {capacity[pick]:.0f}/s"
-    fastest = max(capacity, key=capacity.get)
-    return fastest, f"needs {need:.0f}/s, fastest model manages {capacity[fastest]:.0f}/s"
+        pick = fits[0]
+        # A step down goes to an option that is actually cheaper than the best fit
+        cheaper = sorted((o for o in fits if capacity[o] > capacity[pick]), key=lambda o: capacity[o])
+        if step > 0 and cheaper:
+            pick = cheaper[min(step - 1, len(cheaper) - 1)]
+        m, sc = pick
+        return m, sc, label or f"needs {need:.0f}/s with headroom, {m} at {sc:.0%} size manages {capacity[pick]:.0f}/s"
+    m, sc = max(capacity, key=capacity.get)
+    return m, sc, label or f"needs {need:.0f}/s, fastest option ({m} at {sc:.0%} size) manages {capacity[(m, sc)]:.0f}/s"
 
 
 def backend(gpu=0, streams=None):
@@ -297,7 +331,7 @@ def plan(n, p, q, info):
 
 
 def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=True, step=0, streams=None,
-                gpu_class=""):
+                gpu_class="", ai_scale="auto"):
     """rgbh: RGBH clip at src fps. Returns RGBH at dst fps (same size).
 
     Built on vsmlrt.RIFEMerge rather than vsmlrt.RIFE: RIFE() precomputes a table entry for
@@ -308,17 +342,22 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
     from vsmlrt import RIFEMerge
     t0 = time.perf_counter()
     w, h = rgbh.width, rgbh.height
-    pw, ph = (-w) % PAD, (-h) % PAD
-    clip = core.std.AddBorders(rgbh, right=pw, bottom=ph) if (pw or ph) else rgbh
-
-    # Output frame n sits at source position n*q/p: between frames floor(n*q/p) and the next,
-    # at time point (n*q mod p)/p. The pattern repeats every p output frames.
     ratio = Fraction(dst) / Fraction(src)
     p, q = ratio.numerator, ratio.denominator
     from vsmlrt import RIFEModel
-    chosen, why = choose_model(model_name, clip.width, clip.height, src, dst, step, gpu_class=gpu_class)
+    chosen, scale, why = choose_plan(model_name, w, h, src, dst, step, gpu_class=gpu_class, ai_scale=ai_scale)
     model = getattr(RIFEModel, chosen)
-    write_state(engine="rife_trt", model=chosen, why=why, width=w, height=h, src=float(src), dst=float(dst))
+
+    # The AI's copy: smaller when the card needs it (even sizes), padded to what the model takes
+    sw, sh = (w, h) if scale >= 1 else (max(64, round(w * scale / 2) * 2), max(64, round(h * scale / 2) * 2))
+    write_state(engine="rife_trt", model=chosen, scale=scale, ai_width=sw, ai_height=sh, why=why,
+                width=w, height=h, src=float(src), dst=float(dst))
+    small = core.resize.Bilinear(rgbh, sw, sh) if (sw, sh) != (w, h) else rgbh
+    pw, ph = (-sw) % PAD, (-sh) % PAD
+    clip = core.std.AddBorders(small, right=pw, bottom=ph) if (pw or ph) else small
+
+    # Output frame n sits at source position n*q/p: between frames floor(n*q/p) and the next,
+    # at time point (n*q mod p)/p. The pattern repeats every p output frames.
     last = clip.num_frames - 1
     length = min(clip.num_frames * p // q, MAX_FRAMES)
     _log(f"model {model.name}, {clip.width}x{clip.height}, x{ratio} ({p} out per {q} in), {length} frames", t0)
@@ -349,20 +388,23 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
 
     _log("loading TensorRT engine (vsmlrt.RIFEMerge)", t0)
     merged = RIFEMerge(left, right, mask, model=model, backend=backend(gpu, streams))
-    _log(f"model {chosen}: {why}", t0)
+    _log(f"model {chosen} at {sw}x{sh}: {why}", t0)
     record_engine(clip.width, clip.height, model.name)   # RIFEMerge has built or loaded it by now
     # vs-mlrt returns 32-bit float frames even from a 16-bit input, so copied source frames
     # must be converted to the same format before the two can be mixed in one clip
-    src_same = core.resize.Point(clip, format=merged.format.id) if clip.format.id != merged.format.id else clip
+    made = core.std.Crop(merged, right=pw, bottom=ph) if (pw or ph) else merged
+    if (sw, sh) != (w, h):
+        made = core.resize.Bicubic(made, w, h)
+    # Real frames always come from the full-size source
+    src_same = core.resize.Point(rgbh, format=made.format.id) if rgbh.format.id != made.format.id else rgbh
 
     def pick(n, f):
         a, _, _, copy = decide(n, f)
         # Frames that land on a real frame (or a cut's nearer side) are copied, not inferred
-        return src_same[min(max(a, 0), last)] if copy else merged
+        return src_same[min(max(a, 0), last)] if copy else made
 
-    out = core.std.FrameEval(merged, pick, prop_src=info_out)
+    out = core.std.FrameEval(made, pick, prop_src=info_out)
     _log("engine ready", t0)
     out = core.std.AssumeFPS(out, fpsnum=dst.numerator, fpsden=dst.denominator)
     # Copied source frames keep the source's duration; give every frame the output's
-    out = core.std.SetFrameProps(out, _DurationNum=dst.denominator, _DurationDen=dst.numerator)
-    return core.std.Crop(out, right=pw, bottom=ph) if (pw or ph) else out
+    return core.std.SetFrameProps(out, _DurationNum=dst.denominator, _DurationDen=dst.numerator)
