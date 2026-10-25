@@ -159,6 +159,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  vsmlrt-models:
+    name: vs-mlrt model releases (info)
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for tag in external-models contrib-models; do
+            names=$(gh api "repos/AmusementClub/vs-mlrt/releases/tags/$tag" --jq '[.assets[] | select(.name | test("rife";"i")) | "\(.name) \(.size)"] | join(" ; ")' || echo "none")
+            echo "::notice title=$tag::$names"
+          done
+
   engine:
     name: Engine tests (VapourSynth, no GPU)
     runs-on: ubuntu-latest
