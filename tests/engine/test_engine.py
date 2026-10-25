@@ -129,8 +129,7 @@ rife_sizes.clear()
 o = run_rife({"engine": "rife", "target": 60, "gpu_class": "integrated"}, fps=24.0, display=60, frames=24)
 y0 = o.get_frame(0)
 src0 = core.std.BlankClip(width=1280, height=720, format=vs.YUV420P8, length=1, color=[20, 128, 128]).get_frame(0)
-import numpy as _np
-real_same = _np.array_equal(_np.asarray(y0[0]), _np.asarray(src0[0]))
+real_same = bytes(memoryview(y0[0])) == bytes(memoryview(src0[0]))
 check(rife_sizes == [(640, 360)] and o.width == 1280 and o.height == 720 and o.get_frame(1).width == 1280 and real_same,
       f"vulkan rife on built-in graphics: AI at half size {rife_sizes}, output 1280x720, real frames untouched ({real_same})")
 rife_sizes.clear()
