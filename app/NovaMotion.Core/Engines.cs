@@ -12,13 +12,21 @@ public sealed record Choice(string Value, string Label, string Description = "",
 /// <summary>Names and options of the interpolation engines and frame-rate targets.</summary>
 public static class EngineCatalog
 {
-    public static string EngineName(string engine) => engine switch
+    public static string EngineName(string engine)
     {
-        "rife_trt" => "RIFE · TensorRT",
-        "rife" => "RIFE · Vulkan",
-        "mvtools" => "MVTools",
-        _ => engine,
-    };
+        var parts = engine.Split('@', 2);
+        var name = parts[0] switch
+        {
+            "rife_trt" => "RIFE · TensorRT",
+            "rife" => "RIFE · Vulkan",
+            "mvtools" => "MVTools",
+            _ => parts[0],
+        };
+        if (parts.Length < 2) return name;
+        // Benchmark rows: "rife_trt@0.5" is the AI on a half-size copy, "rife@1" Vulkan device 1
+        return parts[0] == "rife_trt" ? $"{name}, AI at {((double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var sc) ? sc : 1) * 100).ToString("0", CultureInfo.InvariantCulture)}% size"
+             : parts[0] == "rife" ? $"{name}, graphics chip {parts[1]}" : name;
+    }
 
     public static IReadOnlyList<Choice> Engines(EngineAvailability a) => new[]
     {
@@ -156,6 +164,15 @@ public static class BenchmarkLog
             }
         }
         return results;
+    }
+
+    /// <summary>The Vulkan device RIFE ran fastest on, when the benchmark tried more than one.</summary>
+    public static int? FastestVulkanDevice(IReadOnlyList<Result> results)
+    {
+        var vulkan = results.Where(r => r.Fps is not null && r.Engine.StartsWith("rife@", StringComparison.Ordinal)).ToList();
+        if (vulkan.Count < 2) return null;
+        var best = vulkan.MaxBy(r => r.Fps!.Value)!;
+        return int.TryParse(best.Engine[5..], out var id) ? id : null;
     }
 
     public static IReadOnlyList<Result> Read(RuntimeLayout? rt)

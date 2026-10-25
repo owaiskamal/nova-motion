@@ -525,6 +525,12 @@ public sealed partial class MainViewModel
         RebuildChoices();
         Benchmarks.Clear();
         var results = BenchmarkLog.Read(Runtime);
+        // Laptops have two graphics chips; Vulkan RIFE goes on the one the benchmark found fastest
+        if (BenchmarkLog.FastestVulkanDevice(results) is { } device && _settings.Profiles.Any(p => p.Engine.RifeGpu != device))
+        {
+            foreach (var p in _settings.Profiles) p.Engine.RifeGpu = device;
+            _store.Save(_settings);
+        }
         var best = results.Where(r => r.Fps is not null).Select(r => r.Fps!.Value).DefaultIfEmpty(60).Max();
         foreach (var r in results)
             Benchmarks.Add(new BenchmarkItem(EngineCatalog.EngineName(r.Engine), r.Fps is { } f ? $"{f:0} fps" : "failed",

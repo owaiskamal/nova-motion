@@ -319,6 +319,8 @@ def build_engine(clip):
             break
         except Exception as e:     # any engine failure must fall through to the next one
             dbg(f"{engine.__name__} unavailable: {type(e).__name__}: {e}")
+            if os.environ.get("NOVAMOTION_NO_FALLBACK"):   # the benchmark measures one engine, not its stand-in
+                raise
     if smooth is None:
         smooth = interpolate_mvtools(clip, cfg, src, dst)
 

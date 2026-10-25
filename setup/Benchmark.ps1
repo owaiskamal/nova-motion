@@ -7,7 +7,9 @@
 #>
 [CmdletBinding()]
 param(
-    [string[]]$Engines = @("rife_trt", "rife", "mvtools"),
+    # rife_trt@0.5: TensorRT with the AI on a half-size copy (what GTX cards use).
+    # rife@N: Vulkan RIFE on Vulkan device N; laptops list the built-in graphics too, so each is tried.
+    [string[]]$Engines = @("rife_trt", "rife_trt@0.5", "rife@0", "rife@1", "rife@2", "mvtools"),
     [int]$Frames = 400,          # source frames (~16 s of 25 fps video)
     [int]$TimeoutSec = 300
 )
@@ -37,10 +39,17 @@ exec(compile(open(r'$vpy', encoding='utf-8').read(), r'$vpy', 'exec'), g)
 "@ | Set-Content -Encoding ASCII $bench
 
 $results = @()
+$env:NOVAMOTION_NO_FALLBACK = "1"
+$vulkanDone = $false
 foreach ($e in $Engines) {
-    $cfg = Join-Path $Work "engine-$e.json"
-    @{ enabled = $true; engine = $e; target = "display"; rife_model = "rife-v4.6_ensembleFalse"; demo = $false } |
-        ConvertTo-Json | Set-Content -Encoding ASCII $cfg
+    $name, $opt = $e -split "@", 2
+    if ($name -eq "rife" -and $vulkanDone) { continue }
+    $c = [ordered]@{ enabled = $true; engine = $name; target = "display"; rife_model = "rife-v4.6_ensembleFalse";
+                     trt_model = "rife-v4.6"; ai_scale = 1; demo = $false }
+    if ($name -eq "rife_trt" -and $opt) { $c.ai_scale = [double]$opt }
+    if ($name -eq "rife" -and $opt) { $c.rife_gpu = [int]$opt }
+    $cfg = Join-Path $Work ("engine-" + ($e -replace '[@.]', '_') + ".json")
+    $c | ConvertTo-Json | Set-Content -Encoding ASCII $cfg
     $env:NOVAMOTION_ENGINE_CONFIG = $cfg
     Write-Host "==> $e" -ForegroundColor Cyan
 
@@ -67,11 +76,16 @@ foreach ($e in $Engines) {
         Write-Host ("    => {0:N1} fps  ({1})" -f $fps, $verdict) -ForegroundColor $(if ($fps -ge 60) { "Green" } else { "Yellow" })
         $results += [pscustomobject]@{ Engine = $e; Fps = [math]::Round($fps, 1) }
     } elseif ($p.HasExited) {
+        if ($name -eq "rife" -and $opt -and [int]$opt -gt 0) {
+            # No such Vulkan device: the earlier ones were all there is
+            Write-Host "    (no Vulkan device $opt)"; $vulkanDone = $true; continue
+        }
+        Write-Host "    => failed"
         $results += [pscustomobject]@{ Engine = $e; Fps = "failed" }
     }
     Write-Host ""
 }
-Remove-Item Env:\NOVAMOTION_ENGINE_CONFIG -ErrorAction SilentlyContinue
+Remove-Item Env:\NOVAMOTION_ENGINE_CONFIG, Env:\NOVAMOTION_NO_FALLBACK -ErrorAction SilentlyContinue
 Write-Host "Summary (need 60+ fps for smooth 1080p playback):"
 $results | Format-Table -AutoSize | Out-String | Write-Host
 Stop-Transcript | Out-Null

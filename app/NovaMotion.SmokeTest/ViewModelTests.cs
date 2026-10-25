@@ -302,6 +302,24 @@ internal static class ViewModelTests
                 => 94.0 fps  (real-time with headroom)
             """);
         check(bench.Count == 3 && bench[0].Fps == 81.3 && bench[1].Fps is null && bench[2].Fps == 94, "benchmark log parsed");
+        var laptop = BenchmarkLog.Parse("""
+            ==> rife_trt
+                => 20.4 fps  (TOO SLOW for 60 fps)
+            ==> rife_trt@0.5
+                => 71.2 fps  (real-time with headroom)
+            ==> rife@0
+                => 5.4 fps  (TOO SLOW for 60 fps)
+            ==> rife@1
+                => 22.8 fps  (TOO SLOW for 60 fps)
+            ==> rife@2
+                (no Vulkan device 2)
+            ==> mvtools
+                => 77.4 fps  (real-time with headroom)
+            """);
+        check(laptop.Count == 5 && BenchmarkLog.FastestVulkanDevice(laptop) == 1 && BenchmarkLog.FastestVulkanDevice(bench) is null,
+              "benchmark: the faster of a laptop's two graphics chips is found for Vulkan");
+        check(EngineCatalog.EngineName("rife_trt@0.5") == "RIFE · TensorRT, AI at 50% size" && EngineCatalog.EngineName("rife@1") == "RIFE · Vulkan, graphics chip 1"
+              && EngineCatalog.EngineName("mvtools") == "MVTools", $"benchmark: row names ({EngineCatalog.EngineName("rife_trt@0.5")})");
 
         check(YtDlp.ParseUpdate("Current version: stable@2026.09.01\nUpdating to stable@2026.10.10 ...\nUpdated yt-dlp to stable@2026.10.10") == (YtDlp.Outcome.Updated, "2026.10.10"),
               "yt-dlp: update output parsed");
