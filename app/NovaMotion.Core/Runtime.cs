@@ -70,6 +70,12 @@ public sealed record GpuInfo(IReadOnlyList<string> Names)
                                              && n.Contains("RTX", StringComparison.OrdinalIgnoreCase));
     public bool IsIntegratedOnly => Names.Count > 0 && !Names.Any(IsDiscrete);
 
+    /// <summary>A laptop whose screen hangs off the built-in graphics while video is drawn on the
+    /// NVIDIA/AMD card (Optimus and the like). The refresh timing seen across that handoff is unreliable.</summary>
+    public bool IsHybrid => Names.Any(IsDiscrete) && Names.Any(n => !IsDiscrete(n)
+        && (n.Contains("Intel", StringComparison.OrdinalIgnoreCase) || n.Contains("Radeon(TM) Graphics", StringComparison.OrdinalIgnoreCase)
+            || n.Contains("Radeon Graphics", StringComparison.OrdinalIgnoreCase)));
+
     /// <summary>TensorRT needs an NVIDIA Turing card or newer: every RTX, and the GTX 16 series.</summary>
     public bool SupportsTensorRt => Names.Any(n => n.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)
         && (n.Contains("RTX", StringComparison.OrdinalIgnoreCase) || GtxSixteen.IsMatch(n)));

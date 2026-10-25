@@ -132,7 +132,13 @@ internal static class ViewModelTests
         for (var i = 0; i < 6; i++) { now = now.AddSeconds(0.5); dropsAt += 5; fake.Prop("frame-drop-count", dropsAt); vm.Tick(); }
         check(vm.Settings.Active.Engine.QualityStep == 1, "vm: waits for the lighter model to settle before stepping again");
         for (var i = 0; i < 40; i++) { now = now.AddSeconds(0.5); fake.Prop("frame-drop-count", dropsAt); vm.Tick(); }
-        check(vm.Settings.Active.Engine.QualityStep == 1 && vm.DropText == "None", $"vm: no drops, no more steps ({vm.DropText})");
+        check(vm.Settings.Active.Engine.QualityStep == 1 && vm.DropText == "None", $"vm: no drops, no more steps ({vm.DropText}, step {vm.Settings.Active.Engine.QualityStep})");
+        // Drops that are all "mistimed" (display sync, not a slow GPU): switch sync, keep the model
+        var mist = 0;
+        for (var i = 0; i < 16; i++) { now = now.AddSeconds(0.5); mist += 15; dropsAt += 15; fake.Prop("frame-drop-count", dropsAt); fake.Prop("mistimed-frame-count", mist); vm.Tick(); }
+        check(vm.Settings.Active.Engine.QualityStep == 1 && vm.Settings.VideoSync == "audio"
+              && fake.LastSet("video-sync")?[2] as string == "audio" && vm.ToastText.Contains("refresh timing"),
+              $"vm: mistimed drops switch video sync to timestamps instead of a lighter model (step {vm.Settings.Active.Engine.QualityStep}, sync '{vm.Settings.VideoSync}')");
         vm.Settings.Active.Engine.Engine = "mvtools";
 
         // ---- seek bar scrubbing

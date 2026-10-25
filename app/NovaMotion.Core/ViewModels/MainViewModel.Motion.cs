@@ -329,7 +329,7 @@ public sealed partial class MainViewModel
 
     // ------------------------------------------------------------------ keeping playback smooth
 
-    private readonly List<(DateTime At, long Drops)> _dropSamples = new();
+    private readonly List<(DateTime At, long Drops, long Mistimed)> _dropSamples = new();
     private DateTime? _lastStepAt;
     private DateTime _engineStateReadAt;
 
@@ -357,15 +357,31 @@ public sealed partial class MainViewModel
             DropRate = 0;
             return;
         }
-        _dropSamples.Add((now, _state.FrameDrops));
+        _dropSamples.Add((now, _state.FrameDrops, _state.MistimedFrames));
         while (_dropSamples.Count > 0 && now - _dropSamples[0].At > DropWindow) _dropSamples.RemoveAt(0);
         var span = (now - _dropSamples[0].At).TotalSeconds;
         if (span < DropWindow.TotalSeconds * 0.8) { DropRate = 0; return; }
-        DropRate = Math.Max(0, (_dropSamples[^1].Drops - _dropSamples[0].Drops) / span);
+        var all = Math.Max(0, (_dropSamples[^1].Drops - _dropSamples[0].Drops) / span);
+        var mistimed = Math.Max(0, (_dropSamples[^1].Mistimed - _dropSamples[0].Mistimed) / span);
+        DropRate = all;
+
+        // Drops that are "mistimed" aren't the GPU falling behind: locking to the screen's refresh
+        // failed (common on laptops whose screen is on the built-in graphics). Show frames by their
+        // timestamps instead, and don't blame the model for it.
+        if (mistimed > DropRateLimit && mistimed >= all * 0.6 && _settings.VideoSync != "audio")
+        {
+            _settings.VideoSync = "audio";
+            _store.Save(_settings);
+            _dropSamples.Clear();
+            _ = Send("set_property", "video-sync", "audio");
+            ShowToast("This screen's refresh timing was off, so NOVA Motion now times frames by the video instead. Playback should be steady now.");
+            return;
+        }
+        var late = Math.Max(0, all - mistimed);
 
         var canStep = Eng.Engine == "rife_trt" && Eng.TrtModel == "auto" && Eng.QualityStep < MaxQualityStep;
         var settled = _lastStepAt is null || now - _lastStepAt > TimeSpan.FromSeconds(10);
-        if (DropRate > DropRateLimit && canStep && settled)
+        if (late > DropRateLimit && canStep && settled)
         {
             _lastStepAt = now;
             _dropSamples.Clear();
@@ -553,7 +569,9 @@ public sealed partial class MainViewModel
         else if (_settings.DefaultsVersion < AppSettings.CurrentDefaults)
         {
             // Settings made before entry cards had defaults of their own asked them for too much
-            if (gpu.Tier == GpuTier.Entry) _settings.ApplyGpuDefaults(gpu);
+            if (_settings.DefaultsVersion < 2 && gpu.Tier == GpuTier.Entry) _settings.ApplyGpuDefaults(gpu);
+            // Hybrid laptops: frames by their timestamps (version 3)
+            if (gpu.IsHybrid) _settings.VideoSync = "audio";
             _settings.DefaultsVersion = AppSettings.CurrentDefaults;
         }
         _settings.MarkGpu(gpu);

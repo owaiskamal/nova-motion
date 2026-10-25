@@ -102,6 +102,7 @@ public sealed class MpvPlayer : IPlayerBackend
             args.Add("--force-window=immediate");
             args.Add("--title=${media-title} - NOVA Motion");
         }
+        if (settings.VideoSync is "audio") args.Add("--video-sync=audio");
         var userConf = Path.Combine(_store.Directory, "mpv-user.conf");
         if (File.Exists(userConf)) args.Add($"--include={userConf}");
         if (target is not null)

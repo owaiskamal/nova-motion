@@ -168,11 +168,13 @@ mp.add_periodic_timer(5, function()
     local cfg = load()
     msg.info(string.format(
         "ff-stats src=%.3f out=%.2f display=%.2f res=%dx%d hwdec=%s engine=%s target=%s model=%s vsr=%s demo=%s active=%s " ..
-        "drops+%d decdrops+%d late+%d mistimed+%d cache=%.1fs buffering=%s",
+        "drops+%d decdrops+%d late+%d mistimed+%d cache=%.1fs buffering=%s sync=%s",
         num("container-fps"), num("estimated-vf-fps"), num("display-fps"),
         num("width"), num("height"), mp.get_property("hwdec-current", "?"),
-        tostring(cfg.engine), tostring(cfg.target), tostring(cfg.rife_model), tostring(cfg.rtx_vsr), tostring(cfg.demo),
+        tostring(cfg.engine), tostring(cfg.target),
+        tostring(cfg.engine == "rife_trt" and (tostring(cfg.trt_model) .. "@" .. tostring(cfg.ai_scale)) or cfg.rife_model),
+        tostring(cfg.rtx_vsr), tostring(cfg.demo),
         tostring(has_filter(FILTER)), d("drop"), d("dec"), d("late"), d("mist"),
-        num("demuxer-cache-duration"), tostring(mp.get_property_bool("paused-for-cache"))))
+        num("demuxer-cache-duration"), tostring(mp.get_property_bool("paused-for-cache")), mp.get_property("video-sync", "?")))
     last = cur
 end)

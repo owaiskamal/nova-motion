@@ -75,7 +75,10 @@ public sealed class AppSettings
     public bool FirstRunDone { get; set; }
     /// <summary>Which version of the GPU-based defaults these settings were made with.</summary>
     public int DefaultsVersion { get; set; }
-    public const int CurrentDefaults = 2;
+    public const int CurrentDefaults = 3;
+    /// <summary>"" (display-resample, from mpv.conf: frames locked to the screen's refresh) or "audio"
+    /// (frames shown by their timestamps), for screens whose refresh timing can't be trusted.</summary>
+    public string VideoSync { get; set; } = "";
     /// <summary>The "tune for this PC" card on Home was closed.</summary>
     public bool TunePromptDismissed { get; set; }
 
@@ -114,6 +117,7 @@ public sealed class AppSettings
             Profiles.Add(new Profile { Name = "Anime",           Engine = new EngineSettings { Engine = rife, TargetText = "x2", SceneDetect = true, RifeModel = lite } });
         }
         ActiveProfile = tier == GpuTier.Integrated ? "Light (any GPU)" : "Balanced";
+        if (gpu?.IsHybrid == true) VideoSync = "audio";
         MarkGpu(gpu);
         DefaultsVersion = CurrentDefaults;
     }

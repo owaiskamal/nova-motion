@@ -17,6 +17,10 @@ internal static class GpuTests
               && G("AMD Radeon RX 6500 XT").Tier == GpuTier.Entry && G("AMD Radeon RX 7900 XTX").Tier == GpuTier.Performance,
               "gpu: RTX 4070 and RX 7900 are performance class, RTX 3050 and RX 6500 entry");
         check(G("Intel(R) Iris(R) Xe Graphics").Tier == GpuTier.Integrated && G().Tier == GpuTier.Unknown, "gpu: integrated and unknown");
+        check(G("Intel(R) UHD Graphics", "NVIDIA GeForce GTX 1650").IsHybrid && !G("NVIDIA GeForce RTX 4070").IsHybrid
+              && AppSettings.CreateDefaults(G("Intel(R) UHD Graphics", "NVIDIA GeForce GTX 1650")).VideoSync == "audio"
+              && AppSettings.CreateDefaults(G("NVIDIA GeForce RTX 4070")).VideoSync == "",
+              "gpu: hybrid laptops time frames by timestamps; desktops lock to the refresh");
 
         var entry = AppSettings.CreateDefaults(G("NVIDIA GeForce GTX 1650", "Intel(R) UHD Graphics 630"));
         var bal = entry.Active.Engine;
