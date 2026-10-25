@@ -66,7 +66,7 @@ def load_settings():
         os.environ.get("APPDATA", HERE), "NovaMotion", "engine.json")
     cfg = dict(DEFAULTS)
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8-sig") as f:
             cfg.update(json.load(f))
     except (OSError, ValueError):
         pass
@@ -122,10 +122,31 @@ def target_fps(cfg, src):
     if isinstance(t, str) and t.lower().startswith("x"):
         want = src * int(t[1:] or 2)
     else:
-        want = as_fraction(t)
+        want = even_rate(as_fraction(t), src, d)
     # Frames above the refresh rate are generated and then thrown away by the player:
     # pure wasted GPU work (measured: x3 on a 60 Hz TV dropped 15 of every 75 frames).
     return min(want, d) if d else want
+
+
+def even_rate(want, src, display):
+    """A fixed target such as 60 on a screen it doesn't divide (144, 165 Hz) is shown unevenly:
+    frames held for 2, then 3 refreshes, which looks like judder. When a whole multiple of the
+    source lands on an even share of the refresh rate near the target, use that instead:
+    24 fps on 144 Hz -> 72 (each frame 2 refreshes), and it costs the AI the same 48 frames a
+    second as 60 does."""
+    if not display or float(want) <= 0:
+        return want
+    d = float(display)
+    if abs(d / float(want) - round(d / float(want))) < 0.01:
+        return want                                # already even (60 on 60/120/240 Hz)
+    for n in range(1, 6):
+        share = d / n
+        if not (float(want) * 0.8 <= share <= float(want) * 1.25):
+            continue
+        k = round(share / float(src))
+        if k >= 2 and abs(share - float(src) * k) / share < 0.005:   # display-resample covers 0.1 %
+            return src * k
+    return want
 
 
 def matrix_for(clip):

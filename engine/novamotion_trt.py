@@ -102,7 +102,8 @@ def installed_models():
 
 def load_tuning():
     try:
-        with open(TUNING_PATH, encoding="utf-8") as f:
+        # utf-8-sig: Windows PowerShell writes JSON with a byte-order mark, which plain utf-8 rejects
+        with open(TUNING_PATH, encoding="utf-8-sig") as f:
             return json.load(f)
     except (OSError, ValueError):
         return {}
@@ -253,7 +254,7 @@ def record_engine(width, height, model):
     import json
     path = os.path.join(ENGINE_DIR, "novamotion-engines.json")
     try:
-        data = json.load(open(path, encoding="utf-8")) if os.path.isfile(path) else {}
+        data = json.load(open(path, encoding="utf-8-sig")) if os.path.isfile(path) else {}
         key = f"{width}x{height}"
         if key in data and data[key].get("model") == model:
             return

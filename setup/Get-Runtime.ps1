@@ -248,7 +248,7 @@ core.std.BlankClip().set_output()
     Info "VSPipe.exe not found; skipping self-test"
 }
 
-$Installed | ConvertTo-Json | Set-Content -Encoding UTF8 (Join-Path $Runtime "versions.json")
+[IO.File]::WriteAllText((Join-Path $Runtime "versions.json"), ($Installed | ConvertTo-Json), (New-Object Text.UTF8Encoding $false))
 Info ("installed: " + (($Installed.GetEnumerator() | ForEach-Object { "$($_.Key) $($_.Value)" }) -join ", "))
 
 Write-Host ""

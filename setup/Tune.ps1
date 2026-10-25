@@ -140,7 +140,8 @@ $result = [ordered]@{
     streams  = $best
     sizes    = [ordered]@{ $Key = $sizes }
 }
-$result | ConvertTo-Json -Depth 4 | Set-Content -Encoding UTF8 (Join-Path $Runtime "tuning.json")
+# No byte-order mark (Windows PowerShell's UTF8 adds one, which JSON readers reject)
+[IO.File]::WriteAllText((Join-Path $Runtime "tuning.json"), ($result | ConvertTo-Json -Depth 4), (New-Object Text.UTF8Encoding $false))
 Remove-Item Env:\NOVAMOTION_ENGINE_CONFIG -ErrorAction SilentlyContinue
 Write-Host ""
 Write-Host "Saved runtime\tuning.json. NOVA Motion now picks the best model this PC can play smoothly." -ForegroundColor Green

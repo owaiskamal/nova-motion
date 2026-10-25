@@ -271,6 +271,25 @@ check(o.num_frames == 100 + 96, f"export: the engine stops at the source's real 
 o = run({"engine": "mvtools", "target": 60, "source_frames": 0}, fps=24, frames=48)
 check(o.num_frames == 120, f"export: no source_frames keeps the clip's own length ({o.num_frames})")
 
+# Tuning written by Windows PowerShell starts with a byte-order mark
+_bom = os.path.join(tempfile.mkdtemp(), "tuning.json")
+open(_bom, "wb").write(b"\xef\xbb\xbf" + json.dumps({"sizes": {"960x576": {"v4_6": 73.2}}}).encode())
+_saved = novamotion_trt.TUNING_PATH; novamotion_trt.TUNING_PATH = _bom
+check(novamotion_trt.load_tuning().get("sizes", {}).get("960x576", {}).get("v4_6") == 73.2, "tune: tuning.json with a byte-order mark is read")
+novamotion_trt.TUNING_PATH = _saved
+
+# Even cadence on high-refresh screens
+o = run({"engine": "mvtools", "target": 60}, fps=24.0, display=144.0, frames=48)
+check(o.fps == Fraction(72), f"144 Hz: 24 fps film goes to 72 (each frame 2 refreshes), not 60 ({o.fps})")
+o = run({"engine": "mvtools", "target": 60}, fps=23.976, display=144.0, frames=48)
+check(o.fps == Fraction(72000, 1001), f"144 Hz: 23.976 goes to 71.93, display-resample covers the rest ({o.fps})")
+o = run({"engine": "mvtools", "target": 60}, fps=25.0, display=144.0, frames=48)
+check(o.fps == Fraction(60), f"144 Hz: 25 fps has no even rate near 60, stays 60 ({o.fps})")
+o = run({"engine": "mvtools", "target": 60}, fps=24.0, display=60.0, frames=48)
+check(o.fps == Fraction(60), f"60 Hz: 60 stays 60 ({o.fps})")
+o = run({"engine": "mvtools", "target": 60}, fps=30.0, display=144.0, frames=48)
+check(o.fps == Fraction(60), f"144 Hz: 30 fps stays 60 (x2; 72 is not a multiple) ({o.fps})")
+
 # Choosing the model from this PC's measurements (tuning.json)
 ch = novamotion_trt.choose_model
 fast_pc = {"sizes": {"1920x1088": {"v4_6": 110.0, "v4_22_lite": 170.0}}}
