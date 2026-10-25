@@ -53,7 +53,7 @@ TensorRT is what makes AI interpolation real-time: same model, 1.65× the Vulkan
 
 1. Install the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (`winget install Microsoft.DotNet.SDK.8`).
 2. Run **`build.cmd`**. The first run downloads the runtime (about 150 MB: mpv, VapourSynth, RIFE, MVTools, yt-dlp), runs the tests and builds `dist\NovaMotion.exe`.
-3. **NVIDIA RTX and GTX 16-series users:** run **`setup-tensorrt.cmd`** once. It downloads NVIDIA TensorRT through [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) (about 3.3 GB) and prepares the 1080p engine (about 90 s). Then NOVA Motion offers to tune itself for your PC (about 10 minutes), measuring each AI model so playback uses the best one your card keeps up with. Entry cards such as a GTX 1650 start with the light model at 60 fps until then.
+3. **NVIDIA RTX and GTX 16-series users:** run **`setup-tensorrt.cmd`** once. It downloads NVIDIA TensorRT through [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) (about 3.3 GB) and prepares the 1080p engine (about 90 s). Already set up TensorRT before October 2026? Run **`get-models.cmd`** once to add the light and newest models (about 60 MB). Then NOVA Motion offers to tune itself for your PC (about 10 minutes), measuring each AI model so playback uses the best one your card keeps up with. Entry cards such as a GTX 1650 start with the light model at 60 fps until then.
 4. Start `dist\NovaMotion.exe`, paste a link or drop a file, and press **Play**.
 
 Optional: load `extension\` in Chrome or Edge (`chrome://extensions` → Developer mode → Load unpacked). Alt+Shift+F on any video page sends it to NOVA Motion at the same timestamp.

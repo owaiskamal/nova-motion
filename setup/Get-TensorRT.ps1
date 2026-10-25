@@ -14,10 +14,12 @@
 #>
 [CmdletBinding()]
 param(
-    [string[]]$Models = @("v4.6", "v4.22_lite", "v4.26"),
+    [string[]]$Models = @("v4.6", "v4.22_lite", "v4.25_lite", "v4.26"),
     [string[]]$Prebuild = @("v4.6", "v4.22_lite"),
     [switch]$KeepDownloads,
-    [switch]$Force
+    [switch]$Force,
+    # Only add missing RIFE models (TensorRT is already installed): no runtime download
+    [switch]$ModelsOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -97,6 +99,7 @@ Step "vs-mlrt release"
 $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/AmusementClub/vs-mlrt/releases/latest" -Headers $Headers
 Info "vs-mlrt $($rel.tag_name): $(($rel.assets | ForEach-Object { $_.name }) -join ', ')"
 
+if (-not $ModelsOnly) {
 # TensorRT-only package if this release has one, else the full CUDA package (may be split in parts)
 # Packages over 2 GB are split into .7z.001, .7z.002, ... and every part is needed
 $pkg = $rel.assets | Where-Object { $_.name -match '^vsmlrt-windows-x64-tensorrt\.v[\d.]+\.7z(\.\d{3})?$' }
@@ -133,6 +136,7 @@ if ($scripts) {
 }
 if (-not $py) { throw "vsmlrt.py not found" }
 Copy-Item $py.FullName $MpvDir -Force
+} else { Info "models only: TensorRT runtime left as installed" }
 
 Step "RIFE ONNX models: $($Models -join ', ')"
 $want = $Models | ForEach-Object { "rife_$_.onnx" }
@@ -153,7 +157,21 @@ if ($missing) {
         $missing = $want | Where-Object { -not (Test-Path (Join-Path $OnnxDir $_)) }
     }
 }
-if ($missing) { Write-Warning "Not found in this vs-mlrt release: $($missing -join ', ')" }
+if ($missing) {
+    # Models newer than 4.6 are published on their own, one archive each, in the "external-models" release
+    Info "looking in vs-mlrt's external-models release"
+    $ext = Invoke-RestMethod -Uri "https://api.github.com/repos/AmusementClub/vs-mlrt/releases/tags/external-models" -Headers $Headers
+    foreach ($f in @($missing)) {
+        $a = $ext.assets | Where-Object { $_.name -eq ($f -replace '\.onnx$', '.7z') } | Select-Object -First 1
+        if (-not $a) { continue }
+        $mx = Join-Path $Cache ("ext-" + [IO.Path]::GetFileNameWithoutExtension($f))
+        Extract (Get-File $a.browser_download_url $a.name $a.size) $mx @($f)
+        $hit = Get-ChildItem $mx -Recurse -Filter $f | Where-Object { $_.FullName -notmatch 'rife_v2' } | Select-Object -First 1
+        if ($hit) { Copy-Item $hit.FullName $OnnxDir -Force; Info "installed $f" }
+    }
+    $missing = $want | Where-Object { -not (Test-Path (Join-Path $OnnxDir $_)) }
+}
+if ($missing) { Write-Warning "Not found in vs-mlrt's releases: $($missing -join ', ')" }
 if (-not (Get-ChildItem $OnnxDir -Filter "rife_*.onnx")) { throw "No RIFE ONNX models could be installed" }
 
 Step "akarin plugin (exact 25->60 style frame rates without extra work)"
