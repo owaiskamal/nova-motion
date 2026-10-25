@@ -47,6 +47,28 @@ internal static class GpuTests
         var vm2 = new MainViewModel(new FakeHost(), store, null, () => new FakeBackend(), () => DateTime.UtcNow);
         vm2.SetGpu(G("NVIDIA GeForce GTX 1650"));
         check(store.Load().Active.Engine.TargetText == "120", "migration: runs once; the user's own choices stay after it");
+        // TensorRT model and AI size pickers
+        var root = Path.Combine(Path.GetTempPath(), "nm-trt-" + Guid.NewGuid().ToString("N")[..6]);
+        var rtDir = Path.Combine(root, "runtime");
+        var onnx = Path.Combine(rtDir, "mpv", "vs-plugins", "models", "rife");
+        Directory.CreateDirectory(onnx);
+        foreach (var f in new[] { "rife_v4.6.onnx", "rife_v4.22_lite.onnx", "rife_v4.26.onnx", "rife_v4.25_lite.onnx" }) File.WriteAllText(Path.Combine(onnx, f), "");
+        File.WriteAllText(Path.Combine(rtDir, "mpv", "vs-plugins", "vstrt.dll"), "");
+        File.WriteAllText(Path.Combine(rtDir, "novamotion.vpy"), "");
+        var rt = RuntimeLayout.Find(root)!;
+        check(rt.TrtModels().SequenceEqual(new[] { "rife-v4.26", "rife-v4.6", "rife-v4.25_lite", "rife-v4.22_lite" }),
+              $"trt models: installed ones listed, full before lite, newest first ({string.Join(", ", rt.TrtModels())})");
+        var store3 = new SettingsStore(Path.Combine(root, "cfg"));
+        var vm3 = new MainViewModel(new FakeHost(), store3, rt, () => new FakeBackend(), () => DateTime.UtcNow);
+        vm3.SetGpu(G("NVIDIA GeForce GTX 1650"));
+        check(vm3.IsTensorRt && vm3.HasModels && vm3.Models[0].Value == "auto" && vm3.Models[0].IsSelected && vm3.Models.Count == 5,
+              $"pickers: TensorRT lists Auto plus the 4 installed models ({vm3.IsTensorRt} {vm3.Models.Count})");
+        vm3.SelectModelCommand.Execute(vm3.Models.Single(m => m.Value == "rife-v4.22_lite"));
+        vm3.SelectAiSizeCommand.Execute(vm3.AiSizes.Single(a => a.Value == "0.5"));
+        var eng = JsonNode.Parse(File.ReadAllText(store3.EngineConfigPath))!;
+        check(eng["trt_model"]!.GetValue<string>() == "rife-v4.22_lite" && eng["ai_scale"]!.GetValue<string>() == "0.5"
+              && vm3.AiSizes.Single(a => a.IsSelected).Value == "0.5" && vm3.Models.Single(m => m.IsSelected).Value == "rife-v4.22_lite",
+              "pickers: chosen model and AI size reach the engine");
         await Task.CompletedTask;
     }
 }

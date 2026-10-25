@@ -17,6 +17,9 @@ public sealed partial class MainViewModel
     public ObservableCollection<OptionItem> MvQualities { get; } = new();
     public ObservableCollection<OptionItem> OnlineHeights { get; } = new();
     public ObservableCollection<OptionItem> Models { get; } = new();
+    /// <summary>TensorRT: the size the AI works at (Auto, Full, 75 %, Half).</summary>
+    public ObservableCollection<OptionItem> AiSizes { get; } = new();
+    public Command SelectAiSizeCommand { get; private set; } = null!;
 
     public Command SelectProfileCommand { get; private set; } = null!;
     public Command SelectEngineCommand { get; private set; } = null!;
@@ -34,7 +37,25 @@ public sealed partial class MainViewModel
         SelectEngineCommand = new Command(p => { if (p is OptionItem { Available: true } o) { Eng.Engine = o.Value; SyncMotion(); _ = SaveAndApplyAsync(); } });
         SelectTargetCommand = new Command(p => { if (p is OptionItem o) { Eng.TargetText = o.Value; SyncMotion(); _ = SaveAndApplyAsync(); } });
         SelectMvQualityCommand = new Command(p => { if (p is OptionItem o) { Eng.MvQuality = o.Value; SyncMotion(); _ = SaveAndApplyAsync(); } });
-        SelectModelCommand = new Command(p => { if (p is OptionItem o) { Eng.RifeModel = o.Value; SyncMotion(); _ = SaveAndApplyAsync(); } });
+        SelectModelCommand = new Command(p =>
+        {
+            if (p is not OptionItem o) return;
+            if (Eng.Engine == "rife_trt") { Eng.TrtModel = o.Value; Eng.QualityStep = 0; } else Eng.RifeModel = o.Value;
+            SyncMotion(); _ = SaveAndApplyAsync();
+        });
+        SelectAiSizeCommand = new Command(p =>
+        {
+            if (p is not OptionItem o) return;
+            Eng.AiScale = o.Value; Eng.QualityStep = 0;
+            SyncMotion(); _ = SaveAndApplyAsync();
+        });
+        foreach (var (value, label, tip) in new[]
+        {
+            ("auto", "Auto", "The biggest size this PC keeps up with (from tuning)"),
+            ("1", "Full", "The AI sees every pixel. Sharpest; the most work for the GPU."),
+            ("0.75", "75%", "A little softer in-between frames, about half the work"),
+            ("0.5", "Half", "For GTX-class cards: a quarter of the work. Real frames stay full size."),
+        }) AiSizes.Add(new OptionItem(new Choice(value, label, tip)));
         SelectOnlineHeightCommand = new Command(p =>
         {
             if (p is OptionItem o && int.TryParse(o.Value, out var h))
@@ -67,9 +88,6 @@ public sealed partial class MainViewModel
     {
         Engines.Clear();
         foreach (var c in EngineCatalog.Engines(Availability)) Engines.Add(new OptionItem(c));
-        Models.Clear();
-        foreach (var m in Runtime?.RifeModels() ?? Array.Empty<string>())
-            Models.Add(new OptionItem(new Choice(m, EngineCatalog.ModelName(m), m.Contains("lite", StringComparison.OrdinalIgnoreCase) ? "Lighter, a little softer" : "")));
         SyncMotion();
     }
 
@@ -83,13 +101,36 @@ public sealed partial class MainViewModel
         foreach (var o in Targets) o.IsSelected = o.Value == Eng.TargetText;
         foreach (var o in MvQualities) o.IsSelected = o.Value == Eng.MvQuality;
         foreach (var o in OnlineHeights) o.IsSelected = o.Value == _settings.OnlineMaxHeight.ToString(CultureInfo.InvariantCulture);
-        foreach (var o in Models) o.IsSelected = o.Value == Eng.RifeModel;
-        if (Models.Count > 0 && !Models.Any(m => m.IsSelected)) Models[0].IsSelected = true;
+        RebuildModels();
+        foreach (var o in AiSizes) o.IsSelected = o.Value == (Eng.AiScale is "" ? "auto" : Eng.AiScale);
         Raise(nameof(SmoothingEnabled), nameof(SceneDetect), nameof(Dedup), nameof(Demo), nameof(DemoSideBySide), nameof(ShowDemoLabels), nameof(RtxVsr), nameof(IsRife), nameof(IsMvTools),
-              nameof(ActiveProfileName), nameof(EngineName), nameof(TargetName), nameof(HasModels),
+              nameof(ActiveProfileName), nameof(EngineName), nameof(TargetName), nameof(HasModels), nameof(IsTensorRt),
               nameof(CloseToTray), nameof(ResumePlayback), nameof(AutoQueueFolder), nameof(AutoUpdateYtDlp), nameof(StartMinimizedToTray));
         UpdateEngineState();
     }
+
+    /// <summary>The model list for the current engine: Vulkan RIFE's folders, or TensorRT's models with Auto first.</summary>
+    private void RebuildModels()
+    {
+        Models.Clear();
+        static string Tip(string m) => m.Contains("lite", StringComparison.OrdinalIgnoreCase) ? "Lighter, a little softer" : "";
+        if (Eng.Engine == "rife_trt")
+        {
+            Models.Add(new OptionItem(new Choice("auto", "Auto", "The best model this PC keeps up with, picked per video (from tuning)")));
+            foreach (var m in Runtime?.TrtModels() ?? Array.Empty<string>())
+                Models.Add(new OptionItem(new Choice(m, EngineCatalog.ModelName(m), Tip(m))));
+            foreach (var o in Models) o.IsSelected = o.Value == Eng.TrtModel;
+        }
+        else
+        {
+            foreach (var m in Runtime?.RifeModels() ?? Array.Empty<string>())
+                Models.Add(new OptionItem(new Choice(m, EngineCatalog.ModelName(m), Tip(m))));
+            foreach (var o in Models) o.IsSelected = o.Value == Eng.RifeModel;
+        }
+        if (Models.Count > 0 && !Models.Any(m => m.IsSelected)) Models[0].IsSelected = true;
+    }
+
+    public bool IsTensorRt => Eng.Engine == "rife_trt";
 
     private static string ProfileSummary(EngineSettings e) =>
         $"{EngineCatalog.EngineName(e.Engine)} · {EngineCatalog.TargetName(e.TargetText)}";
@@ -99,7 +140,7 @@ public sealed partial class MainViewModel
     public string TargetName => EngineCatalog.TargetName(Eng.TargetText);
     public bool IsRife => Eng.Engine is "rife" or "rife_trt";
     public bool IsMvTools => Eng.Engine == "mvtools";
-    public bool HasModels => Models.Count > 1 && Eng.Engine == "rife";
+    public bool HasModels => Models.Count > 1 && IsRife;
 
     public bool SmoothingEnabled { get => Eng.Enabled; set { if (Eng.Enabled == value) return; Eng.Enabled = value; Raise(); _ = SaveAndApplyAsync(); } }
     public bool Dedup { get => Eng.Dedup; set { if (Eng.Dedup == value) return; Eng.Dedup = value; Raise(); _ = SaveAndApplyAsync(); } }

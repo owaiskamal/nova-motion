@@ -68,7 +68,7 @@
                    Text="NOVA Motion never makes more frames than your screen can show."/>
 
         <StackPanel Visibility="{Binding HasModels, Converter={StaticResource BoolToVis}}">
-            <TextBlock Style="{StaticResource Text.Strong}" Text="RIFE model" Margin="0,18,0,10"/>
+            <TextBlock Style="{StaticResource Text.Strong}" Text="AI model" Margin="0,18,0,10"/>
             <ItemsControl ItemsSource="{Binding Models}" Focusable="False">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -84,6 +84,29 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+        </StackPanel>
+
+        <StackPanel Visibility="{Binding IsTensorRt, Converter={StaticResource BoolToVis}}">
+            <TextBlock Style="{StaticResource Text.Strong}" Text="AI size" Margin="0,18,0,10"/>
+            <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+                <ItemsControl ItemsSource="{Binding AiSizes}" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="1"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="ai-size" Content="{Binding Label}" ToolTip="{Binding Description}"
+                                         IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                         Command="{Binding DataContext.SelectAiSizeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                         CommandParameter="{Binding}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+            <TextBlock Style="{StaticResource Text.Small}" Margin="0,8,0,0" TextWrapping="Wrap"
+                       Text="Smaller sizes are for cards that can't keep up. Only the in-between frames come from the smaller copy; real frames always stay full size."/>
         </StackPanel>
 
         <StackPanel Visibility="{Binding IsMvTools, Converter={StaticResource BoolToVis}}">

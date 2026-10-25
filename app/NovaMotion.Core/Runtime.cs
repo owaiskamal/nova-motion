@@ -29,6 +29,19 @@ public sealed class RuntimeLayout
         return null;
     }
 
+    /// <summary>RIFE models installed for TensorRT, best first: "rife-v4.26", "rife-v4.22_lite"…</summary>
+    public IReadOnlyList<string> TrtModels()
+    {
+        var dir = Path.Combine(MpvDir, "vs-plugins", "models", "rife");
+        if (!System.IO.Directory.Exists(dir)) return Array.Empty<string>();
+        return System.IO.Directory.GetFiles(dir, "rife_v*.onnx")
+            .Select(f => "rife-" + Path.GetFileNameWithoutExtension(f)[5..])
+            .OrderBy(m => m.Contains("lite", StringComparison.OrdinalIgnoreCase))     // full models before lite
+            .ThenByDescending(m => double.TryParse(System.Text.RegularExpressions.Regex.Match(m, @"v4\.(\d+)").Groups[1].Value,
+                                                   System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0)
+            .ToList();
+    }
+
     public IReadOnlyList<string> RifeModels() =>
         System.IO.Directory.Exists(ModelsDir)
             ? System.IO.Directory.GetDirectories(ModelsDir)
