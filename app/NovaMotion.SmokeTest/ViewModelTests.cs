@@ -325,7 +325,7 @@ internal static class ViewModelTests
         check(laptop.Count == 5 && BenchmarkLog.FastestVulkanDevice(laptop) == 1 && BenchmarkLog.FastestVulkanDevice(bench) is null,
               "benchmark: the faster of a laptop's two graphics chips is found for Vulkan");
         check(EngineCatalog.EngineName("rife_trt@0.5") == "RIFE · TensorRT, AI at 50% size" && EngineCatalog.EngineName("rife@1") == "RIFE · Vulkan, graphics chip 1"
-              && EngineCatalog.EngineName("mvtools") == "MVTools", $"benchmark: row names ({EngineCatalog.EngineName("rife_trt@0.5")})");
+              && EngineCatalog.EngineName("mvtools") == "MVTools" && EngineCatalog.EngineName("rife_half@1") == "RIFE · Vulkan, AI at 50% size, graphics chip 1", $"benchmark: row names ({EngineCatalog.EngineName("rife_trt@0.5")})");
 
         check(YtDlp.ParseUpdate("Current version: stable@2026.09.01\nUpdating to stable@2026.10.10 ...\nUpdated yt-dlp to stable@2026.10.10") == (YtDlp.Outcome.Updated, "2026.10.10"),
               "yt-dlp: update output parsed");

@@ -170,9 +170,23 @@ def interpolate_rife_trt(clip, cfg, src, dst):
     return core.resize.Bilinear(smooth, format=clip.format.id, matrix_s=matrix, dither_type="ordered")
 
 
+def vulkan_scale(cfg):
+    """Vulkan RIFE has no tuning: GTX-class and built-in graphics run the AI at half size,
+    everything else at full size, unless a size is set."""
+    s = cfg.get("ai_scale") or "auto"
+    if s != "auto":
+        return max(0.25, min(1.0, float(s)))
+    return 0.5 if cfg.get("gpu_class") in ("entry", "integrated") else 1.0
+
+
 def interpolate_rife(clip, cfg, src, dst):
     matrix = matrix_for(clip)
-    rgb = core.resize.Bicubic(clip, format=vs.RGBS, matrix_in_s=matrix)
+    w, h = clip.width, clip.height
+    scale = vulkan_scale(cfg)
+    # Like the TensorRT path: the AI on a smaller copy, its in-between frames scaled back up,
+    # every real frame straight from the full-size source
+    sw, sh = (w, h) if scale >= 1 else (max(64, round(w * scale / 2) * 2), max(64, round(h * scale / 2) * 2))
+    rgb = core.resize.Bicubic(clip, sw, sh, format=vs.RGBS, matrix_in_s=matrix)
     model_path = os.path.join(MODELS_DIR, cfg["rife_model"])
     if not os.path.isfile(os.path.join(model_path, "flownet.param")):
         # Configured model not installed: use the best one that is (4.6 is the safe default)
@@ -191,9 +205,21 @@ def interpolate_rife(clip, cfg, src, dst):
         sc=bool(cfg["scene_detect"]),
         uhd=clip.width > 2560,
     )
+    dbg(f"vulkan rife: AI at {sw}x{sh} ({scale:.0%}) on device {int(cfg['rife_gpu'])}")
     # mpv's VapourSynth bridge only accepts YUV back, so return the source format.
     # Ordered dither is SIMD-fast; error diffusion was costing a CPU core at high frame rates.
-    return core.resize.Bicubic(smooth, format=clip.format.id, matrix_s=matrix, dither_type="ordered")
+    made = core.resize.Bicubic(smooth, w, h, format=clip.format.id, matrix_s=matrix, dither_type="ordered")
+    if (sw, sh) == (w, h):
+        return made
+    ratio = Fraction(dst) / Fraction(src)
+    p, q = ratio.numerator, ratio.denominator
+    last = clip.num_frames - 1
+
+    def pick(n):
+        # Output frame n sits at source position n*q/p; on a whole position it is a real frame
+        return clip[min(n * q // p, last)] if (n * q) % p == 0 else made
+
+    return core.std.FrameEval(made, pick)
 
 
 MV_PRESETS = {

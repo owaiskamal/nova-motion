@@ -98,8 +98,10 @@ check(o.fps.numerator == 60, "SD source")
 # --- RIFE path with a stand-in plugin: MVTools fakes RIFE's signature on RGB input
 import types
 src_rife = src_text.replace('core.rife.RIFE(', 'fake_rife(').replace('hasattr(core, "rife")', 'True')
+rife_sizes = []
 def fake_rife(rgb, fps_num, fps_den, model_path, **kw):
     assert os.path.isfile(os.path.join(model_path, "flownet.param")), model_path
+    rife_sizes.append((rgb.width, rgb.height))
     y = core.resize.Bicubic(rgb, format=vs.YUV444P16, matrix_s="709")
     sup = core.mv.Super(y); bw = core.mv.Analyse(sup, isb=True); fw = core.mv.Analyse(sup, isb=False)
     out = core.mv.FlowFPS(y, sup, bw, fw, num=fps_num, den=fps_den)
@@ -123,6 +125,17 @@ o = run_rife({"engine": "rife", "target": "display/2"}, display=143.856)
 check(abs(o.fps.numerator / o.fps.denominator - 71.928) < 0.01, f"display/2 on 144 Hz: {o.fps}")
 o = run_rife({"engine": "rife", "target": "display/2"}, display=60)
 check(o.fps.numerator == 60, f"display/2 on 60 Hz keeps 60 (half would add nothing): {o.fps}")
+rife_sizes.clear()
+o = run_rife({"engine": "rife", "target": 60, "gpu_class": "integrated"}, fps=24.0, display=60, frames=24)
+y0 = o.get_frame(0)
+src0 = core.std.BlankClip(width=1280, height=720, format=vs.YUV420P8, length=1, color=[20, 128, 128]).get_frame(0)
+import numpy as _np
+real_same = _np.array_equal(_np.asarray(y0[0]), _np.asarray(src0[0]))
+check(rife_sizes == [(640, 360)] and o.width == 1280 and o.height == 720 and o.get_frame(1).width == 1280 and real_same,
+      f"vulkan rife on built-in graphics: AI at half size {rife_sizes}, output 1280x720, real frames untouched ({real_same})")
+rife_sizes.clear()
+o = run_rife({"engine": "rife", "target": 60, "ai_scale": "1", "gpu_class": "integrated"}, fps=24.0, display=60, frames=24)
+check(rife_sizes == [(1280, 720)], f"vulkan rife: a size set in settings wins ({rife_sizes})")
 o = run_rife({"engine": "rife", "target": "display"}, fmt=vs.YUV420P10, frames=6)
 check(o.format.id == vs.YUV420P10, "10-bit source stays 10-bit YUV")
 

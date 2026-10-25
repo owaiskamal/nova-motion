@@ -55,7 +55,7 @@ TensorRT is what makes AI interpolation real-time: same model, 1.65× the Vulkan
 - **Scene cuts:** on the TensorRT path a cheap frame-difference check finds cuts, and frames that would blend two shots show the nearer real frame instead.
 - **Repeated frames:** sports and phone video often repeat a frame. Blending across a repeat makes motion pause; the engine spots repeats block by block (so a small moving ball isn't mistaken for a still frame) and blends across the pair around them instead.
 - **Tuning** (`tune.cmd`, offered on Home after TensorRT setup) builds and times every installed model on your PC. The engine then picks, per video, the best model and AI size that keep up: full size before a better model at a smaller size. If frames still drop, the player steps to a lighter option on its own and says so.
-- **AI size, like DLSS rendering low and upscaling:** on cards that can't keep up at full size, RIFE works on a 75 % or half-size copy and only the in-between frames are scaled back up. Real frames always stay full size. GTX-class cards start at half size until tuned.
+- **AI size, like DLSS rendering low and upscaling:** on cards that can't keep up at full size, RIFE works on a 75 % or half-size copy and only the in-between frames are scaled back up. Real frames always stay full size. GTX-class cards start at half size until tuned. Vulkan RIFE (Intel, AMD and NVIDIA) does the same: built-in graphics such as Intel Iris Xe and GTX-class cards run it at half size.
 - **Even frame pacing:** a 60 fps target on a 144 Hz screen holds frames for 2, then 3 refreshes, which looks like judder. When a whole multiple of the source divides the refresh rate evenly, the engine uses it: 24 fps film on 144 Hz plays at 72 (2 refreshes each), for the same AI work as 60.
 
 ### Hard problems solved
@@ -82,7 +82,7 @@ TensorRT is what makes AI interpolation real-time: same model, 1.65× the Vulkan
 
 Optional: load `extension\` in Chrome or Edge (`chrome://extensions` → Developer mode → Load unpacked). Alt+Shift+F on any video page sends it to NOVA Motion at the same timestamp.
 
-Measure your own machine with **`benchmark.cmd`** (results in `runtime\benchmark.log`): every engine, TensorRT at full and half size, and Vulkan RIFE on each graphics chip (laptops have two; the app then uses the faster one).
+Measure your own machine with **`benchmark.cmd`** (results in `runtime\benchmark.log`): every engine, TensorRT and Vulkan RIFE at full and half size, and Vulkan RIFE on each graphics chip (laptops have two; the app then uses the faster one).
 
 Something not smooth? Run **`collect-logs.cmd`**. It puts the player and engine logs, settings, tuning results and graphics info into `nova-motion-logs.zip` on your Desktop, to attach to an issue.
 

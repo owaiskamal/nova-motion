@@ -9,7 +9,8 @@
 param(
     # rife_trt@0.5: TensorRT with the AI on a half-size copy (what GTX cards use).
     # rife@N: Vulkan RIFE on Vulkan device N; laptops list the built-in graphics too, so each is tried.
-    [string[]]$Engines = @("rife_trt", "rife_trt@0.5", "rife@0", "rife@1", "rife@2", "mvtools"),
+    # rife_half: Vulkan RIFE with the AI at half size, on the fastest device found above.
+    [string[]]$Engines = @("rife_trt", "rife_trt@0.5", "rife@0", "rife@1", "rife@2", "rife_half", "mvtools"),
     [int]$Frames = 400,          # source frames (~16 s of 25 fps video)
     [int]$TimeoutSec = 300
 )
@@ -41,6 +42,7 @@ exec(compile(open(r'$vpy', encoding='utf-8').read(), r'$vpy', 'exec'), g)
 $results = @()
 $env:NOVAMOTION_NO_FALLBACK = "1"
 $vulkanDone = $false
+$vulkanBest = 0; $vulkanBestFps = -1
 foreach ($e in $Engines) {
     $name, $opt = $e -split "@", 2
     if ($name -eq "rife" -and $vulkanDone) { continue }
@@ -48,6 +50,10 @@ foreach ($e in $Engines) {
                      trt_model = "rife-v4.6"; ai_scale = 1; demo = $false }
     if ($name -eq "rife_trt" -and $opt) { $c.ai_scale = [double]$opt }
     if ($name -eq "rife" -and $opt) { $c.rife_gpu = [int]$opt }
+    if ($name -eq "rife_half") {
+        if ($vulkanBestFps -lt 0) { continue }          # Vulkan RIFE didn't run at all
+        $c.engine = "rife"; $c.rife_gpu = $vulkanBest; $c.ai_scale = 0.5; $e = "rife_half@$vulkanBest"
+    }
     $cfg = Join-Path $Work ("engine-" + ($e -replace '[@.]', '_') + ".json")
     $c | ConvertTo-Json | Set-Content -Encoding ASCII $cfg
     $env:NOVAMOTION_ENGINE_CONFIG = $cfg
@@ -75,6 +81,7 @@ foreach ($e in $Engines) {
         $verdict = if ($fps -ge 66) { "real-time with headroom" } elseif ($fps -ge 60) { "just real-time" } else { "TOO SLOW for 60 fps" }
         Write-Host ("    => {0:N1} fps  ({1})" -f $fps, $verdict) -ForegroundColor $(if ($fps -ge 60) { "Green" } else { "Yellow" })
         $results += [pscustomobject]@{ Engine = $e; Fps = [math]::Round($fps, 1) }
+        if ($name -eq "rife" -and $opt -and $fps -gt $vulkanBestFps) { $vulkanBest = [int]$opt; $vulkanBestFps = $fps }
     } elseif ($p.HasExited) {
         if ($name -eq "rife" -and $opt -and [int]$opt -gt 0) {
             # No such Vulkan device: the earlier ones were all there is
