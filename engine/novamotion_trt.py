@@ -76,7 +76,16 @@ TUNING_PATH = os.path.join(HERE, "tuning.json")
 # Best first. 4.26 is the newest full model; lite models trade a little detail for speed.
 QUALITY_ORDER = ["v4_26", "v4_25", "v4_6", "v4_25_lite", "v4_22_lite"]
 HEADROOM = 1.4   # decoding and drawing share the GPU: the measured speed is not all for RIFE
-TUNED_SIZE = (1920, 1088)
+TUNED_SIZE = (1920, 1088)   # RTX cards are tuned at 1080p; GTX-class cards at the half size they play at
+
+
+def measurements(tuning):
+    """((width, height), {model: fps}) from tuning.json, whichever size the PC was tuned at."""
+    for key, fps in (tuning.get("sizes") or {}).items():
+        m = re.match(r"^(\d+)x(\d+)$", key)
+        if m and fps:
+            return (int(m.group(1)), int(m.group(2))), fps
+    return TUNED_SIZE, {}
 
 
 def onnx_path(model_name):
@@ -132,7 +141,7 @@ def choose_plan(requested, width, height, src, dst, step=0, tuning=None, gpu_cla
     manual = bool(requested and requested != "auto")
     models = [installed_model(requested).name] if manual else (installed_models() or ["v4_6"])
     tuning = load_tuning() if tuning is None else tuning
-    measured = (tuning.get("sizes") or {}).get(f"{TUNED_SIZE[0]}x{TUNED_SIZE[1]}", {})
+    tuned, measured = measurements(tuning)
     label = "chosen in settings" if manual else None
 
     if not measured:
@@ -148,7 +157,7 @@ def choose_plan(requested, width, height, src, dst, step=0, tuning=None, gpu_cla
     need = inferences_per_second(src, dst) * HEADROOM
     capacity = {}
     for sc in scales:
-        per_pixel = (TUNED_SIZE[0] * TUNED_SIZE[1]) / (max(1, width * height) * sc * sc)
+        per_pixel = (tuned[0] * tuned[1]) / (max(1, width * height) * sc * sc)
         for m in models:
             if m in measured:
                 capacity[(m, sc)] = measured[m] * (11 / 12) * per_pixel

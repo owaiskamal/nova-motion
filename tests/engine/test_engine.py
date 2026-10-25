@@ -291,6 +291,9 @@ check(cp("auto", 1920, 1080, Fraction(24000, 1001), Fraction(60), 0, gtx)[:2] ==
 check(cp("auto", 1280, 720, Fraction(24000, 1001), Fraction(60), 0, gtx)[:2] == ("v4_22_lite", 0.75),
       f"plan: the same card at 720p keeps more size with the lite model ({cp('auto', 1280, 720, Fraction(24000, 1001), Fraction(60), 0, gtx)[:2]})")
 check(cp("auto", 1920, 1080, Fraction(25), Fraction(60), 0, fast_pc)[:2] == ("v4_6", 1.0), "plan: a fast PC stays at full size")
+gtx_half = {"sizes": {"960x576": {"v4_6": 70.0, "v4_22_lite": 115.0}}}
+check(cp("auto", 1920, 1080, Fraction(24), Fraction(60), 0, gtx_half)[:2] == ("v4_6", 0.5),
+      f"plan: a card tuned at half size gets the same choice ({cp('auto', 1920, 1080, Fraction(24), Fraction(60), 0, gtx_half)[:2]})")
 check(cp("auto", 1920, 1080, Fraction(24), Fraction(60), 1, gtx)[:2] == ("v4_22_lite", 0.5),
       "plan: a step down picks a cheaper option (lite at half size)")
 check(cp("auto", 1920, 1080, Fraction(25), Fraction(60), 0, gtx, ai_scale="1")[1] == 1.0, "plan: a size set in settings wins")

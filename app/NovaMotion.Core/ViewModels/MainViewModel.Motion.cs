@@ -380,8 +380,11 @@ public sealed partial class MainViewModel
             var path = Runtime is null ? null : Path.Combine(Runtime.Root, "tuning.json");
             if (path is not null && File.Exists(path)
                 && System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path)) is { } t
-                && t["sizes"]?["1920x1088"] is System.Text.Json.Nodes.JsonObject sizes)
+                && t["sizes"] is System.Text.Json.Nodes.JsonObject all
+                && all.FirstOrDefault() is { Key: var sizeKey, Value: System.Text.Json.Nodes.JsonObject sizes })
             {
+                // Tuned at 1080p (RTX) or at the half size GTX-class cards play at (960x576)
+                var half = sizeKey.StartsWith("960x", StringComparison.Ordinal);
                 var max = sizes.Select(kv => TrackInfo.Dbl(kv.Value)).DefaultIfEmpty(1).Max();
                 foreach (var (model, value) in sizes)
                 {
@@ -390,7 +393,8 @@ public sealed partial class MainViewModel
                     TuningResults.Add(new BenchmarkItem(EngineCatalog.ModelName("rife-" + model.Replace('_', '.').Replace(".lite", "_lite")),
                         $"{fps:0} fps", Math.Clamp(fps / Math.Max(max, 1), 0.02, 1), fps * 11 / 12 >= 55 * 1.4));
                 }
-                TuningText = $"Tuned on {TrackInfo.Str(t["measured"])?.Replace('T', ' ') ?? "this PC"}. Frames each model makes per second at 1080p.";
+                TuningText = $"Tuned on {TrackInfo.Str(t["measured"])?.Replace('T', ' ') ?? "this PC"}. Frames each model makes per second "
+                           + (half ? "with the AI at half size, as this card plays 1080p." : "at 1080p.");
             }
         }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { }

@@ -14,7 +14,10 @@
 [CmdletBinding()]
 param(
     [int]$Frames = 300,          # source frames per measurement (12 s of 25 fps video)
-    [int]$TimeoutSec = 900
+    [int]$TimeoutSec = 1500,
+    # Size to measure at: "full" (1080p) or "half" (960x540). Default: half on GTX-class cards,
+    # which play with the AI at half size, so the engines built here are the ones playback uses.
+    [ValidateSet("auto", "full", "half")][string]$Size = "auto"
 )
 $ErrorActionPreference = "Stop"
 $Root    = Split-Path -Parent $PSScriptRoot
@@ -34,8 +37,13 @@ Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
 Start-Transcript -Path $LogFile -Force | Out-Null
 
 $gpu = ((Get-CimInstance Win32_VideoController).Name | Where-Object { $_ -match "NVIDIA" } | Select-Object -First 1)
+$entry = "$gpu" -match 'GTX|\bMX\s*\d|RTX\s*(2050|3050)'
+if ($Size -eq "auto") { $Size = if ($entry) { "half" } else { "full" } }
+$W, $H = if ($Size -eq "half") { 960, 540 } else { 1920, 1080 }
+$Key = "{0}x{1}" -f ($W + (64 - $W % 64) % 64), ($H + (64 - $H % 64) % 64)   # padded, as the engine builds it
 Write-Host "Tuning NOVA Motion for: $gpu" -ForegroundColor Cyan
-Write-Host "Each model: 1080p, 25 -> 60 fps, the whole engine. Keep other GPU work closed meanwhile."
+Write-Host "Each model: ${W}x${H}, 25 -> 60 fps, the whole engine. Keep other GPU work closed meanwhile."
+if ($Size -eq "half") { Write-Host "Measuring at half size: on this card the AI works on a half-size copy of 1080p video." }
 Write-Host ""
 
 # Installed models, best first: rife_v4.22_lite.onnx -> v4_22_lite
@@ -51,7 +59,7 @@ $bench = Join-Path $Work "tune.vpy"
 @"
 import vapoursynth as vs
 core = vs.core
-clip = core.std.BlankClip(width=1920, height=1080, format=vs.YUV420P8, length=$Frames, fpsnum=25, fpsden=1, color=[90, 120, 140])
+clip = core.std.BlankClip(width=$W, height=$H, format=vs.YUV420P8, length=$Frames, fpsnum=25, fpsden=1, color=[90, 120, 140])
 g = {'video_in': clip, 'container_fps': 25.0, 'display_fps': 60.0, '__file__': r'$vpy'}
 exec(compile(open(r'$vpy', encoding='utf-8').read(), r'$vpy', 'exec'), g)
 "@ | Set-Content -Encoding ASCII $bench
@@ -70,7 +78,14 @@ function Measure-Engine([string]$Model, $Streams, [int]$Count = 0) {
     $psi.WorkingDirectory = $MpvDir
     $p = [Diagnostics.Process]::Start($psi)
     $err = $p.StandardError.ReadToEndAsync()
-    if (-not $p.WaitForExit($TimeoutSec * 1000)) { $p.Kill(); return $null }
+    # Building an engine shows nothing for minutes; say it is still working
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    while (-not $p.WaitForExit(30000)) {
+        if ($sw.Elapsed.TotalSeconds -ge $TimeoutSec) {
+            $p.Kill(); Write-Host "    gave up after $([int]$sw.Elapsed.TotalMinutes) min" -ForegroundColor Yellow; return $null
+        }
+        Write-Host ("    still working, {0:mm\:ss}" -f $sw.Elapsed)
+    }
     $m = [regex]::Match($err.Result, 'Output (\d+) frames in ([\d.]+) seconds \(([\d.]+) fps\)')
     if ($m.Success) { return [double]$m.Groups[3].Value }
     $err.Result -split "[`r`n]+" | Where-Object { $_ -and $_ -notmatch '^Frame: ' } | Select-Object -Last 6 | ForEach-Object { Write-Host "    $_" }
@@ -78,8 +93,11 @@ function Measure-Engine([string]$Model, $Streams, [int]$Count = 0) {
 }
 
 # 1. Build each engine once (the first build of a model takes a few minutes)
-foreach ($m in $models) {
-    Write-Host "==> Preparing $m (first time: a few minutes)" -ForegroundColor Cyan
+# Lightest first: those are quick to build and the ones a slower card will use
+$i = 0
+foreach ($m in ($models[($models.Count - 1)..0])) {
+    $i++
+    Write-Host "==> Preparing $m ($i of $($models.Count); first time: a few minutes, longer for the big models)" -ForegroundColor Cyan
     $null = Measure-Engine $m $null 8
 }
 
@@ -120,7 +138,7 @@ $result = [ordered]@{
     gpu      = $gpu
     measured = (Get-Date).ToString("s")
     streams  = $best
-    sizes    = [ordered]@{ "1920x1088" = $sizes }
+    sizes    = [ordered]@{ $Key = $sizes }
 }
 $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding UTF8 (Join-Path $Runtime "tuning.json")
 Remove-Item Env:\NOVAMOTION_ENGINE_CONFIG -ErrorAction SilentlyContinue
