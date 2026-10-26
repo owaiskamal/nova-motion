@@ -30,7 +30,11 @@ $LogFile = Join-Path $Runtime "tune.log"
 $Order   = @("v4_26", "v4_25", "v4_6", "v4_25_lite", "v4_22_lite")   # best first, as in the engine
 
 if (-not (Test-Path $VSPipe)) { throw "Run build.cmd first (VSPipe.exe not found)" }
-if (-not (Test-Path (Join-Path $MpvDir "vs-plugins\vstrt.dll"))) { throw "TensorRT is not installed. Run setup-tensorrt.cmd first." }
+if (-not (Test-Path (Join-Path $MpvDir "vs-plugins\vstrt.dll"))) {
+    # No TensorRT (Intel, AMD, older NVIDIA, or not set up): tune Vulkan RIFE and MVTools instead
+    & (Join-Path $PSScriptRoot "TuneVulkan.ps1")
+    exit $LASTEXITCODE
+}
 New-Item -ItemType Directory -Force -Path $Work | Out-Null
 Copy-Item (Join-Path $Root "engine\novamotion.vpy") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force

@@ -126,15 +126,41 @@ check(abs(o.fps.numerator / o.fps.denominator - 71.928) < 0.01, f"display/2 on 1
 o = run_rife({"engine": "rife", "target": "display/2"}, display=60)
 check(o.fps.numerator == 60, f"display/2 on 60 Hz keeps 60 (half would add nothing): {o.fps}")
 rife_sizes.clear()
-o = run_rife({"engine": "rife", "target": 60, "gpu_class": "integrated"}, fps=24.0, display=60, frames=24)
+o = run_rife({"engine": "rife", "target": 60, "gpu_class": "entry"}, fps=24.0, display=60, frames=24)
 y0 = o.get_frame(0)
 src0 = core.std.BlankClip(width=1280, height=720, format=vs.YUV420P8, length=1, color=[20, 128, 128]).get_frame(0)
 real_same = bytes(memoryview(y0[0])) == bytes(memoryview(src0[0]))
 check(rife_sizes == [(640, 360)] and o.width == 1280 and o.height == 720 and o.get_frame(1).width == 1280 and real_same,
-      f"vulkan rife on built-in graphics: AI at half size {rife_sizes}, output 1280x720, real frames untouched ({real_same})")
+      f"vulkan rife on GTX-class graphics: AI at half size {rife_sizes}, output 1280x720, real frames untouched ({real_same})")
 rife_sizes.clear()
-o = run_rife({"engine": "rife", "target": 60, "ai_scale": "1", "gpu_class": "integrated"}, fps=24.0, display=60, frames=24)
+o = run_rife({"engine": "rife", "target": 60, "ai_scale": "1", "gpu_class": "entry"}, fps=24.0, display=60, frames=24)
 check(rife_sizes == [(1280, 720)], f"vulkan rife: a size set in settings wins ({rife_sizes})")
+# Vulkan tuning (tune.cmd without TensorRT)
+_ns = {"__file__": SCRIPT, "video_in": core.std.BlankClip(length=1)}
+vs.clear_outputs(); exec(compile(src_text.replace("build(video_in).set_output()", "pass"), SCRIPT, "exec"), _ns)
+vp = _ns["vulkan_plan"]
+xe = {"vulkan": {"device": 1, "source": "1920x1080", "options": {
+    "rife-v4.6_ensembleFalse@0.5": 41.0, "rife-v4.22_lite_ensembleFalse@0.5": 66.0, "rife-v4.22_lite_ensembleFalse@0.75": 31.0}}}
+base_cfg = {"rife_model": "rife-v4.6_ensembleFalse", "rife_gpu": 0, "ai_scale": "auto", "gpu_class": "integrated"}
+plan = vp(base_cfg, 1920, 1080, Fraction(24), Fraction(60), xe)
+check(plan[:3] == ("rife-v4.22_lite_ensembleFalse", 0.5, 1), f"vulkan plan: Xe-like PC gets the lite model at half size on the faster device ({plan})")
+plan = vp(base_cfg, 1280, 720, Fraction(24), Fraction(60), xe)
+check(plan[:2] == ("rife-v4.6_ensembleFalse", 0.5), f"vulkan plan: at 720p the chosen model keeps up ({plan})")
+slow = {"vulkan": {"device": 0, "options": {"rife-v4.22_lite_ensembleFalse@0.5": 20.0}}}
+try:
+    vp(base_cfg, 1920, 1080, Fraction(24), Fraction(60), slow); too_slow = False
+except _ns["TooSlow"]:
+    too_slow = True
+check(too_slow, "vulkan plan: nothing keeps up -> TooSlow (the engine plays MVTools)")
+check(vp(dict(base_cfg, gpu_class="entry"), 1920, 1080, Fraction(24), Fraction(60), {})[1] == 0.5, "vulkan plan: untuned GTX-class cards start at half size")
+try:
+    vp(base_cfg, 1920, 1080, Fraction(24), Fraction(60), {}); untuned_slow = False
+except _ns["TooSlow"]:
+    untuned_slow = True
+check(untuned_slow, "vulkan plan: untuned built-in graphics play MVTools until tuned")
+o = run_rife({"engine": "rife", "target": 60}, fps=24.0, display=60, frames=24)
+check(o.fps == Fraction(60), "vulkan plan: no tuning file, runs as before")
+
 o = run_rife({"engine": "rife", "target": "display"}, fmt=vs.YUV420P10, frames=6)
 check(o.format.id == vs.YUV420P10, "10-bit source stays 10-bit YUV")
 

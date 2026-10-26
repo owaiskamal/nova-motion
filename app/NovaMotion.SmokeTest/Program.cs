@@ -27,7 +27,8 @@ var s = store.Load(new GpuInfo(new[] { "NVIDIA GeForce RTX 4070" }));
 Check(s.Profiles.Count == 4 && s.Active.Name == "Balanced", "defaults for RTX GPU");
 Check(!s.Profiles.First(p => p.Name == "Max quality").Engine.RtxVsr, "RTX VSR starts off (too heavy with smoothing at 4K)");
 var light = store.Load(new GpuInfo(new[] { "Intel(R) UHD Graphics 620" }));
-Check(light.Active.Name == "Light (any GPU)", "integrated GPU defaults to light profile");
+Check(light.Active.Name == "Balanced" && light.Active.Engine.Engine == "rife" && light.Active.Engine.GpuClass == "integrated" && light.Active.Engine.TargetText == "60",
+      "integrated GPU: Balanced with Vulkan RIFE at 60 (the engine plays MVTools until tuned)");
 s.Active.Engine.TargetText = "120";
 store.Save(s);
 var engineJson = JsonNode.Parse(File.ReadAllText(store.EngineConfigPath))!;

@@ -78,7 +78,8 @@ TensorRT is what makes AI interpolation real-time: same model, 1.65× the Vulkan
 1. Install the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (`winget install Microsoft.DotNet.SDK.8`).
 2. Run **`build.cmd`**. The first run downloads the runtime (about 150 MB: mpv, VapourSynth, RIFE, MVTools, yt-dlp), runs the tests and builds `dist\NovaMotion.exe`.
 3. **NVIDIA RTX and GTX 16-series users:** run **`setup-tensorrt.cmd`** once. It downloads NVIDIA TensorRT through [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) (about 3.3 GB) with RIFE 4.6, 4.22 Lite, 4.25 Lite and 4.26, then tunes for your PC (about 10 minutes on an RTX card, longer on a GTX), measuring each model so playback uses the best one your card keeps up with. Set up TensorRT before October 2026? Run **`get-models.cmd`** once to add the newer models (about 60 MB, no TensorRT download). Run **`tune.cmd`** again any time, e.g. after a driver update. GTX-class cards are tuned at the half size they play at.
-4. Start `dist\NovaMotion.exe`, paste a link or drop a file, and press **Play**.
+4. **No NVIDIA card, or no TensorRT** (Intel Iris Xe and other built-in graphics, AMD, older NVIDIA): run **`tune.cmd`** too. It measures RIFE on Vulkan at full, 75 % and half AI size on the fastest graphics chip, and MVTools on the processor. NOVA Motion then plays the AI wherever it keeps up and MVTools where it can't, so playback stays steady. Built-in graphics play MVTools until tuned.
+5. Start `dist\NovaMotion.exe`, paste a link or drop a file, and press **Play**.
 
 Optional: load `extension\` in Chrome or Edge (`chrome://extensions` → Developer mode → Load unpacked). Alt+Shift+F on any video page sends it to NOVA Motion at the same timestamp.
 
@@ -93,7 +94,7 @@ Something not smooth? Run **`collect-logs.cmd`**. It puts the player and engine 
 - **Motion panel** (Tab, or the badge next to the controls): the frame rate on screen, dropped frames, the model in use and the size the AI runs at, the frame-cadence strip (white bars are frames from the video, gold ones are generated), the engine's status in plain words, and every smoothing choice: engine, frame rate, AI model (Auto or a fixed one) and AI size (Auto, Full, 75 %, Half).
 - **Before/after:** side by side or a split screen with a divider, labelled, to see what the engine adds.
 - **Enhance & Export:** make a smooth copy of any file at 60 fps, 120 fps or 2× with the best model installed (or the faster live one). Files queue up, show time left, and are saved next to the original with NOVA Motion in the name. NVIDIA cards encode on the GPU (HEVC); otherwise x264 on the CPU.
-- **Fits the PC it runs on:** RTX cards get TensorRT at the display's refresh rate; GTX and other entry cards get 60 fps (or an even rate such as 72 on 144 Hz screens) with the AI at half size; PCs without a graphics card get MVTools. Home offers tuning once TensorRT is installed and explains what the card can do.
+- **Fits the PC it runs on:** RTX cards get TensorRT at the display's refresh rate; GTX and other entry cards get 60 fps (or an even rate such as 72 on 144 Hz screens) with the AI at half size; built-in graphics get Vulkan RIFE at half size once tuning shows it keeps up, MVTools until then. Home offers tuning on every PC and explains what the graphics can do.
 - **Subtitles, audio, speed and online quality** in one panel; drop a subtitle file on the video to load it.
 
 ### Keyboard
@@ -120,7 +121,7 @@ The full list is in Settings → Keyboard shortcuts.
 app/                    .NET 8 solution: NovaMotion.Core (logic + view models), NovaMotion.App (WPF), NovaMotion.SmokeTest
 engine/                 novamotion.vpy, novamotion_trt.py, mpv config + Lua player script
 extension/              Chrome/Edge extension (Manifest V3)
-setup/                  Get-Runtime.ps1, Get-TensorRT.ps1, Tune.ps1, Benchmark.ps1, Build-Engines.ps1
+setup/                  Get-Runtime.ps1, Get-TensorRT.ps1, Tune.ps1, TuneVulkan.ps1, Benchmark.ps1, Build-Engines.ps1
 installer/              Inno Setup script (per-user install)
 tests/                  engine tests (VapourSynth, no GPU), Lua tests (mock mpv), XAML checks
 build.cmd · setup-tensorrt.cmd · get-models.cmd · tune.cmd · prepare-engines.cmd · benchmark.cmd · collect-logs.cmd

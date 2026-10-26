@@ -125,7 +125,7 @@
                     <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,0" Text="{Binding TensorRtText}"/>
                     <TextBlock Style="{StaticResource Text.Small}" Margin="0,6,0,0" TextWrapping="Wrap"
                                Text="TensorRT compiles RIFE for your exact GPU and video size. A size without an engine pauses for a few minutes the first time you play it."/>
-                    <StackPanel Visibility="{Binding HasTensorRt, Converter={StaticResource BoolToVis}}" Margin="0,18,0,0">
+                    <StackPanel Visibility="{Binding CanTune, Converter={StaticResource BoolToVis}}" Margin="0,18,0,0">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Height="36" Content="Tune for this PC"
                                     Command="{Binding TuneCommand}" VerticalAlignment="Top"/>

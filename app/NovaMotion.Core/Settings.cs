@@ -75,7 +75,7 @@ public sealed class AppSettings
     public bool FirstRunDone { get; set; }
     /// <summary>Which version of the GPU-based defaults these settings were made with.</summary>
     public int DefaultsVersion { get; set; }
-    public const int CurrentDefaults = 3;
+    public const int CurrentDefaults = 4;
     /// <summary>"" (display-resample, from mpv.conf: frames locked to the screen's refresh) or "audio"
     /// (frames shown by their timestamps), for screens whose refresh timing can't be trusted.</summary>
     public string VideoSync { get; set; } = "";
@@ -100,7 +100,7 @@ public sealed class AppSettings
         var rife = gpu?.SupportsTensorRt == true ? "rife_trt" : "rife";
         const string lite = "rife-v4.22_lite_ensembleFalse";
         Profiles.Clear();
-        if (tier == GpuTier.Entry)
+        if (tier is GpuTier.Entry or GpuTier.Integrated)
         {
             // A GTX 1650 makes about 40 light-model frames a second at 1080p: enough for 60 fps
             // from film, not for 144 Hz. So 60 fps and the light model, and MVTools as the safe choice.
@@ -116,7 +116,8 @@ public sealed class AppSettings
             Profiles.Add(new Profile { Name = "Light (any GPU)", Engine = new EngineSettings { Engine = "mvtools", MvQuality = "fast", TargetText = "60" } });
             Profiles.Add(new Profile { Name = "Anime",           Engine = new EngineSettings { Engine = rife, TargetText = "x2", SceneDetect = true, RifeModel = lite } });
         }
-        ActiveProfile = tier == GpuTier.Integrated ? "Light (any GPU)" : "Balanced";
+        // Built-in graphics: Balanced too. The engine plays MVTools there until tuning shows the AI keeps up.
+        ActiveProfile = "Balanced";
         if (gpu?.IsHybrid == true) VideoSync = "audio";
         MarkGpu(gpu);
         DefaultsVersion = CurrentDefaults;

@@ -41,6 +41,7 @@ exec(compile(open(r'$vpy', encoding='utf-8').read(), r'$vpy', 'exec'), g)
 
 $results = @()
 $env:NOVAMOTION_NO_FALLBACK = "1"
+$env:NOVAMOTION_NO_TUNING = "1"
 $vulkanDone = $false
 $vulkanBest = 0; $vulkanBestFps = -1
 foreach ($e in $Engines) {
@@ -92,7 +93,7 @@ foreach ($e in $Engines) {
     }
     Write-Host ""
 }
-Remove-Item Env:\NOVAMOTION_ENGINE_CONFIG, Env:\NOVAMOTION_NO_FALLBACK -ErrorAction SilentlyContinue
+Remove-Item Env:\NOVAMOTION_ENGINE_CONFIG, Env:\NOVAMOTION_NO_FALLBACK, Env:\NOVAMOTION_NO_TUNING -ErrorAction SilentlyContinue
 Write-Host "Summary (need 60+ fps for smooth 1080p playback):"
 $results | Format-Table -AutoSize | Out-String | Write-Host
 Stop-Transcript | Out-Null

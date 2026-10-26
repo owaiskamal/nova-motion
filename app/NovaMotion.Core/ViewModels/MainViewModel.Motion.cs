@@ -408,6 +408,12 @@ public sealed partial class MainViewModel
             var json = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(_store.EngineStatePath));
             var model = TrackInfo.Str(json?["model"]);
             if (model is null || TrackInfo.Str(json?["engine"]) != Eng.Engine) { ModelText = ""; return; }
+            if (model == "mvtools")
+            {
+                ModelText = "MVTools for now: the AI can't keep up on this PC" + (HasTuning ? "" : " until it's tuned");
+                ModelWhy = TrackInfo.Str(json?["why"]) ?? ""; Raise(nameof(ModelWhy));
+                return;
+            }
             var name = EngineCatalog.ModelName("rife-" + model.Replace('_', '.').Replace(".lite", "_lite"));
             // On cards that can't run the AI at full size: e.g. "· AI at 960×540"
             if (TrackInfo.Dbl(json?["scale"]) is > 0 and < 1 && TrackInfo.Dbl(json?["ai_width"]) is > 0 and var aw && TrackInfo.Dbl(json?["ai_height"]) is > 0 and var ah)
@@ -453,13 +459,33 @@ public sealed partial class MainViewModel
                 TuningText = $"Tuned on {TrackInfo.Str(t["measured"])?.Replace('T', ' ') ?? "this PC"}. Frames each model makes per second "
                            + (half ? "with the AI at half size, as this card plays 1080p." : "at 1080p.");
             }
+            else if (path is not null && File.Exists(path)
+                && System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path)) is { } tv
+                && tv["vulkan"]?["options"] is System.Text.Json.Nodes.JsonObject vopts)
+            {
+                // Without TensorRT: Vulkan RIFE per model and AI size, and MVTools
+                var rows = vopts.Select(kv => (Name: kv.Key, Fps: TrackInfo.Dbl(kv.Value))).ToList();
+                var mv = TrackInfo.Dbl(tv["mvtools"]);
+                var max = rows.Select(r => r.Fps).Append(mv).DefaultIfEmpty(1).Max();
+                foreach (var (name, fps) in rows)
+                {
+                    var at = name.LastIndexOf('@');
+                    var size = at > 0 && double.TryParse(name[(at + 1)..], NumberStyles.Float, CultureInfo.InvariantCulture, out var sc) ? sc : 1;
+                    var label = $"{EngineCatalog.ModelName(at > 0 ? name[..at] : name)}, AI at {(size * 100).ToString("0", CultureInfo.InvariantCulture)}%";
+                    TuningResults.Add(new BenchmarkItem(label, $"{fps:0} fps", Math.Clamp(fps / Math.Max(max, 1), 0.02, 1), fps * 11 / 12 >= 55 * 1.4));
+                }
+                if (mv > 0) TuningResults.Add(new BenchmarkItem("MVTools (processor)", $"{mv:0} fps", Math.Clamp(mv / Math.Max(max, 1), 0.02, 1), mv >= 60));
+                TuningText = $"Tuned on {TrackInfo.Str(tv["measured"])?.Replace('T', ' ') ?? "this PC"} (no TensorRT here). Frames a second at 1080p, 25 to 60 fps.";
+            }
         }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { }
         Raise(nameof(HasTuning), nameof(TuningText), nameof(ShowTunePrompt), nameof(ShowGpuAdvice));
     }
 
     /// <summary>The Home card that offers tuning: TensorRT is installed, nothing measured yet.</summary>
-    public bool ShowTunePrompt => Availability.TensorRt && !HasTuning && !_settings.TunePromptDismissed;
+    public bool ShowTunePrompt => CanTune && !HasTuning && !_settings.TunePromptDismissed;
+    /// <summary>Tuning works with TensorRT, or with Vulkan RIFE and MVTools on any other PC.</summary>
+    public bool CanTune => Runtime is not null && (Availability.TensorRt || Availability.RifeModels > 0);
     public Command DismissTunePromptCommand { get; private set; } = null!;
     /// <summary>The advice line under the card name: entry and integrated graphics, when the tune card isn't saying it.</summary>
     public bool ShowGpuAdvice => (_gpu?.Tier is GpuTier.Entry or GpuTier.Integrated) && !ShowTunePrompt;
@@ -470,7 +496,7 @@ public sealed partial class MainViewModel
         GpuTier.Entry => Availability.TensorRt
             ? "Your graphics card is entry-level, so NOVA Motion starts with the light AI model at 60 fps. Tuning finds out what it can really do."
             : "Your graphics card is entry-level, so NOVA Motion uses the light AI model at 60 fps. If playback stutters, choose Light in the player.",
-        GpuTier.Integrated => "No graphics card was found, so NOVA Motion uses MVTools, which runs on any PC.",
+        GpuTier.Integrated => "Built-in graphics: NOVA Motion plays MVTools until tuning shows the AI keeps up, then runs the AI on a half-size copy. Tuning takes about 10 minutes.",
         _ => "Tuning measures each AI model on this PC (about 10 minutes), then NOVA Motion uses the best one that keeps up.",
     };
 
@@ -483,7 +509,7 @@ public sealed partial class MainViewModel
 
     private void Tune()
     {
-        if (Runtime is null || !Availability.TensorRt) return;
+        if (!CanTune || Runtime is null) return;
         if (!_settings.TunePromptDismissed) DismissTunePrompt();
         var script = Path.Combine(Path.GetDirectoryName(Runtime.Root) ?? Runtime.Root, "tune.cmd");
         _host.RunInConsole(script, "");
@@ -570,6 +596,8 @@ public sealed partial class MainViewModel
         {
             // Settings made before entry cards had defaults of their own asked them for too much
             if (_settings.DefaultsVersion < 2 && gpu.Tier == GpuTier.Entry) _settings.ApplyGpuDefaults(gpu);
+            // Built-in graphics got MVTools only; now Vulkan RIFE at half size once tuned (version 4)
+            else if (_settings.DefaultsVersion < 4 && gpu.Tier == GpuTier.Integrated) _settings.ApplyGpuDefaults(gpu);
             // Hybrid laptops: frames by their timestamps (version 3)
             if (gpu.IsHybrid) _settings.VideoSync = "audio";
             _settings.DefaultsVersion = AppSettings.CurrentDefaults;
@@ -603,7 +631,7 @@ public sealed partial class MainViewModel
         else foreach (var p in Runtime.Problems()) Problems.Add(p);
         RebuildEngineSizes();
         RefreshTuning();
-        Raise(nameof(Availability), nameof(HasBenchmarks), nameof(HasProblems), nameof(TensorRtText), nameof(CanPlay), nameof(HasTensorRt), nameof(ShowTunePrompt), nameof(GpuAdvice), nameof(ShowGpuAdvice));
+        Raise(nameof(Availability), nameof(HasBenchmarks), nameof(HasProblems), nameof(TensorRtText), nameof(CanPlay), nameof(HasTensorRt), nameof(ShowTunePrompt), nameof(GpuAdvice), nameof(ShowGpuAdvice), nameof(CanTune));
     }
 
     public bool CanPlay => Runtime is not null && File.Exists(Runtime.MpvExe);

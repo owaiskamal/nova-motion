@@ -171,18 +171,97 @@ def interpolate_rife_trt(clip, cfg, src, dst):
 
 
 def vulkan_scale(cfg):
-    """Vulkan RIFE has no tuning: GTX-class and built-in graphics run the AI at half size,
-    everything else at full size, unless a size is set."""
+    """Untuned Vulkan RIFE: GTX-class and built-in graphics run the AI at half size, everything
+    else at full size, unless a size is set."""
     s = cfg.get("ai_scale") or "auto"
     if s != "auto":
         return max(0.25, min(1.0, float(s)))
     return 0.5 if cfg.get("gpu_class") in ("entry", "integrated") else 1.0
 
 
+VULKAN_ORDER = ["rife-v4.26_ensembleFalse", "rife-v4.6_ensembleFalse", "rife-v4.25-lite_ensembleFalse",
+                "rife-v4.22_lite_ensembleFalse"]   # best first
+VULKAN_HEADROOM = 1.4
+
+
+class TooSlow(Exception):
+    """Tuning says no Vulkan RIFE option keeps up with this video on this PC."""
+
+
+def load_tuning():
+    try:
+        with open(os.path.join(HERE, "tuning.json"), encoding="utf-8-sig") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def vulkan_plan(cfg, width, height, src, dst, tuning=None):
+    """(model folder, AI size, device, why) for Vulkan RIFE, from tune.cmd's measurements.
+
+    The configured model at the biggest size that keeps up; else the best other model that does;
+    else the fastest option if it keeps up without the safety margin. If nothing does, TooSlow,
+    and the engine plays MVTools instead: steady beats stuttering AI."""
+    if tuning is None:
+        # Tuning and the benchmark measure exactly what they ask for
+        tuning = {} if os.environ.get("NOVAMOTION_NO_TUNING") else load_tuning()
+    v = tuning.get("vulkan") or {}
+    opts = v.get("options") or {}
+    model, device = cfg["rife_model"], int(cfg["rife_gpu"])
+    if not opts:
+        if cfg.get("gpu_class") == "integrated":
+            # Built-in graphics: play it safe (MVTools) until tune.cmd shows the AI keeps up
+            raise TooSlow("built-in graphics, not tuned yet")
+        return model, vulkan_scale(cfg), device, "untuned"
+    device = int(v.get("device", device))
+    fixed = None if (cfg.get("ai_scale") or "auto") == "auto" else float(cfg["ai_scale"])
+    sw, sh = (int(x) for x in str(v.get("source", "1920x1080")).split("x"))
+    ratio = Fraction(dst) / Fraction(src)
+    need = float(dst) * (ratio.numerator - 1) / ratio.numerator      # frames the AI makes each second
+    capacity = {}
+    for key, fps in opts.items():
+        m, _, sc = key.rpartition("@")
+        if fps and (fixed is None or abs(float(sc) - fixed) < 1e-6):
+            capacity[(m, float(sc))] = float(fps) * (11 / 12) * (sw * sh) / float(width * height)
+    if not capacity:
+        return model, fixed or vulkan_scale(cfg), device, "no measurement for this size"
+
+    def fits(m, margin):
+        return sorted((sc for (mm, sc), c in capacity.items() if mm == m and c >= need * margin), reverse=True)
+
+    if fits(model, VULKAN_HEADROOM):
+        return model, fits(model, VULKAN_HEADROOM)[0], device, "keeps up"
+    for m in VULKAN_ORDER:
+        if fits(m, VULKAN_HEADROOM):
+            return m, fits(m, VULKAN_HEADROOM)[0], device, f"{model} can't keep up here"
+    (m, sc), c = max(capacity.items(), key=lambda kv: kv[1])
+    if c >= need:
+        return m, sc, device, "fastest option, little headroom"
+    raise TooSlow(f"needs {need:.0f} AI frames/s, fastest Vulkan option makes {c:.0f}")
+
+
+def write_state(**state):
+    path = os.environ.get("NOVAMOTION_ENGINE_STATE")
+    if not path:
+        return
+    try:
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(state, f)
+        os.replace(tmp, path)
+    except OSError:
+        pass
+
+
 def interpolate_rife(clip, cfg, src, dst):
     matrix = matrix_for(clip)
     w, h = clip.width, clip.height
-    scale = vulkan_scale(cfg)
+    try:
+        model_name, scale, device, why = vulkan_plan(cfg, w, h, src, dst)
+    except TooSlow as e:
+        write_state(engine="rife", model="mvtools", why=str(e), width=w, height=h, src=float(src), dst=float(dst))
+        raise vs.Error(f"NovaMotion: {e}; playing MVTools instead")
+    cfg = dict(cfg, rife_model=model_name, rife_gpu=device)
     # Like the TensorRT path: the AI on a smaller copy, its in-between frames scaled back up,
     # every real frame straight from the full-size source
     sw, sh = (w, h) if scale >= 1 else (max(64, round(w * scale / 2) * 2), max(64, round(h * scale / 2) * 2))
@@ -205,7 +284,9 @@ def interpolate_rife(clip, cfg, src, dst):
         sc=bool(cfg["scene_detect"]),
         uhd=clip.width > 2560,
     )
-    dbg(f"vulkan rife: AI at {sw}x{sh} ({scale:.0%}) on device {int(cfg['rife_gpu'])}")
+    dbg(f"vulkan rife: {os.path.basename(model_path)}, AI at {sw}x{sh} ({scale:.0%}) on device {int(cfg['rife_gpu'])}: {why}")
+    write_state(engine="rife", model=os.path.basename(model_path).replace("rife-", "").replace("_ensembleFalse", ""),
+                scale=scale, ai_width=sw, ai_height=sh, why=why, width=w, height=h, src=float(src), dst=float(dst))
     # mpv's VapourSynth bridge only accepts YUV back, so return the source format.
     # Ordered dither is SIMD-fast; error diffusion was costing a CPU core at high frame rates.
     made = core.resize.Bicubic(smooth, w, h, format=clip.format.id, matrix_s=matrix, dither_type="ordered")
