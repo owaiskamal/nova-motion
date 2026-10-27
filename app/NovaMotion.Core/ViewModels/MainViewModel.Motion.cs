@@ -607,6 +607,7 @@ public sealed partial class MainViewModel
         SyncMotion();
         RebuildChoices();
         Raise(nameof(ShowTunePrompt), nameof(GpuAdvice), nameof(ShowGpuAdvice));
+        RebuildGenerate();
         _ = UpdateYtDlpAsync();
     }
 
@@ -627,7 +628,7 @@ public sealed partial class MainViewModel
             Benchmarks.Add(new BenchmarkItem(EngineCatalog.EngineName(r.Engine), r.Fps is { } f ? $"{f:0} fps" : "failed",
                                              r.Fps is { } v ? Math.Clamp(v / Math.Max(best, 60), 0.02, 1) : 0.02, r.Fps >= 60));
         Problems.Clear();
-        if (Runtime is null) Problems.Add("The player files are missing. Run build.cmd once to download them, then restart NOVA Motion.");
+        if (Runtime is null) Problems.Add("The player files are missing. Run build.cmd once to download them, then restart NOVA Studio.");
         else foreach (var p in Runtime.Problems()) Problems.Add(p);
         RebuildEngineSizes();
         RefreshTuning();

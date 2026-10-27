@@ -1,12 +1,15 @@
 ; SPDX-License-Identifier: GPL-3.0-or-later
 ; Copyright (C) 2026 Novabit
 ;
-; NOVA Motion installer (Inno Setup 6). Built by CI:
+; NOVA Studio installer (Inno Setup 6). Built by CI:
 ;   iscc /DAppVersion=0.2.0 installer\NovaMotion.iss
 ; Expects dist\ (dotnet publish output) and runtime\ (setup\Get-Runtime.ps1) to exist.
 ;
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\Programs\NOVA Motion, because the
 ; runtime folder must stay writable: TensorRT keeps its compiled engines there.
+;
+; The app was called NOVA Motion before it became NOVA Studio (Motion is now its first module).
+; AppId, install folder and Start menu group keep the old names so existing installs update in place.
 
 #ifndef AppVersion
   #define AppVersion "0.2.0"
@@ -14,9 +17,9 @@
 
 [Setup]
 AppId={{6C1E8A52-3B47-4E0F-9D6A-4E4F56414D31}
-AppName=NOVA Motion
+AppName=NOVA Studio
 AppVersion={#AppVersion}
-AppVerName=NOVA Motion {#AppVersion}
+AppVerName=NOVA Studio {#AppVersion}
 AppPublisher=Novabit
 AppPublisherURL=https://github.com/owaiskamal/nova-motion
 AppSupportURL=https://github.com/owaiskamal/nova-motion/issues
@@ -54,13 +57,19 @@ Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\NOVA Motion"; Filename: "{app}\NovaMotion.exe"
+Name: "{group}\NOVA Studio"; Filename: "{app}\NovaMotion.exe"
 Name: "{group}\Add NVIDIA TensorRT engine"; Filename: "{app}\setup-tensorrt.cmd"; WorkingDir: "{app}"
-Name: "{group}\Uninstall NOVA Motion"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\NOVA Motion"; Filename: "{app}\NovaMotion.exe"; Tasks: desktopicon
+Name: "{group}\Uninstall NOVA Studio"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\NOVA Studio"; Filename: "{app}\NovaMotion.exe"; Tasks: desktopicon
+
+[InstallDelete]
+; Shortcuts from when the app was called NOVA Motion
+Type: files; Name: "{group}\NOVA Motion.lnk"
+Type: files; Name: "{group}\Uninstall NOVA Motion.lnk"
+Type: files; Name: "{autodesktop}\NOVA Motion.lnk"
 
 [Run]
-Filename: "{app}\NovaMotion.exe"; Description: "Start NOVA Motion"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\NovaMotion.exe"; Description: "Start NOVA Studio"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 ; Engines TensorRT built on this PC, and the downloaded TensorRT pack

@@ -63,7 +63,7 @@ public partial class MainWindow : Window, IUiHost
 
     private IPlayerBackend CreatePlayer()
     {
-        if (_runtime is null) throw new InvalidOperationException("the player files are missing. Run build.cmd once, then restart NOVA Motion");
+        if (_runtime is null) throw new InvalidOperationException("the player files are missing. Run build.cmd once, then restart NOVA Studio");
         return new MpvPlayer(_runtime, _store) { WindowHandle = Video.VideoHandle.ToInt64() };
     }
 
@@ -75,6 +75,7 @@ public partial class MainWindow : Window, IUiHost
         UpdatePlayerSurface();
         Home.FocusLink();
         _vm.SetGpu(await GpuInfo.DetectAsync());
+        _vm.SetMemory(await SystemMemory.GraphicsGbAsync());
         if (UiTest.Requested) _ = UiTest.RunAsync(this, _vm);
     }
 
@@ -135,6 +136,7 @@ public partial class MainWindow : Window, IUiHost
             case nameof(MainViewModel.HasMedia):
             case nameof(MainViewModel.IsSettingsOpen):
             case nameof(MainViewModel.IsExportOpen):
+            case nameof(MainViewModel.IsGenerateOpen):
                 UpdatePlayerSurface();
                 break;
             case nameof(MainViewModel.IsFullscreen):
@@ -150,7 +152,7 @@ public partial class MainWindow : Window, IUiHost
                 });
                 break;
             case nameof(MainViewModel.ToastVisible):
-                HomeToast.Visibility = _vm.ToastVisible && (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsExportOpen) ? Visibility.Visible : Visibility.Collapsed;
+                HomeToast.Visibility = _vm.ToastVisible && (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsExportOpen || _vm.IsGenerateOpen) ? Visibility.Visible : Visibility.Collapsed;
                 break;
         }
     }
@@ -158,7 +160,7 @@ public partial class MainWindow : Window, IUiHost
     /// <summary>The video window and its overlay show only while a video plays and no page covers it.</summary>
     private void UpdatePlayerSurface()
     {
-        var show = _vm.HasMedia && !_vm.IsSettingsOpen && !_vm.IsExportOpen;
+        var show = _vm.HasMedia && !_vm.IsSettingsOpen && !_vm.IsExportOpen && !_vm.IsGenerateOpen;
         Video.Visibility = show ? Visibility.Visible : Visibility.Hidden;
         if (_overlay is null) return;
         if (show && IsVisible && WindowState != WindowState.Minimized)
@@ -168,7 +170,7 @@ public partial class MainWindow : Window, IUiHost
             _overlay.ShowControls();
         }
         else if (_overlay.IsVisible) _overlay.Hide();
-        if (!_vm.HasMedia) Home.FocusLink();
+        if (!_vm.HasMedia && _vm.IsMotionModule) Home.FocusLink();
     }
 
     /// <summary>Keeps the overlay window exactly over the video area.</summary>
@@ -239,7 +241,7 @@ public partial class MainWindow : Window, IUiHost
 
     private void OnKey(KeyEventArgs e)
     {
-        if (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsExportOpen) return;
+        if (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsExportOpen || _vm.IsGenerateOpen) return;
         if (Keyboard.FocusedElement is TextBox) return;
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         var mods = Keyboard.Modifiers;

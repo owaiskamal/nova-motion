@@ -5,14 +5,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
         <Grid Margin="56,28,56,48" MaxWidth="900" HorizontalAlignment="Left">
             <StackPanel>
-                <Button Style="{StaticResource Btn.Ghost}" HorizontalAlignment="Left" Margin="-8,0,0,22" Command="{Binding CloseExportCommand}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Style="{StaticResource Icon}" Text="&#xE72B;" FontSize="13" Margin="0,0,10,0"/>
-                        <TextBlock Text="Back" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-
-                <TextBlock Style="{StaticResource Text.Display}" FontSize="28" LineHeight="36" Text="Enhance &amp; Export"/>
+                <TextBlock Style="{StaticResource Text.Display}" FontSize="28" LineHeight="36" Text="Enhance"/>
                 <TextBlock Style="{StaticResource Text.Muted}" FontSize="15" LineHeight="23" MaxWidth="640" HorizontalAlignment="Left" Margin="0,12,0,28"
                            Text="Makes a smooth copy of a video file with the best settings this PC has. It takes longer than watching, but every frame gets full quality, and the copy plays smoothly anywhere: on a phone, a TV, or as an upload."/>
 

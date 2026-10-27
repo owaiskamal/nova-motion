@@ -1,8 +1,18 @@
-# NOVA Motion
+# NOVA Studio
 
 [![CI](https://github.com/owaiskamal/nova-motion/actions/workflows/ci.yml/badge.svg)](https://github.com/owaiskamal/nova-motion/actions/workflows/ci.yml)
 
-**Real-time AI motion smoothing for video and YouTube on Windows, by Novabit.**
+**Watch, enhance and make video with AI on your own graphics card. Windows, by Novabit.**
+
+NOVA Studio is one app with three modules:
+
+- **Motion:** real-time AI motion smoothing for files, YouTube and 1000+ sites. Shipping.
+- **Enhance:** smooth copies of video files; upscaling next. Shipping.
+- **Generate:** images and short clips from open models (Flux, SDXL, Wan 2.2), handed straight to Enhance. Coming soon; the page already checks what your PC can run.
+
+The plan is in [docs/NOVA-STUDIO.md](docs/NOVA-STUDIO.md). The app was called NOVA Motion until v0.2; the code, settings folder, `novamotion://` links and the installer's ID keep that name, so existing installs update in place.
+
+## Motion
 
 NOVA Motion plays 24/25/30 fps video at your screen's refresh rate by generating the missing frames with AI, live, while you watch. Local files, YouTube and 1000+ other sites, one click from the browser.
 
@@ -87,13 +97,18 @@ Measure your own machine with **`benchmark.cmd`** (results in `runtime\benchmark
 
 Something not smooth? Run **`collect-logs.cmd`**. It puts the player and engine logs, settings, tuning results and graphics info into `nova-motion-logs.zip` on your Desktop, to attach to an issue.
 
+### The app
+
+- **Module tabs** in the title bar: Motion, Enhance and Generate. Settings opens over any of them and closes back to it; playing a video switches to Motion.
+- **Generate (preview):** shows the graphics card, its memory (read from the driver, so 12 GB and 24 GB cards report correctly) and system memory, and for each model Generate will start with (SDXL, Flux.1 Schnell, Wan 2.2 TI2V-5B, Wan 2.2 I2V-14B) whether it runs well, runs slower with compressed weights, or is too heavy. NVIDIA only for now.
+
 ### The player
 
 - **Home:** paste a link or drop files; a link you've copied is offered with one click. Recently played videos resume a few seconds before where you stopped, and opening an episode queues the rest of its folder.
 - **On the video:** controls that hide while you watch, a seek bar with buffered range, chapters and hover time, double-click for full screen, scroll for volume.
 - **Motion panel** (Tab, or the badge next to the controls): the frame rate on screen, dropped frames, the model in use and the size the AI runs at, the frame-cadence strip (white bars are frames from the video, gold ones are generated), the engine's status in plain words, and every smoothing choice: engine, frame rate, AI model (Auto or a fixed one) and AI size (Auto, Full, 75 %, Half).
 - **Before/after:** side by side or a split screen with a divider, labelled, to see what the engine adds.
-- **Enhance & Export:** make a smooth copy of any file at 60 fps, 120 fps or 2× with the best model installed (or the faster live one). Files queue up, show time left, and are saved next to the original with NOVA Motion in the name. NVIDIA cards encode on the GPU (HEVC); otherwise x264 on the CPU.
+- **Enhance:** make a smooth copy of any file at 60 fps, 120 fps or 2× with the best model installed (or the faster live one). Files queue up, show time left, and are saved next to the original with NOVA Motion in the name. NVIDIA cards encode on the GPU (HEVC); otherwise x264 on the CPU.
 - **Fits the PC it runs on:** RTX cards get TensorRT at the display's refresh rate; GTX and other entry cards get 60 fps (or an even rate such as 72 on 144 Hz screens) with the AI at half size; built-in graphics get Vulkan RIFE at half size once tuning shows it keeps up, MVTools until then. Home offers tuning on every PC and explains what the graphics can do.
 - **Subtitles, audio, speed and online quality** in one panel; drop a subtitle file on the video to load it.
 
@@ -119,6 +134,7 @@ The full list is in Settings → Keyboard shortcuts.
 
 ```
 app/                    .NET 8 solution: NovaMotion.Core (logic + view models), NovaMotion.App (WPF), NovaMotion.SmokeTest
+docs/                   NOVA-STUDIO.md: the plan for Motion, Enhance and Generate
 engine/                 novamotion.vpy, novamotion_trt.py, mpv config + Lua player script
 extension/              Chrome/Edge extension (Manifest V3)
 setup/                  Get-Runtime.ps1, Get-TensorRT.ps1, Tune.ps1, TuneVulkan.ps1, Benchmark.ps1, Build-Engines.ps1
@@ -148,12 +164,14 @@ CI runs all of these, then builds the app on Windows, plays a test video through
 | M3 Engine manager | ✅ scene-cut and repeated-frame handling · ✅ per-size engine status and preparation · ✅ tuning, offered on first run · ✅ automatic model and AI-size choice with step-down · ✅ defaults for GTX and laptop graphics |
 | M4 Online and launch | ✅ quality picker · ✅ daily yt-dlp updates · extension in the stores, project site |
 | M5 Enhance & Export | ✅ offline smooth copies with the best model, queue, GPU encoding · heavier offline models (e.g. GIMM-VFI), upscaling |
-| Later | NOVA Studio (enhancement suite), smoothing over any window, faster AMD/Intel paths, mobile |
+| M6 NOVA Studio shell | ✅ one app with Motion, Enhance and Generate tabs · ✅ Generate hardware check |
+| M7 Generate | managed ComfyUI engine, model manager, Flux.1 Schnell and SDXL images, Wan 2.2 video, one click to smooth and upscale |
+| Later | light timeline (trim, join, titles), smoothing over any window, faster AMD/Intel paths, cloud GPU tier, mobile |
 
 ## License
 
-NOVA Motion is free software under the [GNU GPL v3.0](LICENSE) (or later). It builds on mpv, VapourSynth, vs-mlrt, RIFE, MVTools and yt-dlp; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). NVIDIA TensorRT is downloaded by the setup script on your machine and is not part of this repository.
+NOVA Studio is free software under the [GNU GPL v3.0](LICENSE) (or later). It builds on mpv, VapourSynth, vs-mlrt, RIFE, MVTools and yt-dlp; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). NVIDIA TensorRT is downloaded by the setup script on your machine and is not part of this repository.
 
-NOVA Motion is an independent project. It is not affiliated with NVIDIA, SVP (SmoothVideo Project) or the projects above, and contains no code from SVP.
+NOVA Studio is an independent project. It is not affiliated with NVIDIA, SVP (SmoothVideo Project) or the projects above, and contains no code from SVP.
 
 © 2026 Novabit

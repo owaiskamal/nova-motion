@@ -61,7 +61,7 @@ public sealed partial class MainViewModel
     public bool CanExport => _exporter is not null;
 
     private bool _isExportOpen;
-    public bool IsExportOpen { get => _isExportOpen; set => Set(ref _isExportOpen, value); }
+    public bool IsExportOpen { get => _isExportOpen; set { if (Set(ref _isExportOpen, value)) RaiseModule(); } }
 
     private ExportQuality _exportQuality = ExportQuality.Best;
     public bool ExportBest { get => _exportQuality == ExportQuality.Best; set { _exportQuality = value ? ExportQuality.Best : ExportQuality.Faster; Raise(); Raise(nameof(ExportFaster)); } }
@@ -91,14 +91,14 @@ public sealed partial class MainViewModel
     {
         foreach (var t in ExportPlan.Targets)
             ExportTargets.Add(new OptionItem(new Choice(t, EngineCatalog.TargetName(t))) { IsSelected = t == "60" });
-        OpenExportCommand = new Command(() => { IsSettingsOpen = false; IsExportOpen = true; });
-        CloseExportCommand = new Command(() => IsExportOpen = false);
+        OpenExportCommand = new Command(() => SelectModule(StudioModule.Enhance));
+        CloseExportCommand = new Command(() => SelectModule(StudioModule.Motion));
         AddExportFilesCommand = new Command(() => { if (_host.PickVideoFiles() is { Count: > 0 } f) QueueExports(f); });
         ExportCurrentCommand = new Command(() =>
         {
             if (_current is null || MediaSource.IsOnline(_current)) { ShowToast("Export works on video files on this PC."); return; }
             QueueExports(new[] { _current });
-            ShowToast("Added to Enhance & Export", "Open", () => { IsExportOpen = true; });
+            ShowToast("Added to Enhance", "Open", () => SelectModule(StudioModule.Enhance));
         });
         SelectExportTargetCommand = new Command(p =>
         {

@@ -93,7 +93,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         RemoveQueueItemCommand = new Command(p => { if (p is QueueItem q && !q.IsCurrent) _queue.RemoveAt(q.Index); });
         ToggleDrawerCommand = new Command(p => ToggleDrawer(p as string));
         CloseDrawerCommand = new Command(() => ActiveDrawer = Drawer.None);
-        OpenSettingsCommand = new Command(() => { RefreshSystem(); IsExportOpen = false; IsSettingsOpen = true; });
+        OpenSettingsCommand = new Command(() => { RefreshSystem(); IsSettingsOpen = true; });
         CloseSettingsCommand = new Command(() => IsSettingsOpen = false);
         ScreenshotCommand = new Command(() => _ = ScreenshotAsync());
         ToastActionCommand = new Command(() => { var a = _toastAction; HideToast(); a?.Invoke(); });
@@ -102,6 +102,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
 
         InitMotion();
         InitExport();
+        InitStudio();
         RefreshRecent();
         RefreshSystem();
     }
@@ -194,8 +195,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         if (list.Count == 0) return;
         if (list.Count == 1 && !MediaSource.IsOnline(list[0]) && _settings.AutoQueueFolder && File.Exists(list[0]))
             list = PlayQueue.FolderSequence(list[0]).ToList();
-        IsSettingsOpen = false;
-        IsExportOpen = false;
+        SelectModule(StudioModule.Motion);
         TargetText = "";
         _queue.Set(list);
         await PlayCurrentAsync(start);
@@ -563,7 +563,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         {
             "loading failed" when online => "This link couldn't be opened. The site may need a newer yt-dlp, or the video is private.",
             "loading failed" => "This file couldn't be opened. It may be missing or damaged.",
-            "unrecognized file format" => "This isn't a video format NOVA Motion can play.",
+            "unrecognized file format" => "This isn't a video format NOVA Studio can play.",
             "no audio or video data played" => "The file has no playable audio or video.",
             null or "" => "The video couldn't be played.",
             _ => $"The video couldn't be played ({mpvError}).",

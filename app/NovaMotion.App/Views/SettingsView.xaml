@@ -63,7 +63,7 @@
                 <RadioButton x:Name="NavAbout" Style="{StaticResource NavItem}" Content="About"/>
             </StackPanel>
             <TextBlock DockPanel.Dock="Bottom" VerticalAlignment="Bottom" Style="{StaticResource Text.Small}">
-                <Run Text="NOVA Motion"/>
+                <Run Text="NOVA Studio"/>
                 <Run Text="{Binding Version, Mode=OneWay}"/>
             </TextBlock>
         </DockPanel>
@@ -254,14 +254,14 @@
                 <StackPanel Visibility="{Binding IsChecked, ElementName=NavAbout, Converter={StaticResource BoolToVis}}">
                     <c:CadenceStrip Ticks="{Binding CadenceTicks}" Repeat="3" BarWidth="5" Gap="5" Height="26" HorizontalAlignment="Left"
                                     RealBrush="{StaticResource Text}" GeneratedBrush="{StaticResource Nova}"/>
-                    <TextBlock Text="NOVA MOTION" FontFamily="{StaticResource DisplayFont}" FontWeight="SemiBold" FontSize="26" Margin="0,18,0,4"/>
+                    <TextBlock Text="NOVA STUDIO" FontFamily="{StaticResource DisplayFont}" FontWeight="SemiBold" FontSize="26" Margin="0,18,0,4"/>
                     <TextBlock Style="{StaticResource Text.Muted}">
                         <Run Text="Version"/>
                         <Run Text="{Binding Version, Mode=OneWay}"/>
                         <Run Text=" by Novabit"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource Text.Body}" Margin="0,20,0,0" MaxWidth="560" HorizontalAlignment="Left"
-                               Text="Free and open source under the GNU GPL v3. Built on mpv, VapourSynth, RIFE, vs-mlrt, MVTools and yt-dlp. NVIDIA TensorRT is downloaded on your PC by the setup script and is not part of NOVA Motion."/>
+                               Text="Motion, Enhance and Generate in one app. Free and open source under the GNU GPL v3. Built on mpv, VapourSynth, RIFE, vs-mlrt, MVTools and yt-dlp. NVIDIA TensorRT is downloaded on your PC by the setup script and is not part of NOVA Studio."/>
                     <StackPanel Orientation="Horizontal" Margin="0,24,0,0">
                         <Button Style="{StaticResource Btn.Secondary}" Height="36" Command="{Binding OpenProjectPageCommand}" Content="Project page"/>
                         <Button Style="{StaticResource Btn.Secondary}" Height="36" Margin="10,0,0,0" Command="{Binding OpenLogFolderCommand}" Content="Open logs folder"/>

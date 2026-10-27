@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:c="clr-namespace:NovaMotion.App.Controls"
         xmlns:v="clr-namespace:NovaMotion.App.Views"
-        Title="NOVA Motion" Width="1280" Height="800" MinWidth="900" MinHeight="580"
+        Title="NOVA Studio" Width="1280" Height="800" MinWidth="900" MinHeight="580"
         Background="{StaticResource Base}" Foreground="{StaticResource Text}"
         FontFamily="{StaticResource UiFont}" FontSize="14"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Ideal"
@@ -30,14 +30,27 @@
                 </Grid.ColumnDefinitions>
 
                 <Button Grid.Column="0" Style="{StaticResource Btn.Link}" Margin="18,0,0,0" Command="{Binding StopCommand}"
-                        WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Home" Focusable="False">
+                        WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Motion home" Focusable="False">
                     <StackPanel Orientation="Horizontal">
                         <c:CadenceStrip Ticks="{Binding CadenceTicks}" BarWidth="3" Gap="2.5" Height="14" Margin="0,0,10,0"
                                         RealBrush="{StaticResource Text}" GeneratedBrush="{StaticResource Nova}"/>
-                        <TextBlock Text="NOVA MOTION" FontFamily="{StaticResource DisplayFont}" FontWeight="SemiBold" FontSize="12.5"
+                        <TextBlock Text="NOVA STUDIO" FontFamily="{StaticResource DisplayFont}" FontWeight="SemiBold" FontSize="12.5"
                                    Foreground="{StaticResource Text}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
+
+                <!-- Module tabs -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="28,0,0,0" VerticalAlignment="Stretch">
+                    <RadioButton x:Name="MotionTab" Style="{StaticResource ModuleTab}" GroupName="module" Content="Motion"
+                                 IsChecked="{Binding IsMotionModule, Mode=OneWay}" Command="{Binding SelectModuleCommand}" CommandParameter="motion"
+                                 ToolTip="Watch with real-time AI smoothing"/>
+                    <RadioButton x:Name="EnhanceTab" Style="{StaticResource ModuleTab}" GroupName="module" Content="Enhance"
+                                 IsChecked="{Binding IsEnhanceModule, Mode=OneWay}" Command="{Binding SelectModuleCommand}" CommandParameter="enhance"
+                                 ToolTip="Save smooth copies of video files"/>
+                    <RadioButton x:Name="GenerateTab" Style="{StaticResource ModuleTab}" GroupName="module" Content="Generate"
+                                 IsChecked="{Binding IsGenerateModule, Mode=OneWay}" Command="{Binding SelectModuleCommand}" CommandParameter="generate"
+                                 ToolTip="Make images and video with open AI models (coming soon)"/>
+                </StackPanel>
 
                 <!-- Engine status chip: what smoothing is doing right now -->
                 <Button Grid.Column="2" Style="{StaticResource Btn.Ghost}" Margin="0,0,4,0" Click="EngineChip_Click"
@@ -50,7 +63,6 @@
                 </Button>
 
                 <StackPanel Grid.Column="3" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
-                    <Button Style="{StaticResource Btn.Caption}" Content="&#xE74E;" FontSize="14" Command="{Binding OpenExportCommand}" ToolTip="Enhance &amp; Export"/>
                     <Button Style="{StaticResource Btn.Caption}" Content="&#xE713;" FontSize="14" Command="{Binding OpenSettingsCommand}" ToolTip="Settings"/>
                     <Border Width="1" Height="16" Background="{StaticResource Line}" Margin="6,0"/>
                     <Button Style="{StaticResource Btn.Caption}" Content="&#xE921;" Click="Minimize_Click" ToolTip="Minimise"/>
@@ -67,8 +79,10 @@
                 <c:VideoHost x:Name="Video" Visibility="Hidden"/>
 
                 <v:HomeView x:Name="Home" Visibility="{Binding HasMedia, Converter={StaticResource InvBoolToVis}}"/>
-                <v:SettingsView x:Name="SettingsPage" Visibility="{Binding IsSettingsOpen, Converter={StaticResource BoolToVis}}"/>
                 <v:ExportView x:Name="ExportPage" Visibility="{Binding IsExportOpen, Converter={StaticResource BoolToVis}}"/>
+                <v:GenerateView x:Name="GeneratePage" Visibility="{Binding IsGenerateOpen, Converter={StaticResource BoolToVis}}"/>
+                <!-- Settings opens over whichever module is showing -->
+                <v:SettingsView x:Name="SettingsPage" Visibility="{Binding IsSettingsOpen, Converter={StaticResource BoolToVis}}"/>
 
                 <!-- Drop target highlight -->
                 <Border x:Name="DropHint" Visibility="Collapsed" Margin="16" CornerRadius="16" BorderThickness="2"

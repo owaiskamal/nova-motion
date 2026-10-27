@@ -47,6 +47,14 @@ internal static class UiTest
             await Task.Delay(500);
             Shot(w, "03-settings-playback");
             vm.CloseSettingsCommand.Execute(null);
+            vm.SelectModule(StudioModule.Generate);
+            await Task.Delay(700);
+            Note($"generate: '{vm.GenerateSummary}' gpu='{vm.GpuName}' vram={vm.GraphicsMemoryText} ram={vm.SystemMemoryText}");
+            Shot(w, "03b-generate");
+            vm.SelectModule(StudioModule.Enhance);
+            await Task.Delay(500);
+            Shot(w, "03c-enhance");
+            vm.SelectModule(StudioModule.Motion);
 
             var video = Environment.GetEnvironmentVariable("NOVAMOTION_UITEST_VIDEO") is { Length: > 0 } v
                 ? v : "av://lavfi:testsrc2=size=1920x1080:rate=25";
