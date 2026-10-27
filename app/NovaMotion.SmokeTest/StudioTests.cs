@@ -26,6 +26,9 @@ internal static class StudioTests
         check(GenerateCatalog.AssessAll(G("Intel(R) Iris(R) Xe Graphics"), 2).All(v => v.Fit == ModelFit.Unsupported)
               && GenerateCatalog.AssessAll(G("AMD Radeon RX 7900 XTX"), 24).All(v => v.Fit == ModelFit.Unsupported),
               "generate: Intel and AMD graphics are not supported yet");
+        var intel = GenerateCatalog.AssessAll(G("Intel(R) Iris(R) Xe Graphics"), 2);
+        check(GenerateCatalog.Summary(intel, 16).StartsWith("Generate needs an NVIDIA") && intel.All(v => v.Text == v.Model.Note),
+              "generate: the reason shows once in the summary; rows keep their descriptions");
         check(GenerateCatalog.AssessAll(rtx4070, null).All(v => v.Fit == ModelFit.Unsupported), "generate: unknown graphics memory is never guessed");
 
         // --- the summary line ----------------------------------------------

@@ -14,7 +14,8 @@ public enum ModelFit { Good, Slow, TooHeavy, Unsupported }
 public sealed record GenModel(string Id, string Name, string Kind, string License, double GoodGb, double MinGb, string Note);
 
 /// <summary>A model's verdict for this PC, as shown on the Generate page.</summary>
-public sealed record ModelVerdict(GenModel Model, ModelFit Fit, string Text)
+/// <param name="Reason">Why the model can't run, for the summary; rows show the model's description instead.</param>
+public sealed record ModelVerdict(GenModel Model, ModelFit Fit, string Text, string Reason = "")
 {
     public string Name => Model.Name;
     public string Kind => Model.Kind;
@@ -55,11 +56,11 @@ public static class GenerateCatalog
     public static ModelVerdict Assess(GenModel m, GpuInfo? gpu, double? vramGb)
     {
         if (gpu is null || gpu.Names.Count == 0)
-            return new(m, ModelFit.Unsupported, "Graphics card not detected yet.");
+            return new(m, ModelFit.Unsupported, m.Note, "Graphics card not detected yet.");
         if (!gpu.IsNvidia)
-            return new(m, ModelFit.Unsupported, "Needs an NVIDIA graphics card for now. AMD and Intel support depends on the models' tools.");
+            return new(m, ModelFit.Unsupported, m.Note, "Generate needs an NVIDIA graphics card for now. AMD and Intel support depends on the models' tools.");
         if (vramGb is not { } gb)
-            return new(m, ModelFit.Unsupported, "Couldn't read the graphics memory.");
+            return new(m, ModelFit.Unsupported, m.Note, "Couldn't read the graphics card's memory.");
         var size = $"{gb:0.#} GB";
         if (gb >= m.GoodGb - 0.5)
             return new(m, ModelFit.Good, $"{m.Note} Your {size} fits the full model.");
@@ -75,7 +76,7 @@ public static class GenerateCatalog
     public static string Summary(IReadOnlyList<ModelVerdict> verdicts, double? ramGb)
     {
         if (verdicts.Count == 0 || verdicts.All(v => v.Fit == ModelFit.Unsupported))
-            return verdicts.FirstOrDefault()?.Text ?? "";
+            return verdicts.FirstOrDefault()?.Reason ?? "";
         bool Can(string kind) => verdicts.Any(v => v.Kind == kind && v.Fit is ModelFit.Good or ModelFit.Slow);
         var text = (Can("Images"), Can("Video")) switch
         {
