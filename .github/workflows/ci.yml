@@ -127,17 +127,20 @@ jobs:
           & $iscc /Q "/DAppVersion=$version" installer\NovaMotion.iss
           if ($LASTEXITCODE -ne 0) { exit 1 }
           Get-ChildItem dist-installer | Format-Table Name, Length
+      # Uploads never fail the build: when the account's artifact storage is full, the build itself is still good
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: NovaMotion-Setup
           path: dist-installer/*.exe
-          retention-days: 30
+          retention-days: 5
       - uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
           name: ui-screenshots
           path: uitest
-          retention-days: 14
+          retention-days: 3
       # Also keep the latest screenshots on a branch of their own (one commit, replaced each run),
       # so they can be looked at with plain git
       - name: Publish screenshots to the ci-screenshots branch
