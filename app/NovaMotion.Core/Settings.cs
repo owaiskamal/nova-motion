@@ -25,6 +25,8 @@ public sealed class EngineSettings
     [JsonPropertyName("gpu_class")]      public string GpuClass { get; set; } = "";
     /// <summary>Set by the player while frames drop: use this many models lighter. Reset for every video.</summary>
     [JsonPropertyName("quality_step")]   public int QualityStep { get; set; }
+    /// <summary>Set by the player when frames keep dropping on the lightest model: whole multiples lower.</summary>
+    [JsonPropertyName("rate_step")]      public int RateStep { get; set; }
     [JsonPropertyName("rife_threads")]   public int RifeThreads { get; set; } = 4;
     [JsonPropertyName("scene_detect")]   public bool SceneDetect { get; set; } = true;
     /// <summary>Blend across frames the video repeats (common in sports and TV uploads).</summary>

@@ -360,8 +360,10 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
 
     # The AI's copy: smaller when the card needs it (even sizes), padded to what the model takes
     sw, sh = (w, h) if scale >= 1 else (max(64, round(w * scale / 2) * 2), max(64, round(h * scale / 2) * 2))
+    # Whether a step down has anywhere to go: the player lowers the frame rate instead when not
+    lighter = choose_plan(model_name, w, h, src, dst, step + 1, gpu_class=gpu_class, ai_scale=ai_scale)[:2] != (chosen, scale)
     write_state(engine="rife_trt", model=chosen, scale=scale, ai_width=sw, ai_height=sh, why=why,
-                width=w, height=h, src=float(src), dst=float(dst))
+                width=w, height=h, src=float(src), dst=float(dst), lighter=lighter)
     small = core.resize.Bilinear(rgbh, sw, sh) if (sw, sh) != (w, h) else rgbh
     pw, ph = (-sw) % PAD, (-sh) % PAD
     clip = core.std.AddBorders(small, right=pw, bottom=ph) if (pw or ph) else small

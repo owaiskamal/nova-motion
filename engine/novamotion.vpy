@@ -48,6 +48,7 @@ DEFAULTS = {
     "rife_model": "rife-v4.6_ensembleFalse",   # Vulkan RIFE model
     "trt_model": "auto",         # TensorRT model: auto (best this PC sustains, see Tune) or e.g. rife-v4.26
     "quality_step": 0,           # set by the player when frames drop: go this many models lighter
+    "rate_step": 0,              # set by the player when frames still drop: this many whole multiples lower
     "trt_streams": None,         # TensorRT streams; None: the tuned value
     "rife_gpu": 0,
     "ai_scale": "auto",                      # TensorRT: AI on a smaller copy (1, 0.75, 0.5) or auto
@@ -183,6 +184,19 @@ def ai_capacity(cfg, width, height):
             cap = float(fps) * (11 / 12) * (sw * sh) / max(1, width * height)
             best = cap if best is None else max(best, cap)
     return best
+
+
+def step_rate(dst, src, steps):
+    """The player's last resort when frames keep dropping: n whole multiples of the source lower
+    (75 -> 50 for 25 fps; a rate between multiples first drops to the one below it). Never
+    below twice the source: under that there is nothing left to smooth."""
+    if steps <= 0:
+        return dst
+    ratio = float(dst) / float(src)
+    k = int(ratio + 1e-6)
+    whole = abs(ratio - round(ratio)) < 0.005
+    k = max(2, k - steps if whole else k - (steps - 1))
+    return src * k if src * k < dst else dst
 
 
 def affordable_rate(dst, src, capacity):
@@ -506,6 +520,10 @@ def build_engine(clip):
         lower = affordable_rate(dst, src, ai_capacity(cfg, clip.width, clip.height))
         if lower != dst:
             dbg(f"{dst} needs more AI frames than this PC makes; playing {lower} instead")
+            dst = lower
+        lower = step_rate(dst, src, int(cfg.get("rate_step") or 0))
+        if lower != dst:
+            dbg(f"frames were dropping at {dst}; playing {lower}")
             dst = lower
     if float(dst) < float(src) * 1.1:   # nothing meaningful to add
         return clip

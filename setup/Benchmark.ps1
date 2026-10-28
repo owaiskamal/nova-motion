@@ -34,7 +34,10 @@ $bench = Join-Path $Work "bench.vpy"
 @"
 import vapoursynth as vs
 core = vs.core
-clip = core.std.BlankClip(width=1920, height=1080, format=vs.YUV420P8, length=$Frames, fpsnum=25, fpsden=1, color=[90, 120, 140])
+base = core.std.BlankClip(width=1920, height=1080, format=vs.YUV420P8, length=$Frames, fpsnum=25, fpsden=1)
+# Every frame different, like real video: a still clip is all repeats, and the engine skips the AI
+# for repeats, which made tuning read several times faster than real playback
+clip = core.std.FrameEval(base, lambda n: core.std.BlankClip(base, color=[40 + (n * 7) % 160, 120, 140]))
 g = {'video_in': clip, 'container_fps': 25.0, 'display_fps': 60.0, '__file__': r'$vpy'}
 exec(compile(open(r'$vpy', encoding='utf-8').read(), r'$vpy', 'exec'), g)
 "@ | Set-Content -Encoding ASCII $bench

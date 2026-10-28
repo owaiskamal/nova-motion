@@ -139,7 +139,11 @@ internal static class ViewModelTests
         check(vm.Settings.Active.Engine.QualityStep == 1 && vm.Settings.VideoSync == "audio"
               && fake.LastSet("video-sync")?[2] as string == "audio" && vm.ToastText.Contains("refresh timing"),
               $"vm: mistimed drops switch video sync to timestamps instead of a lighter model (step {vm.Settings.Active.Engine.QualityStep}, sync '{vm.Settings.VideoSync}')");
+        // No lighter model to go to (MVTools here): late frames lower the frame rate instead
         vm.Settings.Active.Engine.Engine = "mvtools";
+        for (var i = 0; i < 30; i++) { now = now.AddSeconds(0.5); dropsAt += 10; fake.Prop("frame-drop-count", dropsAt); vm.Tick(); }
+        check(vm.Settings.Active.Engine.RateStep >= 1 && fake.Applied?.RateStep >= 1 && vm.ToastText.Contains("lowered the frame rate"),
+              $"vm: steady late frames with no lighter model lower the frame rate (rate step {vm.Settings.Active.Engine.RateStep})");
 
         // ---- seek bar scrubbing
         vm.IsScrubbing = true;

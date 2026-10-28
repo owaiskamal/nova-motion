@@ -339,6 +339,13 @@ ar = _ns2["affordable_rate"]
 check(ar(Fraction(75), Fraction(25), 71.6) == Fraction(75), "affordable: 25 -> 75 needs 50/s, a 72/s card keeps it")
 check(ar(Fraction(72), Fraction(25), 40.0) == Fraction(50), "affordable: a card making 40/s plays 25 -> 50 (25/s) instead of 72 (71/s)")
 check(ar(Fraction(60), Fraction(24), None) == Fraction(60), "affordable: untuned, nothing changes")
+sr = _ns2["step_rate"]
+check(sr(Fraction(75), Fraction(25), 1) == Fraction(50) and sr(Fraction(75), Fraction(25), 3) == Fraction(50)
+      and sr(Fraction(60), Fraction(25), 1) == Fraction(50) and sr(Fraction(144), Fraction(24), 2) == Fraction(96)
+      and sr(Fraction(60), Fraction(24), 0) == Fraction(60),
+      "rate steps: 75 -> 50 for 25 fps (never under 2x), 60 -> 50, 144 -> 96 for 24 fps, none when not asked")
+o = run({"engine": "mvtools", "target": "display/2", "rate_step": 1}, fps=25.0, display=144.0, frames=48)
+check(o.fps == Fraction(50), f"rate step in the engine: 25 fps on 144 Hz plays at 50 after one step ({o.fps})")
 
 # Choosing the model from this PC's measurements (tuning.json)
 ch = novamotion_trt.choose_model

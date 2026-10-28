@@ -220,12 +220,14 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         _handledEof = false;
         _fpsSamples.Clear();
         _dropSamples.Clear();
-        if (Eng.QualityStep != 0)
+        if (Eng.QualityStep != 0 || Eng.RateStep != 0)
         {
-            // Every video starts on the best model again; a lighter one was only for the last video
+            // Every video starts on the best model and rate again; lower ones were only for the last video
             Eng.QualityStep = 0;
+            Eng.RateStep = 0;
             _store.WriteEngineConfig(Eng);
         }
+        _engineLighter = true;
         IsOpening = true;
         OpeningTitle = MediaSource.GuessTitle(target);
         Raise(nameof(Title), nameof(Origin), nameof(HasMedia));

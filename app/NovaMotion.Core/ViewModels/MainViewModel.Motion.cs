@@ -335,6 +335,10 @@ public sealed partial class MainViewModel
 
     /// <summary>Most lighter steps the player takes on its own (one per model below the best fit).</summary>
     public const int MaxQualityStep = 3;
+    /// <summary>Most frame-rate steps down the player takes (each one whole multiple of the video's rate).</summary>
+    public const int MaxRateStep = 4;
+    /// <summary>From the engine's state: whether a lighter model or AI size is left to step to.</summary>
+    private bool _engineLighter = true;
     /// <summary>Dropped frames per second, averaged over this window, that count as "not keeping up".</summary>
     public const double DropRateLimit = 2.5;
     public static readonly TimeSpan DropWindow = TimeSpan.FromSeconds(6);
@@ -379,15 +383,26 @@ public sealed partial class MainViewModel
         }
         var late = Math.Max(0, all - mistimed);
 
-        var canStep = Eng.Engine == "rife_trt" && Eng.TrtModel == "auto" && Eng.QualityStep < MaxQualityStep;
+        // First a lighter model or AI size, while one exists; then a lower frame rate (a whole
+        // multiple of the video's), down to twice the video's rate. Works on any screen and engine.
+        var canStep = Eng.Engine == "rife_trt" && Eng.TrtModel == "auto" && Eng.QualityStep < MaxQualityStep && _engineLighter;
+        var canLower = !canStep && Eng.RateStep < MaxRateStep;
         var settled = _lastStepAt is null || now - _lastStepAt > TimeSpan.FromSeconds(10);
-        if (late > DropRateLimit && canStep && settled)
+        if (late > DropRateLimit && settled && (canStep || canLower))
         {
             _lastStepAt = now;
             _dropSamples.Clear();
-            Eng.QualityStep++;
+            if (canStep)
+            {
+                Eng.QualityStep++;
+                ShowToast("Frames were dropping, so NOVA Motion switched to a lighter model to stay smooth.");
+            }
+            else
+            {
+                Eng.RateStep++;
+                ShowToast("Frames were dropping, so NOVA Motion lowered the frame rate to keep playback steady.");
+            }
             _ = SaveAndApplyAsync();
-            ShowToast("Frames were dropping, so NOVA Motion switched to a lighter model to stay smooth.");
         }
     }
 
@@ -414,6 +429,7 @@ public sealed partial class MainViewModel
                 ModelWhy = TrackInfo.Str(json?["why"]) ?? ""; Raise(nameof(ModelWhy));
                 return;
             }
+            _engineLighter = json?["lighter"] is not System.Text.Json.Nodes.JsonValue lv || !lv.TryGetValue(out bool l) || l;
             var name = EngineCatalog.ModelName("rife-" + model.Replace('_', '.').Replace(".lite", "_lite"));
             // On cards that can't run the AI at full size: e.g. "· AI at 960×540"
             if (TrackInfo.Dbl(json?["scale"]) is > 0 and < 1 && TrackInfo.Dbl(json?["ai_width"]) is > 0 and var aw && TrackInfo.Dbl(json?["ai_height"]) is > 0 and var ah)
