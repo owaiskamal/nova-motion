@@ -322,11 +322,23 @@ check(o.fps == Fraction(72), f"144 Hz: 24 fps film goes to 72 (each frame 2 refr
 o = run({"engine": "mvtools", "target": 60}, fps=23.976, display=144.0, frames=48)
 check(o.fps == Fraction(72000, 1001), f"144 Hz: 23.976 goes to 71.93, display-resample covers the rest ({o.fps})")
 o = run({"engine": "mvtools", "target": 60}, fps=25.0, display=144.0, frames=48)
-check(o.fps == Fraction(60), f"144 Hz: 25 fps has no even rate near 60, stays 60 ({o.fps})")
+check(o.fps == Fraction(75), f"144 Hz: 25 fps goes to 75 (3x, 50 AI frames/s) instead of 60 (55/s, uneven) ({o.fps})")
+o = run({"engine": "mvtools", "target": "display/2"}, fps=25.0, display=144.0, frames=48)
+check(o.fps == Fraction(75), f"144 Hz, half the refresh: 25 fps goes to 75, not 72 (71 AI frames/s) ({o.fps})")
+o = run({"engine": "mvtools", "target": 60}, fps=25.0, display=60.0, frames=48)
+check(o.fps == Fraction(60), f"60 Hz: 25 fps stays 60 (75 is more than the screen shows) ({o.fps})")
 o = run({"engine": "mvtools", "target": 60}, fps=24.0, display=60.0, frames=48)
 check(o.fps == Fraction(60), f"60 Hz: 60 stays 60 ({o.fps})")
 o = run({"engine": "mvtools", "target": 60}, fps=30.0, display=144.0, frames=48)
 check(o.fps == Fraction(60), f"144 Hz: 30 fps stays 60 (x2; 72 is not a multiple) ({o.fps})")
+
+# Lower the rate when even the fastest option can't keep up (GTX 1650: 72/s at half size)
+_ns2 = {"__file__": SCRIPT, "video_in": core.std.BlankClip(length=1)}
+vs.clear_outputs(); exec(compile(src_text.replace("build(video_in).set_output()", "pass"), SCRIPT, "exec"), _ns2)
+ar = _ns2["affordable_rate"]
+check(ar(Fraction(75), Fraction(25), 71.6) == Fraction(75), "affordable: 25 -> 75 needs 50/s, a 72/s card keeps it")
+check(ar(Fraction(72), Fraction(25), 40.0) == Fraction(50), "affordable: a card making 40/s plays 25 -> 50 (25/s) instead of 72 (71/s)")
+check(ar(Fraction(60), Fraction(24), None) == Fraction(60), "affordable: untuned, nothing changes")
 
 # Choosing the model from this PC's measurements (tuning.json)
 ch = novamotion_trt.choose_model

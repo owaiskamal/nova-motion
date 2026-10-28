@@ -116,16 +116,88 @@ def target_fps(cfg, src):
     t = cfg.get("target", "display")
     d = display_rate()
     if t in ("display", "display/2"):
+        known = d is not None
         d = d or Fraction(60)
         # Half the refresh rate keeps an even cadence on 120-240 Hz screens at a fraction of the GPU cost
-        return d / 2 if t == "display/2" and d >= 100 else d   # on 60 Hz, half (30) would be worse
+        want = d / 2 if t == "display/2" and d >= 100 else d   # on 60 Hz, half (30) would be worse
+        return multiple_rate(want, src, d) if known else want
     if isinstance(t, str) and t.lower().startswith("x"):
         want = src * int(t[1:] or 2)
     else:
-        want = even_rate(as_fraction(t), src, d)
+        want = multiple_rate(even_rate(as_fraction(t), src, d), src, d)
     # Frames above the refresh rate are generated and then thrown away by the player:
     # pure wasted GPU work (measured: x3 on a 60 Hz TV dropped 15 of every 75 frames).
     return min(want, d) if d else want
+
+
+def multiple_rate(want, src, display):
+    """Live playback only (the screen is known). A rate that isn't a whole multiple of the source
+    makes the AI work on almost every output frame: 25 fps to 72 needs 71 new frames a second.
+    A whole multiple near the target needs far fewer and moves evenly: 25 -> 75 needs 50
+    (2 new frames per real one). Used when one lies between 85 % and 130 % of the target and
+    the screen can show it."""
+    if not display or float(src) <= 0:
+        return want
+    ratio = float(want) / float(src)
+    if abs(ratio - round(ratio)) < 0.005:
+        return want                                  # already a whole multiple (24 -> 72, 30 -> 60)
+    best = None
+    for k in range(2, 9):
+        rate = src * k
+        if float(rate) > float(display) * 1.001 or not (0.85 <= float(rate) / float(want) <= 1.3):
+            continue
+        if best is None or abs(float(rate) - float(want)) < abs(float(best) - float(want)):
+            best = rate
+    return best if best is not None else want
+
+
+AI_SCALES_ALL = [1.0, 0.75, 0.5]
+
+
+def ai_capacity(cfg, width, height):
+    """The most AI frames a second this PC's tuning says any option can make for this video size,
+    or None when untuned. TensorRT: the measured models at each allowed AI size; Vulkan: its
+    measured model/size options."""
+    tuning = {} if os.environ.get("NOVAMOTION_NO_TUNING") else load_tuning()
+    fixed = None if (cfg.get("ai_scale") or "auto") == "auto" else float(cfg["ai_scale"])
+    scales = [fixed] if fixed else AI_SCALES_ALL
+    best = None
+    if cfg.get("engine") == "rife_trt" and tuning.get("sizes"):
+        for key, fps in tuning["sizes"].items():
+            try:
+                tw, th = (int(x) for x in key.split("x"))
+            except ValueError:
+                continue
+            for v in (fps or {}).values():
+                for sc in scales:
+                    cap = float(v) * (11 / 12) * (tw * th) / (max(1, width * height) * sc * sc)
+                    best = cap if best is None else max(best, cap)
+            break
+    elif cfg.get("engine") == "rife" and (tuning.get("vulkan") or {}).get("options"):
+        v = tuning["vulkan"]
+        sw, sh = (int(x) for x in str(v.get("source", "1920x1080")).split("x"))
+        for key, fps in v["options"].items():
+            sc = float(key.rpartition("@")[2] or 1)
+            if fixed and abs(sc - fixed) > 1e-6:
+                continue
+            cap = float(fps) * (11 / 12) * (sw * sh) / max(1, width * height)
+            best = cap if best is None else max(best, cap)
+    return best
+
+
+def affordable_rate(dst, src, capacity):
+    """When even the fastest option can't make the frames dst needs, a lower whole multiple of
+    the source that it can make: steady 50 fps beats 72 with 40 frames a second dropped."""
+    if capacity is None:
+        return dst
+    ratio = Fraction(dst) / Fraction(src)
+    need = float(dst) * (ratio.numerator - 1) / ratio.numerator
+    if need <= capacity:
+        return dst
+    for k in range(int(float(dst) / float(src)), 1, -1):
+        if float(src) * (k - 1) * 1.1 <= capacity:
+            return src * k
+    return dst
 
 
 def even_rate(want, src, display):
@@ -430,6 +502,11 @@ def build_engine(clip):
         return clip
 
     dst = target_fps(cfg, src)
+    if globals().get("display_fps"):    # live playback: never ask for more than tuning says this PC makes
+        lower = affordable_rate(dst, src, ai_capacity(cfg, clip.width, clip.height))
+        if lower != dst:
+            dbg(f"{dst} needs more AI frames than this PC makes; playing {lower} instead")
+            dst = lower
     if float(dst) < float(src) * 1.1:   # nothing meaningful to add
         return clip
 

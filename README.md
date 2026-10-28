@@ -67,6 +67,7 @@ TensorRT is what makes AI interpolation real-time: same model, 1.65× the Vulkan
 - **Tuning** (`tune.cmd`, offered on Home after TensorRT setup) builds and times every installed model on your PC. The engine then picks, per video, the best model and AI size that keep up: full size before a better model at a smaller size. If frames still drop, the player steps to a lighter option on its own and says so.
 - **AI size, like DLSS rendering low and upscaling:** on cards that can't keep up at full size, RIFE works on a 75 % or half-size copy and only the in-between frames are scaled back up. Real frames always stay full size. GTX-class cards start at half size until tuned. Vulkan RIFE (Intel, AMD and NVIDIA) does the same: built-in graphics such as Intel Iris Xe and GTX-class cards run it at half size.
 - **Even frame pacing:** a 60 fps target on a 144 Hz screen holds frames for 2, then 3 refreshes, which looks like judder. When a whole multiple of the source divides the refresh rate evenly, the engine uses it: 24 fps film on 144 Hz plays at 72 (2 refreshes each), for the same AI work as 60.
+- **Rates the AI can afford:** a rate that isn't a whole multiple of the source makes the AI work on almost every frame (25 → 72 needs 71 new frames a second). During playback the engine picks a whole multiple near the target when there is one (25 fps on 144 Hz → 75, which needs 50), and when tuning says even the fastest option can't keep up, it plays a lower multiple (25 → 50) instead of dropping frames.
 
 ### Hard problems solved
 
