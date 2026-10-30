@@ -80,6 +80,12 @@ jobs:
           copy /y engine\novamotion_trt.py runtime\
           xcopy /e /y /i /q engine\mpv runtime\mpv\portable_config
 
+      - name: Setup check (the summary build.cmd ends with)
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File setup\Setup.ps1 -CheckOnly
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
       # Walk through the UI on the runner's desktop and screenshot each screen
       - name: UI run with screenshots
         shell: pwsh

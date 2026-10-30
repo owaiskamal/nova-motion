@@ -117,6 +117,8 @@ if ($mv) { Write-Host ("    {0:N1} fps" -f $mv) } else { Write-Host "    failed"
 Remove-Item Env:\NOVAMOTION_ENGINE_CONFIG, Env:\NOVAMOTION_NO_FALLBACK, Env:\NOVAMOTION_NO_TUNING -ErrorAction SilentlyContinue
 
 $result = [ordered]@{
+    # 2: measured on moving frames (1 used a still clip, which read several times too fast)
+    version  = 2
     gpu      = ($gpus -join ", ")
     measured = (Get-Date).ToString("s")
     vulkan   = [ordered]@{ device = $device; source = "1920x1080"; options = $options }

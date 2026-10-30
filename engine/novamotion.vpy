@@ -278,7 +278,9 @@ class TooSlow(Exception):
 def load_tuning():
     try:
         with open(os.path.join(HERE, "tuning.json"), encoding="utf-8-sig") as f:
-            return json.load(f)
+            data = json.load(f)
+        # Version 1 was measured on a still clip and reads several times faster than real video
+        return data if int(data.get("version") or 1) >= 2 else {}
     except (OSError, ValueError):
         return {}
 

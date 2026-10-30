@@ -313,9 +313,11 @@ check(o.num_frames == 120, f"export: no source_frames keeps the clip's own lengt
 
 # Tuning written by Windows PowerShell starts with a byte-order mark
 _bom = os.path.join(tempfile.mkdtemp(), "tuning.json")
-open(_bom, "wb").write(b"\xef\xbb\xbf" + json.dumps({"sizes": {"960x576": {"v4_6": 73.2}}}).encode())
+open(_bom, "wb").write(b"\xef\xbb\xbf" + json.dumps({"version": 2, "sizes": {"960x576": {"v4_6": 73.2}}}).encode())
 _saved = novamotion_trt.TUNING_PATH; novamotion_trt.TUNING_PATH = _bom
 check(novamotion_trt.load_tuning().get("sizes", {}).get("960x576", {}).get("v4_6") == 73.2, "tune: tuning.json with a byte-order mark is read")
+open(_bom, "w").write(json.dumps({"sizes": {"960x576": {"v4_6": 73.2}}}))
+check(novamotion_trt.load_tuning() == {}, "tune: results from before version 2 (still clip) are ignored")
 novamotion_trt.TUNING_PATH = _saved
 
 # Even cadence on high-refresh screens

@@ -142,6 +142,8 @@ foreach ($m in $models) {
 }
 
 $result = [ordered]@{
+    # 2: measured on moving frames (1 used a still clip, which read several times too fast)
+    version  = 2
     gpu      = $gpu
     measured = (Get-Date).ToString("s")
     streams  = $best

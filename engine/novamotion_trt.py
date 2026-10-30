@@ -73,6 +73,7 @@ def installed_model(name):
 # and drawing, which share the GPU.
 
 TUNING_PATH = os.path.join(HERE, "tuning.json")
+TUNING_VERSION = 2
 # Best first. 4.26 is the newest full model; lite models trade a little detail for speed.
 QUALITY_ORDER = ["v4_26", "v4_25", "v4_6", "v4_25_lite", "v4_22_lite"]
 HEADROOM = 1.4   # decoding and drawing share the GPU: the measured speed is not all for RIFE
@@ -104,7 +105,9 @@ def load_tuning():
     try:
         # utf-8-sig: Windows PowerShell writes JSON with a byte-order mark, which plain utf-8 rejects
         with open(TUNING_PATH, encoding="utf-8-sig") as f:
-            return json.load(f)
+            data = json.load(f)
+        # Version 1 was measured on a still clip and reads several times faster than real video
+        return data if int(data.get("version") or 1) >= TUNING_VERSION else {}
     except (OSError, ValueError):
         return {}
 

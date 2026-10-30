@@ -89,11 +89,16 @@ TensorRT is what makes AI interpolation real-time: same model, 1.65× the Vulkan
 
 **From source:**
 
-1. Install the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (`winget install Microsoft.DotNet.SDK.8`).
-2. Run **`build.cmd`**. The first run downloads the runtime (about 150 MB: mpv, VapourSynth, RIFE, MVTools, yt-dlp), runs the tests and builds `dist\NovaMotion.exe`.
-3. **NVIDIA RTX and GTX 16-series users:** run **`setup-tensorrt.cmd`** once. It downloads NVIDIA TensorRT through [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) (about 3.3 GB) with RIFE 4.6, 4.22 Lite, 4.25 Lite and 4.26, then tunes for your PC (about 10 minutes on an RTX card, longer on a GTX), measuring each model so playback uses the best one your card keeps up with. Set up TensorRT before October 2026? Run **`get-models.cmd`** once to add the newer models (about 60 MB, no TensorRT download). Run **`tune.cmd`** again any time, e.g. after a driver update. GTX-class cards are tuned at the half size they play at.
-4. **No NVIDIA card, or no TensorRT** (Intel Iris Xe and other built-in graphics, AMD, older NVIDIA): run **`tune.cmd`** too. It measures RIFE on Vulkan at full, 75 % and half AI size on the fastest graphics chip, and MVTools on the processor. NOVA Motion then plays the AI wherever it keeps up and MVTools where it can't, so playback stays steady. Built-in graphics play MVTools until tuned.
-5. Start `dist\NovaMotion.exe`, paste a link or drop a file, and press **Play**.
+1. Run **`build.cmd`**. It sets everything up and says what it's doing; run it again any time to repair or update, finished steps are skipped:
+   - the .NET 8 SDK (offers to install it with winget),
+   - the player runtime: mpv, VapourSynth, RIFE on Vulkan with four models, MVTools, yt-dlp (about 150 MB),
+   - on NVIDIA RTX and GTX 16 cards, NVIDIA TensorRT through [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) with RIFE 4.6, 4.22 Lite, 4.25 Lite and 4.26 (asks first: about 3 GB, one time),
+   - the tests, then the app in `dist\`,
+   - tuning for your PC (TensorRT, or RIFE on Vulkan and MVTools), redone when it's outdated or the graphics changed,
+   - Start menu and desktop shortcuts, and a summary of what's ready.
+2. Start **NOVA Motion**, paste a link or drop a file, and press **Play**.
+
+Options: `build.cmd -Yes` answers every question with yes, `-NoTensorRT`, `-NoTune`, `-NoShortcuts`, and `-CheckOnly` only reports what's set up. The separate scripts still work on their own: `setup-tensorrt.cmd`, `get-models.cmd`, `tune.cmd`, `benchmark.cmd`, `collect-logs.cmd`.
 
 Optional: load `extension\` in Chrome or Edge (`chrome://extensions` → Developer mode → Load unpacked). Alt+Shift+F on any video page sends it to NOVA Motion at the same timestamp.
 

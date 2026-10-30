@@ -19,7 +19,9 @@ param(
     [switch]$KeepDownloads,
     [switch]$Force,
     # Only add missing RIFE models (TensorRT is already installed): no runtime download
-    [switch]$ModelsOnly
+    [switch]$ModelsOnly,
+    # Setup.ps1 tunes afterwards itself
+    [switch]$NoTune
 )
 
 $ErrorActionPreference = "Stop"
@@ -198,9 +200,11 @@ try {
     }
 } catch { Write-Warning "akarin not installed ($_). TensorRT still works; non-whole rate steps cost a little more GPU." }
 
-Step "Tuning for this PC: building and timing each model at 1080p (about 10 minutes)"
-& (Join-Path $PSScriptRoot "Tune.ps1")
-if ($LASTEXITCODE -ne 0) { Write-Warning "Tuning did not finish; run tune.cmd later. TensorRT still works with the default model." }
+if (-not $NoTune) {
+    Step "Tuning for this PC: building and timing each model (about 10 minutes)"
+    & (Join-Path $PSScriptRoot "Tune.ps1")
+    if ($LASTEXITCODE -ne 0) { Write-Warning "Tuning did not finish; run tune.cmd later. TensorRT still works with the default model." }
+}
 
 if (-not $KeepDownloads) {
     Info "removing downloaded archives (use -KeepDownloads to keep them)"

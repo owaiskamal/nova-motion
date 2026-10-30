@@ -458,6 +458,12 @@ public sealed partial class MainViewModel
         {
             var path = Runtime is null ? null : Path.Combine(Runtime.Root, "tuning.json");
             if (path is not null && File.Exists(path)
+                && System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path)) is { } tver && TrackInfo.Int(tver["version"]) < 2)
+            {
+                TuningText = "Tuned with an older test that overstated speed. Tune again (about 10 minutes) so NOVA Motion picks options this PC really keeps up with.";
+                path = null;
+            }
+            if (path is not null && File.Exists(path)
                 && System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path)) is { } t
                 && t["sizes"] is System.Text.Json.Nodes.JsonObject all
                 && all.FirstOrDefault() is { Key: var sizeKey, Value: System.Text.Json.Nodes.JsonObject sizes })
