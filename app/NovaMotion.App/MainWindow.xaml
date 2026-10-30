@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:c="clr-namespace:NovaMotion.App.Controls"
         xmlns:v="clr-namespace:NovaMotion.App.Views"
-        Title="NOVA Studio" Width="1280" Height="800" MinWidth="900" MinHeight="580"
+        Title="NOVA Studio" Icon="/Assets/NovaMotion.ico" Width="1280" Height="800" MinWidth="900" MinHeight="580"
         Background="{StaticResource Base}" Foreground="{StaticResource Text}"
         FontFamily="{StaticResource UiFont}" FontSize="14"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Ideal"

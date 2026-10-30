@@ -13,6 +13,8 @@
     <Product>NOVA Motion</Product>
     <Copyright>Copyright (C) 2026 Novabit. GPL-3.0-or-later.</Copyright>
     <Company>Novabit</Company>
+    <!-- The .exe's icon: shortcuts, Explorer, taskbar, and the tray icon (read from the .exe) -->
+    <ApplicationIcon>Assets\NovaMotion.ico</ApplicationIcon>
     <!-- dotnet publish -c Release -r win-x64 → single NovaMotion.exe -->
     <SelfContained>false</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
@@ -20,6 +22,7 @@
 
   <ItemGroup>
     <Resource Include="Fonts\*.ttf" />
+    <Resource Include="Assets\NovaMotion.ico" />
   </ItemGroup>
 
   <ItemGroup>
