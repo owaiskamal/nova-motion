@@ -1,9 +1,19 @@
 name: Release
 
-# Push a tag like v0.2.0 to build the installer and publish it as a GitHub release.
+# Builds the installer and publishes it as a GitHub release. Either push a tag like v0.2.0, or
+# run it from Actions > Release > Run workflow with the version: it then tags the commit itself.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. v0.2.0"
+        required: true
+        default: "v0.2.0"
+
+env:
+  TAG: ${{ github.event.inputs.version || github.ref_name }}
 
 jobs:
   installer:
@@ -27,7 +37,7 @@ jobs:
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y | Out-Null }
-          $version = "${{ github.ref_name }}".TrimStart("v")
+          $version = "$env:TAG".TrimStart("v")
           & $iscc /Q "/DAppVersion=$version" installer\NovaMotion.iss
           if ($LASTEXITCODE -ne 0) { exit 1 }
       - name: Publish the release
@@ -36,10 +46,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $file = (Get-ChildItem dist-installer\*.exe | Select-Object -First 1).FullName
-          # Written notes for this version when there are some (docs/releases/<tag>.md), else GitHub's list of changes
-          $notes = "docs/releases/${{ github.ref_name }}.md"
+          # Written notes for this version when there are some (docs/releases/<tag>.md), else GitHub's list of changes.
+          # --target tags this commit when the tag doesn't exist yet (a run started by hand).
+          $notes = "docs/releases/$env:TAG.md"
           if (Test-Path $notes) {
-            gh release create "${{ github.ref_name }}" $file --title "NOVA Motion ${{ github.ref_name }}" --notes-file $notes
+            gh release create "$env:TAG" $file --target "$env:GITHUB_SHA" --title "NOVA Motion $env:TAG" --notes-file $notes
           } else {
-            gh release create "${{ github.ref_name }}" $file --title "NOVA Motion ${{ github.ref_name }}" --generate-notes
+            gh release create "$env:TAG" $file --target "$env:GITHUB_SHA" --title "NOVA Motion $env:TAG" --generate-notes
           }
+          if ($LASTEXITCODE -ne 0) { exit 1 }
