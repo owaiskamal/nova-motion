@@ -132,14 +132,18 @@ def choose_model(requested, width, height, src, dst, step=0, tuning=None, gpu_cl
 
 
 def choose_plan(requested, width, height, src, dst, step=0, tuning=None, gpu_class="", ai_scale="auto",
-                scales=None):
+                scales=None, ready=None):
     """(model name, AI size scale, why).
 
     requested: 'auto' or a model such as 'rife-v4.26'. ai_scale: 'auto' or a number.
     step: how many steps lighter than the best fit to go (the player asks when frames drop).
     With measurements, the best option that keeps up wins, full size before a better model at a
     smaller size. Without, RTX starts at v4.6 full size, GTX-class cards at the lightest model
-    and half size."""
+    and half size.
+
+    ready(model, scale) -> bool: a step down only goes to options whose TensorRT engine is
+    already built. Building one takes minutes with the player frozen, and the frames lost
+    meanwhile would read as the GPU being too slow, so the next step would build again."""
     fixed = None if ai_scale in (None, "", "auto") else float(ai_scale)
     scales = [fixed] if fixed else (scales or AI_SCALES)
     manual = bool(requested and requested != "auto")
@@ -154,6 +158,8 @@ def choose_plan(requested, width, height, src, dst, step=0, tuning=None, gpu_cla
         else:
             base = "v4_6" if "v4_6" in models else models[0]
             ladder = [(m, scales[0]) for m in models[models.index(base):]] + [(models[-1], sc) for sc in scales[1:]]
+        if step > 0 and ready:
+            ladder = ladder[:1] + [o for o in ladder[1:] if ready(*o)]
         m, sc = ladder[min(step, len(ladder) - 1)]
         return m, sc, label or "default (run Tune for this PC to pick automatically)"
 
@@ -172,7 +178,8 @@ def choose_plan(requested, width, height, src, dst, step=0, tuning=None, gpu_cla
     if fits:
         pick = fits[0]
         # A step down goes to an option that is actually cheaper than the best fit
-        cheaper = sorted((o for o in fits if capacity[o] > capacity[pick]), key=lambda o: capacity[o])
+        cheaper = sorted((o for o in fits if capacity[o] > capacity[pick] and (ready is None or ready(*o))),
+                         key=lambda o: capacity[o])
         if step > 0 and cheaper:
             pick = cheaper[min(step - 1, len(cheaper) - 1)]
         m, sc = pick
@@ -252,6 +259,26 @@ def scene_changes(clip):
     return core.std.ModifyFrame(diff, [diff, before, after], mark)
 
 
+def engine_ready(model, width, height):
+    """Whether a TensorRT engine for this model and AI size (padded) is already built."""
+    import json
+    path = os.path.join(ENGINE_DIR, "novamotion-engines.json")
+    try:
+        data = json.load(open(path, encoding="utf-8-sig")) if os.path.isfile(path) else {}
+    except (OSError, ValueError):
+        return False
+    pw, ph = width + (-width) % PAD, height + (-height) % PAD
+    entry = data.get(f"{pw}x{ph}") or {}
+    return model in (entry.get("models") or [entry.get("model")])
+
+
+def ai_size(width, height, scale):
+    """The AI's copy size for a video size and AI scale (even numbers), as interpolate makes it."""
+    if scale >= 1:
+        return width, height
+    return max(64, round(width * scale / 2) * 2), max(64, round(height * scale / 2) * 2)
+
+
 def record_engine(width, height, model):
     """Notes in ENGINE_DIR that an engine for this padded size exists (the app shows which are ready)."""
     import json
@@ -259,9 +286,13 @@ def record_engine(width, height, model):
     try:
         data = json.load(open(path, encoding="utf-8-sig")) if os.path.isfile(path) else {}
         key = f"{width}x{height}"
-        if key in data and data[key].get("model") == model:
+        entry = data.get(key) or {}
+        models = list(entry.get("models") or ([entry["model"]] if entry.get("model") else []))
+        if model in models and entry.get("model") == model:
             return
-        data[key] = {"model": model, "built": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        if model not in models:
+            models.append(model)
+        data[key] = {"model": model, "models": models, "built": time.strftime("%Y-%m-%dT%H:%M:%S")}
         tmp = path + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
@@ -358,15 +389,20 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
     ratio = Fraction(dst) / Fraction(src)
     p, q = ratio.numerator, ratio.denominator
     from vsmlrt import RIFEModel
-    chosen, scale, why = choose_plan(model_name, w, h, src, dst, step, gpu_class=gpu_class, ai_scale=ai_scale)
+    ready = lambda m, sc: engine_ready(getattr(RIFEModel, m).name, *ai_size(w, h, sc))
+    chosen, scale, why = choose_plan(model_name, w, h, src, dst, step, gpu_class=gpu_class, ai_scale=ai_scale, ready=ready)
     model = getattr(RIFEModel, chosen)
 
     # The AI's copy: smaller when the card needs it (even sizes), padded to what the model takes
-    sw, sh = (w, h) if scale >= 1 else (max(64, round(w * scale / 2) * 2), max(64, round(h * scale / 2) * 2))
+    sw, sh = ai_size(w, h, scale)
     # Whether a step down has anywhere to go: the player lowers the frame rate instead when not
-    lighter = choose_plan(model_name, w, h, src, dst, step + 1, gpu_class=gpu_class, ai_scale=ai_scale)[:2] != (chosen, scale)
-    write_state(engine="rife_trt", model=chosen, scale=scale, ai_width=sw, ai_height=sh, why=why,
-                width=w, height=h, src=float(src), dst=float(dst), lighter=lighter)
+    lighter = choose_plan(model_name, w, h, src, dst, step + 1, gpu_class=gpu_class, ai_scale=ai_scale,
+                          ready=ready)[:2] != (chosen, scale)
+    building = not ready(chosen, scale)
+    state = dict(engine="rife_trt", model=chosen, scale=scale, ai_width=sw, ai_height=sh, why=why,
+                 width=w, height=h, src=float(src), dst=float(dst), lighter=lighter)
+    # The app reads "building" to tell a TensorRT build (minutes, player frozen) from a stuck player
+    write_state(**state, building=building)
     small = core.resize.Bilinear(rgbh, sw, sh) if (sw, sh) != (w, h) else rgbh
     pw, ph = (-sw) % PAD, (-sh) % PAD
     clip = core.std.AddBorders(small, right=pw, bottom=ph) if (pw or ph) else small
@@ -405,6 +441,8 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
     merged = RIFEMerge(left, right, mask, model=model, backend=backend(gpu, streams))
     _log(f"model {chosen} at {sw}x{sh}: {why}", t0)
     record_engine(clip.width, clip.height, model.name)   # RIFEMerge has built or loaded it by now
+    if building:
+        write_state(**state, building=False)
     # vs-mlrt returns 32-bit float frames even from a 16-bit input, so copied source frames
     # must be converted to the same format before the two can be mixed in one clip
     made = core.std.Crop(merged, right=pw, bottom=ph) if (pw or ph) else merged

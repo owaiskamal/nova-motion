@@ -75,6 +75,7 @@ public sealed partial class MainViewModel
         });
         PrepareEnginesCommand = new Command(PrepareEngines);
         TuneCommand = new Command(Tune);
+        PlayWithoutSmoothingCommand = new Command(() => _ = PlayWithoutSmoothingAsync(automatic: false));
         DismissTunePromptCommand = new Command(DismissTunePrompt);
         UpdateYtDlpCommand = new Command(() => _ = UpdateYtDlpAsync(force: true));
         SelectQualityNowCommand = new Command(p => { if (p is OptionItem o) _ = SelectQualityNowAsync(o); });
@@ -142,7 +143,17 @@ public sealed partial class MainViewModel
     public bool IsMvTools => Eng.Engine == "mvtools";
     public bool HasModels => Models.Count > 1 && IsRife;
 
-    public bool SmoothingEnabled { get => Eng.Enabled; set { if (Eng.Enabled == value) return; Eng.Enabled = value; Raise(); _ = SaveAndApplyAsync(); } }
+    public bool SmoothingEnabled
+    {
+        get => Eng.Enabled;
+        set
+        {
+            if (Eng.Enabled == value) return;
+            // A player stuck in the engine can't take the change: start it again without smoothing
+            if (!value && IsStuck) { _ = PlayWithoutSmoothingAsync(automatic: false); return; }
+            Eng.Enabled = value; Raise(); _ = SaveAndApplyAsync();
+        }
+    }
     public bool Dedup { get => Eng.Dedup; set { if (Eng.Dedup == value) return; Eng.Dedup = value; Raise(); _ = SaveAndApplyAsync(); } }
     public bool SceneDetect { get => Eng.SceneDetect; set { if (Eng.SceneDetect == value) return; Eng.SceneDetect = value; Raise(); _ = SaveAndApplyAsync(); } }
     public bool Demo { get => Eng.Demo; set { if (Eng.Demo == value) return; Eng.Demo = value; Raise(); Raise(nameof(ShowDemoLabels)); _ = SaveAndApplyAsync(); } }
@@ -293,6 +304,8 @@ public sealed partial class MainViewModel
         }
         else s = EngineState.Failed;
 
+        if (s == EngineState.Active && EngineState != EngineState.Active) _activeSince = now;
+        else if (s != EngineState.Active) _activeSince = null;
         EngineState = s;
         // Called for every frame-rate report: only notify the view when something it shows changed
         var signature = $"{s}|{OutputFpsText}|{SourceFpsText}|{DisplayText}|{VideoSizeText}|{DecoderText}|{Eng.Engine}";
@@ -342,11 +355,111 @@ public sealed partial class MainViewModel
     /// <summary>Dropped frames per second, averaged over this window, that count as "not keeping up".</summary>
     public const double DropRateLimit = 2.5;
     public static readonly TimeSpan DropWindow = TimeSpan.FromSeconds(6);
+    /// <summary>How long after the engine starts running drops are not counted.</summary>
+    public static readonly TimeSpan DropGrace = TimeSpan.FromSeconds(6);
+    private DateTime? _activeSince;
 
     private double _dropRate;
     /// <summary>Frames the player dropped per second over the last few seconds.</summary>
     public double DropRate { get => _dropRate; private set { if (Set(ref _dropRate, value)) Raise(nameof(DropText)); } }
     public string DropText => DropRate < 0.2 ? "None" : $"{DropRate:0.#} a second";
+
+    // ------------------------------------------------------------------ stuck engine
+
+    private DateTime? _lastProgressAt;
+    private bool _autoRecovered;
+    private bool _stalled;
+    /// <summary>Playing, yet no new frame for this long: the player is stuck (usually in the engine).</summary>
+    public static readonly TimeSpan StallAfter = TimeSpan.FromSeconds(8);
+    /// <summary>Stuck this long with no TensorRT build under way: restart without smoothing on its own.</summary>
+    public static readonly TimeSpan AutoRecoverAfter = TimeSpan.FromSeconds(25);
+
+    /// <summary>The player isn't moving: show "Play without smoothing", the way out.</summary>
+    public bool IsStuck => HasMedia && (_stalled || EngineState == EngineState.PreparingLong);
+    public string StuckText => EngineBuilding
+        ? "TensorRT is building an engine for this size. It's a one-time wait of a few minutes."
+        : "Smoothing is taking too long to start.";
+    public Command PlayWithoutSmoothingCommand { get; private set; } = null!;
+
+    private bool EngineBuilding
+    {
+        get
+        {
+            try
+            {
+                return File.Exists(_store.EngineStatePath)
+                    && System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(_store.EngineStatePath))?["building"] is System.Text.Json.Nodes.JsonValue b
+                    && b.TryGetValue(out bool v) && v;
+            }
+            catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { return false; }
+        }
+    }
+
+    private bool _probing;
+    private DateTime? _lastProbeAt;
+
+    private void WatchStall(DateTime now)
+    {
+        var playing = HasMedia && !IsOpening && _loadedAt is not null && !_state.Paused && !_state.Seeking && !_state.Buffering && Eng.Enabled;
+        var since = _lastProgressAt ?? _loadedAt;
+        var quiet = playing && since is { } t && now - t > StallAfter;
+        if (!quiet) { SetStalled(false); }
+        else if (!_probing && (_lastProbeAt is null || now - _lastProbeAt > TimeSpan.FromSeconds(4)))
+            _ = ProbeAsync(now);   // no position for a while: ask the player before calling it stuck
+        if (EngineState == EngineState.PreparingLong) Raise(nameof(IsStuck), nameof(StuckText));
+        // Stuck with no build going on: nothing will come of waiting. Once per video.
+        if (_stalled && !_autoRecovered && since is { } s && now - s > AutoRecoverAfter && !EngineBuilding)
+        {
+            _autoRecovered = true;
+            _ = PlayWithoutSmoothingAsync(automatic: true);
+        }
+    }
+
+    /// <summary>A player stuck in the engine doesn't answer (or answers the same position).</summary>
+    private async Task ProbeAsync(DateTime now)
+    {
+        _probing = true;
+        _lastProbeAt = now;
+        try
+        {
+            var before = _state.Position;
+            var answer = await Send("get_property", "time-pos");
+            if (answer is null) SetStalled(true);                                   // no answer in 5 s
+            else if (answer is System.Text.Json.Nodes.JsonValue v && v.TryGetValue(out double pos) && Math.Abs(pos - before) < 0.01)
+                SetStalled(true);                                                  // answers, but doesn't move
+            else { _lastProgressAt = _clock(); SetStalled(false); }               // fine: events were just quiet
+        }
+        finally { _probing = false; }
+    }
+
+    private void SetStalled(bool value)
+    {
+        if (value == _stalled) return;
+        _stalled = value;
+        Raise(nameof(IsStuck), nameof(StuckText));
+    }
+
+    /// <summary>
+    /// The way out of a stuck engine: the player is waiting inside it and can't take commands, so it
+    /// is closed and started again at the same moment, without smoothing.
+    /// </summary>
+    private async Task PlayWithoutSmoothingAsync(bool automatic)
+    {
+        if (_queue.Current is null) return;
+        var at = _state.Position;
+        Eng.Enabled = false;
+        _store.Save(_settings);
+        Raise(nameof(SmoothingEnabled));
+        var old = _backend;
+        _backend = null;                       // its last events are ignored from here on
+        _stalled = false;
+        if (old is not null) { try { await old.DisposeAsync(); } catch (Exception) { /* already gone */ } }
+        await PlayCurrentAsync(at > 1 ? at : null);
+        ShowToast(automatic
+            ? "Smoothing got stuck, so the video continues without it. Turn it back on in the Motion panel (Ctrl+S)."
+            : "Playing without smoothing. Turn it back on in the Motion panel (Ctrl+S).");
+        Raise(nameof(IsStuck));
+    }
 
     /// <summary>
     /// When frames keep dropping, the GPU isn't keeping up with the chosen model: switch to the
@@ -361,6 +474,9 @@ public sealed partial class MainViewModel
             DropRate = 0;
             return;
         }
+        // Frames lost while the engine starts or restarts (the player catching up) aren't the GPU
+        // falling behind; counting them stepped down again and again, each step a new engine build
+        if (_activeSince is null || now - _activeSince < DropGrace) { _dropSamples.Clear(); DropRate = 0; return; }
         _dropSamples.Add((now, _state.FrameDrops, _state.MistimedFrames));
         while (_dropSamples.Count > 0 && now - _dropSamples[0].At > DropWindow) _dropSamples.RemoveAt(0);
         var span = (now - _dropSamples[0].At).TotalSeconds;

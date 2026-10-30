@@ -18,15 +18,19 @@ internal sealed class FakeBackend : IPlayerBackend
     public Task StartAsync(string? target, AppSettings settings, CancellationToken ct = default)
     { Running = true; Starts++; return Task.CompletedTask; }
 
+    /// <summary>Stuck in the engine: answers nothing, like a frozen mpv. A restart clears it.</summary>
+    public bool Frozen;
+
     public Task<JsonNode?> CommandAsync(params object?[] command)
     {
         Commands.Add(command);
+        if (Frozen) return Task.FromException<JsonNode?>(new TimeoutException("mpv did not answer"));
         return Task.FromResult<JsonNode?>(JsonValue.Create(true));
     }
 
     public EngineSettings? Applied;
     public Task ApplyAsync(EngineSettings engine) { Applied = engine; return Task.CompletedTask; }
-    public ValueTask DisposeAsync() { Running = false; return ValueTask.CompletedTask; }
+    public ValueTask DisposeAsync() { Running = false; Frozen = false; return ValueTask.CompletedTask; }
 
     public void Prop(string name, JsonNode? value) => PropertyChanged?.Invoke(name, value);
     public void Event(string name, string json = "{}") => EventReceived?.Invoke(name, JsonNode.Parse(json));
@@ -125,8 +129,12 @@ internal static class ViewModelTests
         fake.Prop("vf", JsonNode.Parse("[{\"label\":\"novamotion\",\"enabled\":true}]"));
         fake.Prop("estimated-vf-fps", 60);
         vm.Tick();
-        var dropsAt = 0;
-        for (var i = 0; i < 16; i++) { now = now.AddSeconds(0.5); dropsAt += 5; fake.Prop("frame-drop-count", dropsAt); vm.Tick(); }
+        // Drops in the first seconds after the engine starts are the player catching up: ignored
+        for (var i = 0; i < 8; i++) { now = now.AddSeconds(0.5); fake.Prop("frame-drop-count", 40 * (i + 1)); vm.Tick(); }
+        check(vm.Settings.Active.Engine.QualityStep == 0, "vm: drops right after the engine starts don't step down");
+        for (var i = 0; i < 6; i++) { now = now.AddSeconds(0.5); vm.Tick(); }
+        var dropsAt = 320;
+        for (var i = 0; i < 30 && vm.Settings.Active.Engine.QualityStep == 0; i++) { now = now.AddSeconds(0.5); dropsAt += 5; fake.Prop("frame-drop-count", dropsAt); vm.Tick(); }
         check(vm.Settings.Active.Engine.QualityStep == 1 && fake.Applied?.QualityStep == 1 && vm.ToastText.Contains("lighter model"),
               $"vm: steady dropped frames switch to a lighter model (step {vm.Settings.Active.Engine.QualityStep}, rate {vm.DropRate:0.#})");
         for (var i = 0; i < 6; i++) { now = now.AddSeconds(0.5); dropsAt += 5; fake.Prop("frame-drop-count", dropsAt); vm.Tick(); }

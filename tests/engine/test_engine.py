@@ -377,6 +377,17 @@ check(cp("auto", 1920, 1080, Fraction(24), Fraction(60), 0, gtx_half)[:2] == ("v
 check(cp("auto", 1920, 1080, Fraction(24), Fraction(60), 1, gtx)[:2] == ("v4_22_lite", 0.5),
       "plan: a step down picks a cheaper option (lite at half size)")
 check(cp("auto", 1920, 1080, Fraction(25), Fraction(60), 0, gtx, ai_scale="1")[1] == 1.0, "plan: a size set in settings wins")
+check(cp("auto", 1920, 1080, Fraction(24), Fraction(60), 1, gtx, ready=lambda m, sc: False)[:2] == ("v4_6", 0.5),
+      "plan: a step down never goes to an engine that isn't built (it would freeze playback for minutes)")
+check(cp("auto", 1920, 1080, Fraction(24), Fraction(60), 1, gtx, ready=lambda m, sc: m == "v4_22_lite")[:2] == ("v4_22_lite", 0.5),
+      "plan: a step down goes to a built engine")
+_man = os.path.join(novamotion_trt.ENGINE_DIR, "novamotion-engines.json")
+_keep = open(_man).read() if os.path.isfile(_man) else None
+json.dump({"960x576": {"model": "v4_6", "models": ["v4_22_lite", "v4_6"]}, "1920x1088": {"model": "v4_6"}}, open(_man, "w"))
+check(novamotion_trt.engine_ready("v4_22_lite", 960, 540) and novamotion_trt.engine_ready("v4_6", 1920, 1080)
+      and not novamotion_trt.engine_ready("v4_26", 960, 540) and not novamotion_trt.engine_ready("v4_6", 1440, 810),
+      "engines: built ones are known per model and padded size")
+if _keep is not None: open(_man, "w").write(_keep)
 check(cp("auto", 1920, 1080, Fraction(25), Fraction(60), 0, {}, gpu_class="entry")[1] == 0.5
       and cp("auto", 1920, 1080, Fraction(25), Fraction(60), 0, {})[1] == 1.0, "plan: untuned, GTX starts at half size, RTX at full")
 check(ch("rife-v4.22_lite", 1920, 1088, Fraction(25), Fraction(60), 0, fast_pc)[0] == "v4_22_lite", "tune: a model chosen in settings wins")

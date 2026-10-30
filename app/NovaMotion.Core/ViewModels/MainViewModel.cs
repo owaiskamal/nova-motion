@@ -228,6 +228,8 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
             _store.WriteEngineConfig(Eng);
         }
         _engineLighter = true;
+        _autoRecovered = false;
+        _lastProgressAt = null;
         IsOpening = true;
         OpeningTitle = MediaSource.GuessTitle(target);
         Raise(nameof(Title), nameof(Origin), nameof(HasMedia));
@@ -257,9 +259,10 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         if (_backend is { IsRunning: true }) return;
         if (_backend is not null) await _backend.DisposeAsync();
         var b = _createBackend();
-        b.PropertyChanged += (n, d) => _host.Post(() => OnProperty(n, d));
-        b.EventReceived += (e, m) => _host.Post(() => OnEvent(e, m));
-        b.Exited += () => _host.Post(OnExited);
+        // A player replaced by a restart may still report on its way out: only the current one counts
+        b.PropertyChanged += (n, d) => _host.Post(() => { if (ReferenceEquals(_backend, b)) OnProperty(n, d); });
+        b.EventReceived += (e, m) => _host.Post(() => { if (ReferenceEquals(_backend, b)) OnEvent(e, m); });
+        b.Exited += () => _host.Post(() => { if (ReferenceEquals(_backend, b)) OnExited(); });
         _backend = b;
         _store.Save(_settings);
         await b.StartAsync(null, _settings);
@@ -496,6 +499,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         switch (name)
         {
             case "time-pos":
+                _lastProgressAt = _clock();
                 // mpv reports every frame; the controls only need about four updates a second
                 // (redrawing the overlay 60 times a second would cost real GPU time)
                 if (Math.Floor(_state.Position * 4) == Math.Floor(_lastShownPosition * 4)) return;
@@ -635,7 +639,9 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
             case PlayerAction.SpeedUp: await Send("multiply", "speed", 1.1); break;
             case PlayerAction.SpeedDown: await Send("multiply", "speed", 1 / 1.1); break;
             case PlayerAction.SpeedReset: await Send("set_property", "speed", 1.0); break;
-            case PlayerAction.ToggleSmoothing: SmoothingEnabled = !SmoothingEnabled; ShowToast(SmoothingEnabled ? "Smoothing on" : "Smoothing off"); break;
+            case PlayerAction.ToggleSmoothing:
+                if (IsStuck && SmoothingEnabled) { SmoothingEnabled = false; break; }   // restarts without it; says so
+                SmoothingEnabled = !SmoothingEnabled; ShowToast(SmoothingEnabled ? "Smoothing on" : "Smoothing off"); break;
             case PlayerAction.CycleEngine: CycleEngine(); break;
             case PlayerAction.CycleTarget: CycleTarget(); break;
             case PlayerAction.ToggleDemo: Demo = !Demo; ShowToast(Demo ? "Split screen: original on the left" : "Split screen off"); break;
@@ -701,6 +707,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         }
         if (_lastHistorySave is { } last && now - last > TimeSpan.FromSeconds(10) && !_state.Paused) SaveHistory();
         UpdateEngineState();
+        WatchStall(now);
         WatchDrops(now);
         ReadEngineState(now);
     }
