@@ -1,128 +1,65 @@
-# NOVA Studio
+# NOVA Motion
 
+**Watch at your screen's full frame rate.** Free, open-source AI motion smoothing for Windows, by Novabit. NOVA Motion generates the frames in between with AI, live, on your own graphics card, so 24 and 25 fps video plays smoothly instead of stepping. It runs even on a GTX 1650 laptop.
+
+[![Latest release](https://img.shields.io/github/v/release/owaiskamal/nova-motion?label=download&color=FFB84D)](https://github.com/owaiskamal/nova-motion/releases/latest)
 [![CI](https://github.com/owaiskamal/nova-motion/actions/workflows/ci.yml/badge.svg)](https://github.com/owaiskamal/nova-motion/actions/workflows/ci.yml)
+[![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-2A3456)](LICENSE)
 
-**Watch, enhance and make video with AI on your own graphics card. Windows, by Novabit.**
+**[Download for Windows](https://github.com/owaiskamal/nova-motion/releases/latest)** · [Website](https://owaiskamal.github.io/nova-motion/) · [How it works](docs/ENGINEERING.md) · [Report a problem](https://github.com/owaiskamal/nova-motion/issues)
 
-NOVA Studio is one app with three modules:
+<!-- Demo: a 60 fps before/after clip goes here. Upload the MP4 by dragging it into this file in GitHub's web editor; GitHub inserts a link it plays inline. Credit under it: Footage: Tears of Steel (CC BY 3.0) Blender Foundation, mango.blender.org -->
 
-- **Motion:** real-time AI motion smoothing for files, YouTube and 1000+ sites. Shipping.
-- **Enhance:** smooth copies of video files; upscaling next. Shipping.
-- **Generate:** images and short clips from open models (Flux, SDXL, Wan 2.2), handed straight to Enhance. Coming soon; the page already checks what your PC can run.
+![The Motion home screen: paste a link or drop a video; the strip of white and amber bars shows 24 frames in and 60 out](docs/img/home.png)
 
-The plan is in [docs/NOVA-STUDIO.md](docs/NOVA-STUDIO.md). The app was called NOVA Motion until v0.2; the code, settings folder, `novamotion://` links and the installer's ID keep that name, so existing installs update in place.
+## What it does
 
-## Motion
+- **Real AI frames, live.** RIFE, an open AI model, makes the in-between frames while you watch. The frames from the video itself are never touched.
+- **Fits your graphics card.** A one-time tuning run measures each model on your PC and the engine uses the best one that keeps up. On cards like a GTX 1650 the AI works on a half-size copy and only its frames are scaled up.
+- **YouTube and 1,000+ sites.** Paste a link, or send the video you're watching from Chrome or Edge with the browser extension. It picks up where you stopped.
+- **Steady, never stuck.** If frames start dropping it switches to a lighter setting on its own instead of stuttering; **Play without smoothing** is always one click away.
+- **Enhance.** Save a smooth copy of any video that plays anywhere, or a labelled before/after clip to share.
+- **Free and open.** GPL-3.0. No account, no watermark, no upload: everything runs on your PC.
 
-NOVA Motion plays 24/25/30 fps video at your screen's refresh rate by generating the missing frames with AI, live, while you watch. Local files, YouTube and 1000+ other sites, one click from the browser.
+## What runs on your PC
 
-> Status: v0.2, the full player. The video plays inside NOVA Motion with its own controls, resume, queue, subtitles and a live Motion panel. 1080p 25 → 60 fps in real time with RIFE on TensorRT, Enhance & Export for smooth copies of files, and tuning that fits the engine to your graphics card, from RTX desktops down to a GTX 1650 laptop. See the [roadmap](#roadmap).
+| Graphics | How NOVA Motion runs |
+| --- | --- |
+| NVIDIA RTX | RIFE on TensorRT, the fastest path, at your screen's refresh rate |
+| NVIDIA GTX 16 (e.g. GTX 1650) | RIFE on TensorRT with the AI at half size, at 60 fps or an even rate for your screen |
+| Other NVIDIA, AMD, Intel | RIFE on Vulkan when tuning shows it keeps up, MVTools otherwise. Supported, tested less so far |
 
-<!-- Demo: a 60 fps before/after clip goes here. Upload the MP4 by dragging it into this file in GitHub's web editor; GitHub inserts a link it plays inline. -->
+Windows 10 or 11. TensorRT needs a one-time download of about 3 GB, offered during setup on cards that support it.
 
-## Benchmarks
+## Get started
 
-Measured with `benchmark.cmd` and `tune.cmd` (the whole engine, not just the model). Real-time playback of 24 fps film to 60 needs 48 AI frames a second; 25 → 60 needs 55.
+**Installer:** download `NovaMotion-Setup` from the [latest release](https://github.com/owaiskamal/nova-motion/releases/latest), run it (no admin rights needed) and start NOVA Motion. NVIDIA RTX and GTX 16 users then run *Add NVIDIA TensorRT engine* from the Start menu once. Windows may show a SmartScreen warning because the installer isn't code-signed yet: choose *More info*, then *Run anyway*.
 
-**NVIDIA RTX 4070 desktop**, 1080p, 25 → 60 fps:
+**From source:** run **`build.cmd`**. It sets everything up and says what it's doing, and you can run it again any time to repair or update; finished steps are skipped:
 
-| Engine | Frames per second | Quality | Runs on |
-| --- | ---: | --- | --- |
-| **RIFE on TensorRT** (fp16) | **81** | AI, best | NVIDIA RTX, GTX 16 |
-| MVTools | 94 | Motion vectors, good | Any CPU |
-| RIFE on Vulkan (ncnn) | 49 | AI, best | Any modern GPU |
+1. the .NET 8 SDK (offers to install it with winget),
+2. the player runtime: mpv, VapourSynth, RIFE on Vulkan with four models, MVTools, yt-dlp (about 150 MB),
+3. on NVIDIA RTX and GTX 16 cards, NVIDIA TensorRT through [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) with RIFE 4.6, 4.22 Lite, 4.25 Lite and 4.26 (asks first),
+4. the tests, then the app in `dist\`,
+5. tuning for your PC, redone when it's outdated or the graphics changed,
+6. Start menu and desktop shortcuts, and a summary of what's ready.
 
-TensorRT is what makes AI interpolation real-time: same model, 1.65× the Vulkan speed.
+Options: `build.cmd -Yes` answers every question with yes; `-NoTensorRT`, `-NoTune` and `-NoShortcuts` skip those steps; `-CheckOnly` only reports what's set up.
 
-**NVIDIA GTX 1650 laptop** (4 GB, no tensor cores, Intel i5-12450H, 144 Hz screen), 25 → 60 fps:
+**Browser extension (optional):** load `extension\` in Chrome or Edge (`chrome://extensions`, Developer mode, Load unpacked). Alt+Shift+F on any video page sends it to NOVA Motion at the same moment.
 
-| RIFE model on TensorRT | Full size (1080p) | AI at half size (960×540) |
-| --- | ---: | ---: |
-| **4.6** | 19.7 | **73.2** |
-| 4.22 Lite | 13.5 | 50.1 |
-| 4.26 | 11.9 | 47.7 |
-| 4.25 Lite | 7.1 | 35.3 |
-| MVTools (CPU) | 77.4 | |
+## Using it
 
-- At full size no model keeps up on this card. With the AI on a half-size copy (only the in-between frames come from it; real frames stay full size), 4.6 has room to spare for 24 and 25 fps video.
-- "Lite" models are *slower* than 4.6 here. They have fewer weights, not less work, and without tensor cores that doesn't pay off. Tuning measures instead of assuming, so the engine picks 4.6.
-- One TensorRT stream gave 8 fps, three gave 20: the card waits more than it works at 1080p, so tuning also picks the stream count.
-
-## How it works
-
-```
- NOVA Motion app (WPF, .NET 8) ──writes──►  %APPDATA%\NovaMotion\engine.json
-        │  JSON IPC (named pipe)                       ▲ read on every (re)load
-        ▼                                              │
-   mpv player ── vf=vapoursynth ──►  novamotion.vpy ──┬─► RIFE · TensorRT (vs-mlrt, fp16)   NVIDIA RTX
-        │  ytdl_hook                                   ├─► RIFE · ncnn Vulkan               any GPU
-        ▼                                              └─► MVTools FlowFPS                  CPU fallback
-     yt-dlp (YouTube & co)
-```
-
-- **The engine** (`engine/novamotion.vpy`) receives decoded frames from mpv, works out the target rate (your display's refresh rate by default; 23.976 → 60000/1001 on a 59.94 Hz screen), and generates the in-between frames. It never makes more frames than the screen can show, and falls back TensorRT → Vulkan → MVTools so playback always works.
-- **The TensorRT path** (`engine/novamotion_trt.py`) schedules frames itself: output frame *n* sits between source frames ⌊n·q/p⌋ and the next, at time point (n·q mod p)/p. Frames that land exactly on a source frame are copied, not inferred.
-- **The player script** (`engine/mpv/scripts/novamotion.lua`) applies the engine to every file, handles hotkeys and live settings changes, and writes a performance line every 5 s (output fps, dropped frames, cache) to `mpv.log`.
-- **The app** (`app/`) is the player. mpv draws the video into a window inside the app; the controls live in a transparent window kept exactly over it, because Windows always paints a native child window above WPF content. All behaviour sits in a view model (`NovaMotion.Core/ViewModels`) with no WPF in it, so it is tested on Linux against a fake mpv.
-- **Scene cuts:** on the TensorRT path a cheap frame-difference check finds cuts, and frames that would blend two shots show the nearer real frame instead.
-- **Repeated frames:** sports and phone video often repeat a frame. Blending across a repeat makes motion pause; the engine spots repeats block by block (so a small moving ball isn't mistaken for a still frame) and blends across the pair around them instead.
-- **Tuning** (`tune.cmd`, offered on Home after TensorRT setup) builds and times every installed model on your PC. The engine then picks, per video, the best model and AI size that keep up: full size before a better model at a smaller size. If frames still drop, the player steps to a lighter option on its own and says so.
-- **AI size, like DLSS rendering low and upscaling:** on cards that can't keep up at full size, RIFE works on a 75 % or half-size copy and only the in-between frames are scaled back up. Real frames always stay full size. GTX-class cards start at half size until tuned. Vulkan RIFE (Intel, AMD and NVIDIA) does the same: built-in graphics such as Intel Iris Xe and GTX-class cards run it at half size.
-- **Even frame pacing:** a 60 fps target on a 144 Hz screen holds frames for 2, then 3 refreshes, which looks like judder. When a whole multiple of the source divides the refresh rate evenly, the engine uses it: 24 fps film on 144 Hz plays at 72 (2 refreshes each), for the same AI work as 60.
-- **Rates the AI can afford:** a rate that isn't a whole multiple of the source makes the AI work on almost every frame (25 → 72 needs 71 new frames a second). During playback the engine picks a whole multiple near the target when there is one (25 fps on 144 Hz → 75, which needs 50), and when tuning says even the fastest option can't keep up, it plays a lower multiple (25 → 50) instead of dropping frames.
-- **Steady under load, on any screen:** if frames keep dropping during playback, the player first steps to a lighter model or AI size while one exists, then lowers the frame rate one whole multiple of the video at a time (75 → 50 for 25 fps), down to twice the video's rate. Each new video starts at the best setting again. Tuning and the benchmark measure on moving test frames, as real video is: a still test clip is all repeats, which the engine skips, and read several times faster than real playback.
-- **Never stuck:** a TensorRT engine build freezes the player for minutes, and steps down used to start one mid-video (a new AI size needs its own engine), then count the frozen time as dropped frames and step again. Step-downs now only go to engines already built, drops in the first seconds after the engine starts don't count, and when the player stops answering a **Play without smoothing** card offers the way out (Ctrl+S too): it restarts at the same moment without the engine. With no build under way it does that by itself after 25 seconds.
-
-### Hard problems solved
-
-- **The endless clip.** A live player doesn't know a stream's length, so mpv hands the engine a clip of ~2 billion frames. vs-mlrt's `RIFE()` builds a Python table entry per output frame up front, which never finishes: playback froze silently. NOVA Motion computes each frame's source pair and time point on demand instead; setup takes 0.02 s at any length.
-- **Format hand-offs.** mpv's VapourSynth bridge only accepts YUV back, and vs-mlrt returns 32-bit frames from 16-bit input. Each mismatch disabled the engine with no visible error, and the player fell back to 25 fps. Formats are now matched at every hand-off, and the tests check them.
-- **Wasted frames.** "3× source" on a 60 Hz TV made 75 fps and threw 15 frames a second away. Output is now capped at the refresh rate.
-- **Laptops dropping frames that were on time.** On a GTX 1650 laptop the engine kept up (0 late frames), yet mpv dropped ~35 frames a second as "mistimed". Locking frames to the refresh rate fails when the screen hangs off the Intel graphics and video is drawn on the NVIDIA card. Laptops with two graphics chips now time frames by the video's own timestamps, the player switches by itself when most drops are mistimed, and those drops no longer push the model down.
-- **Tuning that was never read.** Windows PowerShell wrote `tuning.json` with a byte-order mark that the engine's JSON reader rejected, so every PC ran the untuned default. Files are now read with or without it and written without.
-- **Models that were never installed.** vs-mlrt's main release only carries RIFE 4.6; newer and lite models are published one archive each in its external-models release, which setup now uses.
-- **Exports cut short or starting black.** mpv's VapourSynth bridge stops at the first request past the end of an open-ended clip and drops the frames in flight, and caches a black placeholder for frames asked for during setup. Exports now count the source frames, pad the engine's end, stop the encoder at the exact count, stamp even timestamps, and turn caching off while MVTools is created: a 2 s clip at 25 fps exports as exactly 120 frames at 60 fps, checked in CI.
-- **Invisible failures.** Every bug above showed only as "not smooth". Per-5 s stats in `mpv.log`, an `engine-debug.log` that dumps every thread's stack if the engine takes over 15 s to start, and a benchmark found them all.
-
-## Quick start (Windows 10/11)
-
-**Installer:** download `NovaMotion-Setup` from the latest [release](https://github.com/owaiskamal/nova-motion/releases) (or from the newest CI run's artifacts), run it, and start NOVA Motion. No admin rights needed. NVIDIA RTX and GTX 16-series users then run *Add NVIDIA TensorRT engine* from the Start menu once.
-
-**From source:**
-
-1. Run **`build.cmd`**. It sets everything up and says what it's doing; run it again any time to repair or update, finished steps are skipped:
-   - the .NET 8 SDK (offers to install it with winget),
-   - the player runtime: mpv, VapourSynth, RIFE on Vulkan with four models, MVTools, yt-dlp (about 150 MB),
-   - on NVIDIA RTX and GTX 16 cards, NVIDIA TensorRT through [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) with RIFE 4.6, 4.22 Lite, 4.25 Lite and 4.26 (asks first: about 3 GB, one time),
-   - the tests, then the app in `dist\`,
-   - tuning for your PC (TensorRT, or RIFE on Vulkan and MVTools), redone when it's outdated or the graphics changed,
-   - Start menu and desktop shortcuts, and a summary of what's ready.
-2. Start **NOVA Motion**, paste a link or drop a file, and press **Play**.
-
-Options: `build.cmd -Yes` answers every question with yes, `-NoTensorRT`, `-NoTune`, `-NoShortcuts`, and `-CheckOnly` only reports what's set up. The separate scripts still work on their own: `setup-tensorrt.cmd`, `get-models.cmd`, `tune.cmd`, `benchmark.cmd`, `collect-logs.cmd`.
-
-Optional: load `extension\` in Chrome or Edge (`chrome://extensions` → Developer mode → Load unpacked). Alt+Shift+F on any video page sends it to NOVA Motion at the same timestamp.
-
-Measure your own machine with **`benchmark.cmd`** (results in `runtime\benchmark.log`): every engine, TensorRT and Vulkan RIFE at full and half size, and Vulkan RIFE on each graphics chip (laptops have two; the app then uses the faster one).
-
-Something not smooth? Run **`collect-logs.cmd`**. It puts the player and engine logs, settings, tuning results and graphics info into `nova-motion-logs.zip` on your Desktop, to attach to an issue.
-
-### The app
-
-- **Module tabs** in the title bar: Motion, Enhance and Generate. Settings opens over any of them and closes back to it; playing a video switches to Motion.
-- **Generate (preview):** shows the graphics card, its memory (read from the driver, so 12 GB and 24 GB cards report correctly) and system memory, and for each model Generate will start with (SDXL, Flux.1 Schnell, Wan 2.2 TI2V-5B, Wan 2.2 I2V-14B) whether it runs well, runs slower with compressed weights, or is too heavy. NVIDIA only for now.
-
-### The player
-
-- **Home:** paste a link or drop files; a link you've copied is offered with one click. Recently played videos resume a few seconds before where you stopped, and opening an episode queues the rest of its folder.
+- **Home:** paste a link or drop files. Recently played videos resume a few seconds before where you stopped, and opening an episode queues the rest of its folder.
 - **On the video:** controls that hide while you watch, a seek bar with buffered range, chapters and hover time, double-click for full screen, scroll for volume.
-- **Motion panel** (Tab, or the badge next to the controls): the frame rate on screen, dropped frames, the model in use and the size the AI runs at, the frame-cadence strip (white bars are frames from the video, gold ones are generated), the engine's status in plain words, and every smoothing choice: engine, frame rate, AI model (Auto or a fixed one) and AI size (Auto, Full, 75 %, Half).
-- **Before/after:** side by side or a split screen with a divider, labelled, to see what the engine adds.
-- **Enhance:** make a smooth copy of any file at 60 fps, 120 fps or 2× with the best model installed (or the faster live one). Files queue up, show time left, and are saved next to the original with NOVA Motion in the name. NVIDIA cards encode on the GPU (HEVC); otherwise x264 on the CPU. Turn on **Before/after video** for a labelled side-by-side of the original and NOVA Motion, and give a start time and length to export just that part: made for sharing.
-- **Fits the PC it runs on:** RTX cards get TensorRT at the display's refresh rate; GTX and other entry cards get 60 fps (or an even rate such as 72 on 144 Hz screens) with the AI at half size; built-in graphics get Vulkan RIFE at half size once tuning shows it keeps up, MVTools until then. Home offers tuning on every PC and explains what the graphics can do.
+- **Motion panel** (Tab): the frame rate on screen, dropped frames, the model in use and the size the AI runs at, the cadence strip (white bars are frames from the video, amber ones are generated), and every smoothing choice: engine, frame rate, AI model (Auto or a fixed one) and AI size (Auto, Full, 75 %, Half).
+- **Before/after** (Ctrl+D): side by side or a split screen, labelled, to see what the engine adds.
+- **Enhance:** a smooth copy of any file at 60 fps, 120 fps or 2× with the best model installed. Files queue up and show time left. Turn on **Before/after video** and give a start time and length to export a short labelled clip to share.
 - **Subtitles, audio, speed and online quality** in one panel; drop a subtitle file on the video to load it.
 
-### Keyboard
+![Enhance: frame rate, quality, a before/after video switch with start time and length](docs/img/enhance.png)
+
+## Keyboard
 
 | Key | Action |
 | --- | --- |
@@ -140,30 +77,35 @@ Something not smooth? Run **`collect-logs.cmd`**. It puts the player and engine 
 
 The full list is in Settings → Keyboard shortcuts.
 
-## Project layout
+## When something isn't smooth
 
-```
-app/                    .NET 8 solution: NovaMotion.Core (logic + view models), NovaMotion.App (WPF), NovaMotion.SmokeTest
-docs/                   NOVA-STUDIO.md: the plan for Motion, Enhance and Generate
-engine/                 novamotion.vpy, novamotion_trt.py, mpv config + Lua player script
-extension/              Chrome/Edge extension (Manifest V3)
-setup/                  Get-Runtime.ps1, Get-TensorRT.ps1, Tune.ps1, TuneVulkan.ps1, Benchmark.ps1, Build-Engines.ps1
-installer/              Inno Setup script (per-user install)
-tests/                  engine tests (VapourSynth, no GPU), Lua tests (mock mpv), XAML checks
-build.cmd · setup-tensorrt.cmd · get-models.cmd · tune.cmd · prepare-engines.cmd · benchmark.cmd · collect-logs.cmd
-```
+- Run **`tune.cmd`** after a driver update or a new graphics card, so the engine knows what your PC really keeps up with. Setup and the app also offer it.
+- **`benchmark.cmd`** measures every engine on your PC (results in `runtime\benchmark.log`). Sharing the result in an issue helps others with the same card.
+- **`collect-logs.cmd`** puts the player and engine logs, settings, tuning results and graphics info into `nova-motion-logs.zip` on your Desktop, to attach to an [issue](https://github.com/owaiskamal/nova-motion/issues).
 
-## Development
+## Tested on real PCs
 
-```bash
-dotnet run --project app/NovaMotion.SmokeTest                       # core library: settings, IPC, links
-pip install vapoursynth vapoursynth-mvtools
-python tests/engine/test_engine.py engine/novamotion.vpy             # engine, GPU parts stood in
-cd tests/lua && TESTCFG=/tmp/cfg.json lua5.4 run.lua ../../engine/mpv/scripts/novamotion.lua
-python tests/ui/lint_xaml.py app/NovaMotion.App app/NovaMotion.Core  # resource keys, style targets, bindings
-```
+Real playback, 1080p video, with the setting the engine picked on its own:
 
-CI runs all of these, then builds the app on Windows, plays a test video through the real player, exports a test clip and checks it frame by frame (count, timestamps, no black start), screenshots every screen (published to the `ci-screenshots` branch) and builds the installer.
+| PC | Video | Result |
+| --- | --- | --- |
+| RTX 4070 desktop, 60 Hz screen | 24 fps film to 60 | Smooth, RIFE 4.6 on TensorRT at full size |
+| GTX 1650 laptop, 144 Hz screen | 24 fps film to 72 | Smooth, RIFE 4.6 on TensorRT with the AI at half size |
+| GTX 1650 laptop, 144 Hz screen | 25 fps video | Plays at 50: 75 needs about 50 AI frames a second, more than this card makes |
+
+Frames-per-second benchmarks are being measured again. Earlier figures came from a still test clip, which the engine processes faster than real video because it skips repeated frames, so they overstated speed; tuning and `benchmark.cmd` now use moving test frames. Measure your own PC with `benchmark.cmd`, and share the result in an issue to help others with the same card.
+
+How the engine gets there, and the problems it took to make AI frames real-time on ordinary PCs, is in [docs/ENGINEERING.md](docs/ENGINEERING.md).
+
+## NOVA Studio
+
+NOVA Motion is the first module of **NOVA Studio**, a set of AI video tools that run on your own graphics card. In the app, the title bar has three tabs:
+
+- **Motion:** real-time smoothing for files and online video. Available.
+- **Enhance:** smooth copies of files; AI upscaling next. Available.
+- **Generate:** images and short clips from open models (Flux, SDXL, Wan 2.2), handed straight to Enhance. In development; the page already checks what your PC can run.
+
+The plan is in [docs/NOVA-STUDIO.md](docs/NOVA-STUDIO.md). The code, settings folder, `novamotion://` links and the installer's ID keep the NOVA Motion name, so installs update in place.
 
 ## Roadmap
 
@@ -172,16 +114,20 @@ CI runs all of these, then builds the app on Windows, plays a test video through
 | M1 Foundations | ✅ CI with Windows UI screenshots · ✅ installer · ✅ pinned dependency versions |
 | M2 Own player window | ✅ mpv inside the app, on-video controls, subtitles, queue, resume |
 | M3 Engine manager | ✅ scene-cut and repeated-frame handling · ✅ per-size engine status and preparation · ✅ tuning, offered on first run · ✅ automatic model and AI-size choice with step-down · ✅ defaults for GTX and laptop graphics |
-| M4 Online and launch | ✅ quality picker · ✅ daily yt-dlp updates · extension in the stores, project site |
+| M4 Online and launch | ✅ quality picker · ✅ daily yt-dlp updates · ✅ project site · extension in the stores |
 | M5 Enhance & Export | ✅ offline smooth copies with the best model, queue, GPU encoding · heavier offline models (e.g. GIMM-VFI), upscaling |
 | M6 NOVA Studio shell | ✅ one app with Motion, Enhance and Generate tabs · ✅ Generate hardware check |
 | M7 Generate | managed ComfyUI engine, model manager, Flux.1 Schnell and SDXL images, Wan 2.2 video, one click to smooth and upscale |
 | Later | light timeline (trim, join, titles), smoothing over any window, faster AMD/Intel paths, cloud GPU tier, mobile |
 
+## Contributing
+
+Bug reports with a `collect-logs.cmd` zip, benchmark results from your GPU, and pull requests are welcome. Building, tests and the project layout are in [docs/ENGINEERING.md](docs/ENGINEERING.md#development).
+
 ## License
 
-NOVA Studio is free software under the [GNU GPL v3.0](LICENSE) (or later). It builds on mpv, VapourSynth, vs-mlrt, RIFE, MVTools and yt-dlp; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). NVIDIA TensorRT is downloaded by the setup script on your machine and is not part of this repository.
+NOVA Motion and NOVA Studio are free software under the [GNU GPL v3.0](LICENSE) (or later). It builds on mpv, VapourSynth, vs-mlrt, RIFE, MVTools and yt-dlp; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). NVIDIA TensorRT is downloaded by the setup script on your machine and is not part of this repository.
 
-NOVA Studio is an independent project. It is not affiliated with NVIDIA, SVP (SmoothVideo Project) or the projects above, and contains no code from SVP.
+NOVA Motion is an independent project. It is not affiliated with NVIDIA, SVP (SmoothVideo Project) or the projects above, and contains no code from SVP.
 
 © 2026 Novabit

@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NOVA Motion: smooth video with AI, on your own PC</title>
+<meta name="description" content="Free, open-source AI motion smoothing for Windows. 24 and 25 fps video plays at your screen's frame rate, live, even on a GTX 1650 laptop.">
+<meta property="og:title" content="NOVA Motion by Novabit">
+<meta property="og:description" content="Free, open-source AI motion smoothing for Windows. Runs even on a GTX 1650 laptop.">
+<meta property="og:image" content="https://owaiskamal.github.io/nova-motion/img/enhance.png">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0F1424">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230F1424'/%3E%3Cg fill='%23FFB84D'%3E%3Crect x='6' y='9' width='3' height='14' rx='1.5' fill='%23ECEFF7'/%3E%3Crect x='12' y='9' width='3' height='14' rx='1.5'/%3E%3Crect x='18' y='9' width='3' height='14' rx='1.5'/%3E%3Crect x='24' y='9' width='3' height='14' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+@font-face { font-family: "Unbounded"; src: url("fonts/Unbounded-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Onest"; src: url("fonts/Onest-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Onest"; src: url("fonts/Onest-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
+
+:root {
+  /* The app's own palette */
+  --base: #0F1424;
+  --surface: #151B2E;
+  --raised: #1C2440;
+  --line: #2A3456;
+  --text: #ECEFF7;
+  --muted: #959DB9;
+  --faint: #5D6688;
+  --nova: #FFB84D;
+  --nova-ink: #241503;
+  --measure: 34rem;
+  --gutter: clamp(1rem, 4vw, 3rem);
+}
+* { box-sizing: border-box; }
+html { background: var(--base); color: var(--text); }
+body {
+  margin: 0;
+  font: 400 1.0625rem/1.6 "Onest", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--nova); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--nova); outline-offset: 3px; border-radius: 6px; }
+img { max-width: 100%; display: block; }
+.wrap { max-width: 72rem; margin: 0 auto; padding: 0 var(--gutter); }
+
+/* ---------- header */
+header.top { display: flex; align-items: center; gap: 2rem; padding: 1.25rem 0; }
+.brand { display: flex; align-items: center; gap: .65rem; text-decoration: none; color: var(--text);
+  font: 600 1rem/1 "Unbounded", sans-serif; letter-spacing: .02em; }
+.brand svg { flex: none; }
+.brand small { font: 400 .875rem/1 "Onest", sans-serif; color: var(--muted); letter-spacing: 0; }
+header.top nav { margin-left: auto; display: flex; gap: 1.5rem; align-items: center; }
+header.top nav a { color: var(--muted); text-decoration: none; font-weight: 600; font-size: .95rem; }
+header.top nav a:hover { color: var(--text); }
+header.top nav a.btn-primary, header.top nav a.btn-primary:hover { color: var(--nova-ink); }
+@media (max-width: 40rem) {
+  header.top nav a.secondary, .brand small { display: none; }
+  td:first-child { white-space: normal; }
+}
+
+/* ---------- buttons */
+.btn { display: inline-flex; align-items: center; gap: .55rem; padding: .85rem 1.35rem; border-radius: 10px;
+  font: 600 1rem/1 "Onest", sans-serif; text-decoration: none; border: 1px solid transparent; }
+.btn-primary { background: var(--nova); color: var(--nova-ink); }
+.btn-primary:hover { background: #FFC56B; }
+.btn-quiet { background: var(--raised); color: var(--text); border-color: var(--line); }
+.btn-quiet:hover { border-color: var(--faint); }
+header.top .btn { padding: .6rem 1rem; font-size: .9rem; }
+
+/* ---------- hero */
+.hero { padding: clamp(2.5rem, 7vw, 5.5rem) 0 2rem; }
+.hero h1 {
+  font: 600 clamp(2.3rem, 6.2vw, 4.6rem)/1.04 "Unbounded", sans-serif;
+  letter-spacing: -.02em; margin: 0; max-width: 15ch;
+}
+.hero .lede { color: var(--muted); font-size: clamp(1.05rem, 1.6vw, 1.25rem); max-width: var(--measure); margin: 1.5rem 0 2rem; }
+.hero .lede strong { color: var(--text); font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.fineprint { color: var(--faint); font-size: .9rem; margin-top: 1rem; }
+
+/* ---------- the motion demo: the page's one bold moment */
+.demo { margin-top: clamp(2.5rem, 6vw, 4.5rem); }
+.lane { position: relative; }
+.lane + .lane { margin-top: 1.25rem; }
+.lane-name { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+  font-weight: 600; font-size: .95rem; margin-bottom: .5rem; }
+.lane-name span:last-child { color: var(--muted); font-weight: 400; font-size: .875rem; }
+.lane canvas { width: 100%; height: clamp(64px, 9vw, 96px); display: block; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 12px; }
+.lane.smooth canvas { border-color: #4a3c22; }
+.cadence-note { display: flex; gap: 1.5rem; flex-wrap: wrap; color: var(--muted); font-size: .875rem; margin-top: 1rem; }
+.key { display: inline-flex; align-items: center; gap: .45rem; }
+.key i { width: 4px; height: 14px; border-radius: 2px; display: inline-block; }
+
+/* ---------- sections */
+section.block { padding: clamp(3.5rem, 8vw, 6rem) 0 0; }
+h2 { font: 600 clamp(1.5rem, 3vw, 2.1rem)/1.15 "Unbounded", sans-serif; letter-spacing: -.01em; margin: 0 0 1rem; max-width: 22ch; }
+.intro { color: var(--muted); max-width: var(--measure); margin: 0 0 2.5rem; }
+
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 2.25rem 3rem; margin: 0; padding: 0; list-style: none; }
+.features h3 { font: 600 1.1rem/1.3 "Onest", sans-serif; margin: 0 0 .4rem; }
+.features p { margin: 0; color: var(--muted); max-width: 32rem; }
+.features li { border-top: 1px solid var(--line); padding-top: 1.1rem; }
+
+.shot { margin: clamp(3rem, 6vw, 4.5rem) 0 0; }
+.shot img { border-radius: 14px; border: 1px solid var(--line); }
+.shot figcaption { color: var(--faint); font-size: .875rem; margin-top: .75rem; }
+
+/* hardware */
+table { border-collapse: collapse; width: 100%; max-width: 52rem; font-size: .975rem; }
+th, td { text-align: left; padding: .8rem 1rem .8rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: .875rem; }
+td:first-child { font-weight: 600; white-space: nowrap; }
+td.dim { color: var(--muted); }
+
+/* video, shown once a demo clip exists */
+.video-wrap video { width: 100%; border-radius: 14px; border: 1px solid var(--line); background: #000; }
+
+/* next + footer */
+.next { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 2rem 3rem; }
+.next h3 { font: 600 1.05rem/1.3 "Onest", sans-serif; margin: 0 0 .35rem; }
+.next p { color: var(--muted); margin: 0; }
+.status { color: var(--nova); font-size: .95rem; font-weight: 600; margin: 0 0 .35rem !important; }
+footer { margin-top: clamp(4rem, 9vw, 7rem); padding: 2.5rem 0 3rem; border-top: 1px solid var(--line); color: var(--faint); font-size: .875rem; }
+footer p { max-width: 46rem; margin: 0 0 .6rem; }
+footer a { color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./" aria-label="NOVA Motion home">
+      <svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true">
+        <rect x="0" y="0" width="3" height="20" rx="1.5" fill="#ECEFF7"/>
+        <rect x="7.5" y="0" width="3" height="20" rx="1.5" fill="#FFB84D"/>
+        <rect x="15" y="0" width="3" height="20" rx="1.5" fill="#FFB84D"/>
+        <rect x="22.5" y="0" width="3" height="20" rx="1.5" fill="#FFB84D"/>
+      </svg>
+      NOVA Motion <small>by Novabit</small>
+    </a>
+    <nav aria-label="Main">
+      <a class="secondary" href="#features">Features</a>
+      <a class="secondary" href="#benchmarks">Results</a>
+      <a class="secondary" href="https://github.com/owaiskamal/nova-motion">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/owaiskamal/nova-motion/releases/latest">Download</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Watch at your screen's full frame rate.</h1>
+      <p class="lede">Films and most online video are made at 24 or 25 frames a second. <strong>NOVA Motion generates the frames in between with AI, live, on your own graphics card</strong>, so motion looks smooth instead of stepping. Free and open source for Windows.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="https://github.com/owaiskamal/nova-motion/releases/latest">Download for Windows</a>
+        <a class="btn btn-quiet" href="https://github.com/owaiskamal/nova-motion">Source on GitHub</a>
+      </div>
+      <p class="fineprint">Windows 10 and 11. Best on NVIDIA graphics, including a GTX 1650 laptop; Intel and AMD work too.</p>
+
+      <div class="demo" aria-label="Animated comparison of 24 fps and 60 fps motion">
+        <div class="lane">
+          <div class="lane-name"><span>As filmed</span><span>24 frames a second</span></div>
+          <canvas id="lane24" aria-hidden="true"></canvas>
+        </div>
+        <div class="lane smooth">
+          <div class="lane-name"><span>With NOVA Motion</span><span>60 frames a second</span></div>
+          <canvas id="lane60" aria-hidden="true"></canvas>
+        </div>
+        <div class="cadence-note">
+          <span class="key"><i style="background:var(--text)"></i>Frames from the video</span>
+          <span class="key"><i style="background:var(--nova)"></i>Frames NOVA Motion makes</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="block video-wrap" id="demo-video" hidden>
+      <h2>See it on real footage</h2>
+      <p class="intro">The original on the left, NOVA Motion on the right, both playing at 60 frames a second. Made with NOVA Motion's own before/after export.</p>
+      <video src="media/demo.mp4" controls muted loop playsinline preload="metadata"></video>
+      <p class="fineprint" id="demo-credit"></p>
+    </section>
+
+    <section class="block" id="features">
+      <h2>Smooth motion, without a high-end PC</h2>
+      <p class="intro">NOVA Motion is a full video player with the smoothing built in. It measures your graphics card and uses what it can really keep up with.</p>
+      <ul class="features">
+        <li>
+          <h3>Real AI frames, live</h3>
+          <p>RIFE, an open AI model, makes the in-between frames while you watch. The frames from the video itself are never touched.</p>
+        </li>
+        <li>
+          <h3>Fits your graphics card</h3>
+          <p>A one-time tuning run measures each model on your PC. On cards like a GTX 1650 the AI works on a half-size copy and only its frames are scaled up, which is four times less work.</p>
+        </li>
+        <li>
+          <h3>YouTube and 1,000+ sites</h3>
+          <p>Paste a link, or send the video you're watching from Chrome or Edge with the browser extension. It picks up where you stopped.</p>
+        </li>
+        <li>
+          <h3>Steady, even when it's hard</h3>
+          <p>If frames start dropping, it switches to a lighter setting on its own instead of stuttering. One click plays without smoothing.</p>
+        </li>
+        <li>
+          <h3>Smooth copies of your files</h3>
+          <p>Enhance saves a smooth version of any video that plays anywhere, or a labelled before/after clip to share.</p>
+        </li>
+        <li>
+          <h3>Free and open</h3>
+          <p>GPL-3.0. No account, no watermark, no upload: everything runs on your PC.</p>
+        </li>
+      </ul>
+      <figure class="shot">
+        <img src="img/enhance.png" width="1024" height="600" loading="lazy"
+             alt="The Enhance screen: frame rate 60, 120 fps or twice the source, Best or Faster quality, a before/after video switch with start time and length, and a Choose videos button.">
+        <figcaption>Enhance: pick a frame rate and quality, or make a short before/after clip to share.</figcaption>
+      </figure>
+    </section>
+
+    <section class="block" id="benchmarks">
+      <h2>Tested on real PCs</h2>
+      <p class="intro">Real playback of 1080p video, with the setting NOVA Motion picked on its own.</p>
+      <table>
+        <thead><tr><th scope="col">PC</th><th scope="col">Video</th><th scope="col">Result</th></tr></thead>
+        <tbody>
+          <tr><td>RTX 4070 desktop</td><td>24 fps film to 60</td><td>Smooth, AI at full size</td></tr>
+          <tr><td>GTX 1650 laptop</td><td>24 fps film to 72 on a 144 Hz screen</td><td>Smooth, AI at half size</td></tr>
+          <tr><td>GTX 1650 laptop</td><td>25 fps video</td><td class="dim">Plays at 50, the most this card keeps up with</td></tr>
+        </tbody>
+      </table>
+      <p class="fineprint">Measure your own PC with benchmark.cmd, and share the result in a GitHub issue to help others with the same card.</p>
+    </section>
+
+    <section class="block" id="hardware">
+      <h2>What runs on your PC</h2>
+      <table>
+        <thead><tr><th scope="col">Graphics</th><th scope="col">How NOVA Motion runs</th></tr></thead>
+        <tbody>
+          <tr><td>NVIDIA RTX</td><td>RIFE on TensorRT, the fastest path, at your screen's refresh rate.</td></tr>
+          <tr><td>NVIDIA GTX 16</td><td>RIFE on TensorRT with the AI at half size, 60 fps or an even rate for your screen.</td></tr>
+          <tr><td>Other NVIDIA, AMD, Intel</td><td class="dim">RIFE on Vulkan when tuning shows it keeps up, MVTools otherwise. Supported, tested less so far.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="block" id="next">
+      <h2>Part of NOVA Studio</h2>
+      <p class="intro">NOVA Motion is the first module of NOVA Studio, a set of AI video tools that run on your own graphics card.</p>
+      <div class="next">
+        <div><h3>Motion</h3><p class="status">Available</p><p>Real-time smoothing for files and online video.</p></div>
+        <div><h3>Enhance</h3><p class="status">Available</p><p>Smooth copies of files. AI upscaling is next.</p></div>
+        <div><h3>Generate</h3><p class="status">In development</p><p>Images and short clips from open models, handed straight to Enhance.</p></div>
+      </div>
+      <p class="fineprint">Follow progress: watch the repository's releases on GitHub.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>NOVA Motion is free software under the GNU GPL v3.0. It builds on mpv, VapourSynth, vs-mlrt, RIFE, MVTools and yt-dlp. NVIDIA TensorRT is downloaded on your PC by the setup and isn't part of NOVA Motion.</p>
+    <p>An independent project, not affiliated with NVIDIA, SVP or the projects above.</p>
+    <p>© 2026 Novabit. <a href="https://github.com/owaiskamal/nova-motion">GitHub</a> · <a href="https://github.com/owaiskamal/nova-motion/issues">Report a problem</a></p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  // ---- Real footage clip: shown only once media/demo.mp4 exists
+  const vw = document.getElementById('demo-video');
+  const v = vw.querySelector('video');
+  v.addEventListener('loadedmetadata', () => { vw.hidden = false; }, { once: true });
+  document.getElementById('demo-credit').textContent =
+    'Footage: Tears of Steel (CC BY 3.0) Blender Foundation, mango.blender.org';
+
+  // ---- The two lanes: the same motion, sampled 24 and 60 times a second
+  const css = getComputedStyle(document.documentElement);
+  const TEXT = css.getPropertyValue('--text').trim(), NOVA = css.getPropertyValue('--nova').trim();
+  const LINE = css.getPropertyValue('--line').trim(), FAINT = css.getPropertyValue('--faint').trim();
+  const lanes = [
+    { el: document.getElementById('lane24'), fps: 24 },
+    { el: document.getElementById('lane60'), fps: 60 },
+  ];
+  const PERIOD = 2.5;   // seconds to cross and come back
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+
+  function size() {
+    for (const l of lanes) {
+      const r = l.el.getBoundingClientRect(), d = devicePixelRatio || 1;
+      l.el.width = Math.round(r.width * d); l.el.height = Math.round(r.height * d);
+      l.ctx = l.el.getContext('2d'); l.ctx.setTransform(d, 0, 0, d, 0, 0);
+      l.w = r.width; l.h = r.height;
+    }
+  }
+  // Position along the lane for a time: eased back and forth, like a camera pan
+  const pos = t => { const p = (t % PERIOD) / PERIOD; return 0.5 - 0.5 * Math.cos(p * 2 * Math.PI); };
+
+  function drawLane(l, t, still) {
+    const { ctx, w, h } = l;
+    ctx.clearRect(0, 0, w, h);
+    const r = Math.min(h * 0.22, 16), pad = r * 2.2, y = h / 2, span = w - 2 * pad;
+    // tick rail along the bottom: where frames fall in time across one pass
+    ctx.fillStyle = LINE;
+    ctx.fillRect(pad, h - 12, span, 1);
+    if (still) {
+      // Reduced motion: every frame of one pass, like a long exposure
+      const n = Math.round(l.fps * PERIOD / 2);
+      for (let i = 0; i <= n; i++) {
+        const tt = i / l.fps, real = l.fps === 24 || Math.abs(tt * 24 - Math.round(tt * 24)) < 1e-6;
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = real ? TEXT : NOVA;
+        ctx.beginPath(); ctx.arc(pad + pos(tt) * span, y, r * 0.55, 0, 7); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      return;
+    }
+    // The frame being shown: the last one this lane has made
+    const idx = Math.floor(t * l.fps), shown = idx / l.fps;
+    const isReal = i => l.fps === 24 || ((i % 5) + 5) % 5 === 0;   // at 60 fps, 1 frame in 5 lands on a filmed one
+    // the last frames' marks on the rail, fading: white = from the video, amber = made by NOVA Motion
+    const marks = Math.round(l.fps * 0.4);
+    for (let k = marks; k >= 0; k--) {
+      const i = idx - k;
+      ctx.globalAlpha = 1 - k / (marks + 1);
+      ctx.fillStyle = isReal(i) ? TEXT : NOVA;
+      ctx.fillRect(pad + pos(i / l.fps) * span - 1.5, h - 18, 3, 12);
+    }
+    // faint trail of the previous positions, so the size of each step reads
+    for (let k = 4; k >= 1; k--) {
+      ctx.globalAlpha = 0.07 * (5 - k);
+      ctx.fillStyle = FAINT;
+      ctx.beginPath(); ctx.arc(pad + pos(shown - k / l.fps) * span, y - 4, r, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = TEXT;
+    ctx.beginPath(); ctx.arc(pad + pos(shown) * span, y - 4, r, 0, 7); ctx.fill();
+  }
+
+  let start = performance.now(), raf = 0;
+  function frame(now) {
+    const t = (now - start) / 1000;
+    lanes.forEach(l => drawLane(l, t, false));
+    raf = requestAnimationFrame(frame);
+  }
+  function run() {
+    cancelAnimationFrame(raf);
+    size();
+    if (reduce.matches) lanes.forEach(l => drawLane(l, 0, true));
+    else raf = requestAnimationFrame(frame);
+  }
+  addEventListener('resize', run);
+  reduce.addEventListener('change', run);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) cancelAnimationFrame(raf); else run();
+  });
+  run();
+})();
+</script>
+</body>
+</html>
