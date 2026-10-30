@@ -119,6 +119,8 @@ def run_rife(cfg, **kw):
         src_text, SCRIPT = saved
 o = run_rife({"engine": "rife", "target": "display", "rife_model": "missing-model"})
 check(o.format.id == vs.YUV420P8 and o.fps.numerator == 60, f"rife path: YUV out (mpv rejects RGB), missing model falls back to installed one ({o.format.name} {o.fps})")
+o = run({"engine": "mvtools", "target": 60, "demo": True, "demo_labels": True}, fps=25.0, display=0, frames=24)
+check(o.fps == Fraction(60) and o.width == 1280 and o.get_frame(5).width == 1280, f"export comparison: labelled halves, 60 fps ({o.width} {o.fps})")
 o = run_rife({"engine": "rife", "target": "display", "demo": True})
 check(o.format.id == vs.YUV420P8 and o.width == 1280, "rife + demo halves stack")
 o = run_rife({"engine": "rife", "target": "display/2"}, display=143.856)

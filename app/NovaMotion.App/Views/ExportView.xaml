@@ -50,6 +50,23 @@
                                 </Border>
                             </StackPanel>
                         </Grid>
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ExportComparison}" Margin="0,18,0,0">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Text.Body}" Text="Before/after video"/>
+                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="The original and NOVA Motion side by side, labelled. Made for sharing: pick a short part with fast motion below."/>
+                            </StackPanel>
+                        </CheckBox>
+                        <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource Text.Small}" Text="From (optional)" Margin="0,0,0,6"/>
+                                <TextBox Style="{StaticResource Input}" Width="110" Tag="0:00" Text="{Binding ExportStartText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Where to start, e.g. 3:15. Empty: the beginning."/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Text.Small}" Text="Seconds (optional)" Margin="0,0,0,6"/>
+                                <TextBox Style="{StaticResource Input}" Width="110" Tag="All" Text="{Binding ExportLengthText, UpdateSourceTrigger=PropertyChanged}" ToolTip="How long, e.g. 20. Empty: to the end."/>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Danger}" VerticalAlignment="Bottom" Margin="16,0,0,8" TextWrapping="Wrap" MaxWidth="320" Text="{Binding ExportRangeProblem}"/>
+                        </StackPanel>
                         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ExportGpuEncoder}" Margin="0,18,0,0">
                             <StackPanel>
                                 <TextBlock Style="{StaticResource Text.Body}" Text="Use the GPU encoder"/>

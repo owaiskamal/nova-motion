@@ -77,6 +77,13 @@ internal static class ExportTests
               && args.Contains("--ovc=hevc_nvenc") && args.Any(a => a.StartsWith("--vf=lavfi=[tpad=stop_mode=clone:stop=8],@novamotion:vapoursynth=file=%")),
               "export: mpv encodes through the engine, input after --");
         check(ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o with { HardwareEncoder = false }).Contains("--ovc=libx264"), "export: CPU encoder when asked");
+        check(ExportOptions.ParseTime("3:15") == 195 && ExportOptions.ParseTime("1:02:03") == 3723 && ExportOptions.ParseTime("20") == 20
+              && ExportOptions.ParseTime("") is null && ExportOptions.ParseTime("abc") is null, "export: times read as 3:15 or seconds");
+        var cmp = o with { Comparison = true, StartSeconds = 195, LengthSeconds = 20 };
+        var cmpArgs = ExportPlan.MpvArguments(rt, "i", "o", "p", "l", cmp);
+        check(cmpArgs.Contains("--start=195") && cmpArgs.Contains("--length=20")
+              && ExportPlan.OutputPath("/v/Tears of Steel.mkv", cmp, _ => false).EndsWith("Tears of Steel (NOVA Motion before-after 60 fps).mp4"),
+              "export: a before/after part of a video: start, length and its own file name");
         check(ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o, new FrameRate(60000, 1001)).Any(x => x.EndsWith(",lavfi=[setpts=N*1001/(60000*TB)]")),
               "export: frames numbered at the output rate after the engine");
         check(FrameRate.Frames(50, new FrameRate(25, 1), new FrameRate(60, 1)) == 120

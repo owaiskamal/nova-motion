@@ -35,6 +35,7 @@ public sealed class EngineSettings
     [JsonPropertyName("demo")]           public bool Demo { get; set; }
     /// <summary>"side": the middle of the picture twice, original then smoothed. "split": left and right halves.</summary>
     [JsonPropertyName("demo_mode")]      public string DemoMode { get; set; } = "side";
+    [JsonPropertyName("demo_labels")]    public bool DemoLabels { get; set; }
     [JsonPropertyName("rtx_vsr")]        public bool RtxVsr { get; set; }
 
     /// <summary>"display", "x2", "x3" or a number such as "60" / "120".</summary>

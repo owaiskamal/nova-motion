@@ -59,6 +59,7 @@ DEFAULTS = {
     "mv_quality": "balanced",    # fast | balanced | quality
     "demo": False,               # before/after: original on the left, smoothed on the right
     "demo_mode": "side",         # side: the same middle part of the picture twice | split: left and right halves
+    "demo_labels": False,        # exports: write "Original" / "NOVA Motion" into the picture (the player draws its own)
 }
 
 
@@ -457,7 +458,21 @@ def divider(like, width=4):
     return core.std.Expr(bar, exprs)
 
 
-def demo_split(original, smooth, src, dst, mode="side"):
+def fps_words(rate):
+    v = float(rate)
+    return f"{v:.0f}" if abs(v - round(v)) < 0.05 else f"{v:.2f}".rstrip("0").rstrip(".")
+
+
+def label(clip, words):
+    """Words burned into the top of a picture, sized to it. Skipped if the text plugin can't."""
+    try:
+        scale = max(1, clip.height // 360)
+        return core.text.Text(clip, words, alignment=8, scale=scale)
+    except (vs.Error, AttributeError, TypeError):
+        return clip
+
+
+def demo_split(original, smooth, src, dst, mode="side", labels=False):
     """Before/after in one picture, at the output frame rate (the original's frames are repeated).
 
     side:  the middle half of the picture, twice: the same motion side by side, which makes the
@@ -477,6 +492,9 @@ def demo_split(original, smooth, src, dst, mode="side"):
         start = ((w - half) // 2) & ~3               # the middle half of the frame
         left = core.std.Crop(before, left=start, right=w - start - half)
         right = core.std.Crop(smooth, left=start, right=w - start - (w - half - bar_w))
+    if labels:
+        left = label(left, f"Original  {fps_words(src)} fps")
+        right = label(right, f"NOVA Motion  {fps_words(dst)} fps")
     both = core.std.StackHorizontal([left, divider(left, bar_w), right])
     # A stacked frame keeps the first input's properties, and the 'before' side carries the
     # original's frame duration (1/24 s). mpv times frames by that property, so without this
@@ -548,7 +566,7 @@ def build_engine(clip):
         smooth = interpolate_mvtools(clip, cfg, src, dst)
 
     if cfg.get("demo"):
-        smooth = demo_split(clip, smooth, src, dst, cfg.get("demo_mode", "side"))
+        smooth = demo_split(clip, smooth, src, dst, cfg.get("demo_mode", "side"), bool(cfg.get("demo_labels")))
     # Every output frame must say it lasts 1/dst s. Frames copied straight from the source
     # still carry the source's duration (e.g. 1/25 s), and mpv times frames by that property:
     # mixed durations made it drop and mistime frames on 25 fps video.

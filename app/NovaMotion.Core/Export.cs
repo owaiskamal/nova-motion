@@ -23,6 +23,25 @@ public sealed record ExportOptions
     public string? OutputFolder { get; init; }
     /// <summary>Use NVIDIA's hardware encoder (fast); otherwise x264 on the CPU.</summary>
     public bool HardwareEncoder { get; init; } = true;
+    /// <summary>A before/after video: the original and NOVA Motion side by side, labelled.</summary>
+    public bool Comparison { get; init; }
+    /// <summary>Only part of the video: from this second…</summary>
+    public double? StartSeconds { get; init; }
+    /// <summary>…for this many seconds (null: to the end).</summary>
+    public double? LengthSeconds { get; init; }
+
+    /// <summary>"3:15" or "195" (seconds) to seconds; null when empty or unreadable.</summary>
+    public static double? ParseTime(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        double total = 0;
+        foreach (var part in text.Trim().Split(':'))
+        {
+            if (!double.TryParse(part, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) || v < 0) return null;
+            total = total * 60 + v;
+        }
+        return total;
+    }
 }
 
 public sealed record SourceInfo(int? Frames, double? Fps);
@@ -83,7 +102,7 @@ public static class ExportPlan
         exists ??= File.Exists;
         var dir = o.OutputFolder ?? Path.GetDirectoryName(input) ?? ".";
         var name = Path.GetFileNameWithoutExtension(input);
-        var label = o.Target.StartsWith('x') ? $"{o.Target}" : $"{o.Target} fps";
+        var label = (o.Comparison ? "before-after " : "") + (o.Target.StartsWith('x') ? $"{o.Target}" : $"{o.Target} fps");
         var path = Path.Combine(dir, $"{name} (NOVA Motion {label}).mp4");
         for (var i = 2; exists(path); i++) path = Path.Combine(dir, $"{name} (NOVA Motion {label}) ({i}).mp4");
         return path;
@@ -94,7 +113,9 @@ public static class ExportPlan
     {
         var e = playing.Clone();
         e.Enabled = true;
-        e.Demo = false;
+        e.Demo = o.Comparison;
+        e.DemoMode = "side";
+        e.DemoLabels = o.Comparison;
         e.RtxVsr = false;
         e.QualityStep = 0;
         e.SceneDetect = true;
@@ -150,6 +171,8 @@ public static class ExportPlan
         // The engine pads its end with spare frames; stop at the real ones. mpv holds the last
         // frame it counts back from the encoder, so one more (a copy of the last frame) is asked for.
         if (frames is > 0) args.Add($"--frames={frames + 1}");
+        if (o.StartSeconds is > 0 and var start) args.Add($"--start={start.ToString(CultureInfo.InvariantCulture)}");
+        if (o.LengthSeconds is > 0 and var length) args.Add($"--length={length.ToString(CultureInfo.InvariantCulture)}");
         if (o.HardwareEncoder)
         {
             // NVENC HEVC at constant quality: visually lossless at this level, a fraction of the CPU
@@ -204,6 +227,14 @@ public sealed class ExportRunner : IExportRunner
         var source = await ProbeAsync(_runtime.MpvExe, input, ct);
         var probed = engine.Clone();
         probed.SourceFrames = source.Frames;
+        // A part of the video: its own frame count, from the length (or what's left after the start)
+        if (source.Fps is { } sf && (options.LengthSeconds is > 0 || options.StartSeconds is > 0))
+        {
+            var whole = source.Frames ?? int.MaxValue;
+            var from = (int)Math.Round((options.StartSeconds ?? 0) * sf);
+            var count = options.LengthSeconds is { } len ? (int)Math.Round(len * sf) : whole - from;
+            probed.SourceFrames = Math.Max(1, Math.Min(count, whole - from));
+        }
         File.WriteAllText(cfg, JsonSerializer.Serialize(probed, Json.Options));
         var rate = source.Fps is { } fps ? FrameRate.Output(probed, fps) : null;
         long? frames = rate is not null && source.Frames is { } n ? FrameRate.Frames(n, FrameRate.Snap(source.Fps!.Value), rate) : null;
@@ -222,8 +253,10 @@ public sealed class ExportRunner : IExportRunner
                 try
                 {
                     if (duration <= 0 && await mpv.CommandAsync("get_property", "duration") is JsonValue d && d.TryGetValue(out double dv)) duration = dv;
-                    if (duration > 0 && await mpv.CommandAsync("get_property", "time-pos") is JsonValue t && t.TryGetValue(out double tv))
-                        progress.Report(Math.Clamp(tv / duration, 0, 1));
+                    var from = options.StartSeconds ?? 0;
+                    var span = options.LengthSeconds ?? (duration - from);
+                    if (duration > 0 && span > 0 && await mpv.CommandAsync("get_property", "time-pos") is JsonValue t && t.TryGetValue(out double tv))
+                        progress.Report(Math.Clamp((tv - from) / span, 0, 1));
                 }
                 catch (Exception ex) when (ex is MpvException or TimeoutException or InvalidOperationException or IOException) { }
                 await Task.WhenAny(exited.Task, Task.Delay(500, ct));

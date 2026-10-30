@@ -22,7 +22,11 @@ public sealed class ExportItem : Observable
     {
         Input = input; Output = output; Options = options;
         Title = MediaSource.GuessTitle(input);
-        Summary = $"{EngineCatalog.TargetName(options.Target)} · {(options.Quality == ExportQuality.Best ? "Best quality" : "Faster")}";
+        Summary = $"{EngineCatalog.TargetName(options.Target)} · {(options.Quality == ExportQuality.Best ? "Best quality" : "Faster")}"
+                + (options.Comparison ? " · before/after" : "")
+                + (options.StartSeconds is > 0 || options.LengthSeconds is > 0
+                    ? $" · from {TimeFormat.Format(options.StartSeconds ?? 0)}" + (options.LengthSeconds is { } l ? $" for {l:0.#} s" : "")
+                    : "");
     }
 
     public string Input { get; }
@@ -69,6 +73,19 @@ public sealed partial class MainViewModel
 
     private bool _exportGpuEncoder = true;
     public bool ExportGpuEncoder { get => _exportGpuEncoder; set => Set(ref _exportGpuEncoder, value); }
+
+    private bool _exportComparison;
+    /// <summary>Export a before/after video: the original and NOVA Motion side by side, labelled.</summary>
+    public bool ExportComparison { get => _exportComparison; set => Set(ref _exportComparison, value); }
+    private string _exportStartText = "";
+    /// <summary>Only part of each video, from this time ("3:15"); empty = from the start.</summary>
+    public string ExportStartText { get => _exportStartText; set { if (Set(ref _exportStartText, value)) Raise(nameof(ExportRangeProblem)); } }
+    private string _exportLengthText = "";
+    /// <summary>…for this many seconds ("20"); empty = to the end.</summary>
+    public string ExportLengthText { get => _exportLengthText; set { if (Set(ref _exportLengthText, value)) Raise(nameof(ExportRangeProblem)); } }
+    public string ExportRangeProblem =>
+        (ExportStartText.Length > 0 && ExportOptions.ParseTime(ExportStartText) is null) || (ExportLengthText.Length > 0 && ExportOptions.ParseTime(ExportLengthText) is not > 0)
+            ? "Write times as 3:15 or 195, and the length in seconds." : "";
 
     /// <summary>What the export will use, in a sentence.</summary>
     public string ExportEngineText => Availability.TensorRt
@@ -129,6 +146,9 @@ public sealed partial class MainViewModel
             Target = ExportTargets.FirstOrDefault(t => t.IsSelected)?.Value ?? "60",
             Quality = _exportQuality,
             HardwareEncoder = _exportGpuEncoder && _gpu?.IsNvidia != false,
+            Comparison = _exportComparison,
+            StartSeconds = ExportOptions.ParseTime(ExportStartText),
+            LengthSeconds = ExportOptions.ParseTime(ExportLengthText),
         };
         var taken = Exports.Select(e => e.Output).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var f in files.Where(f => !MediaSource.IsOnline(f)))
