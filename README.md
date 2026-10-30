@@ -18,6 +18,8 @@ NOVA Motion plays 24/25/30 fps video at your screen's refresh rate by generating
 
 > Status: v0.2, the full player. The video plays inside NOVA Motion with its own controls, resume, queue, subtitles and a live Motion panel. 1080p 25 → 60 fps in real time with RIFE on TensorRT, Enhance & Export for smooth copies of files, and tuning that fits the engine to your graphics card, from RTX desktops down to a GTX 1650 laptop. See the [roadmap](#roadmap).
 
+<!-- Demo: a 60 fps before/after clip goes here. Upload the MP4 by dragging it into this file in GitHub's web editor; GitHub inserts a link it plays inline. -->
+
 ## Benchmarks
 
 Measured with `benchmark.cmd` and `tune.cmd` (the whole engine, not just the model). Real-time playback of 24 fps film to 60 needs 48 AI frames a second; 25 → 60 needs 55.
@@ -110,7 +112,7 @@ Something not smooth? Run **`collect-logs.cmd`**. It puts the player and engine 
 - **On the video:** controls that hide while you watch, a seek bar with buffered range, chapters and hover time, double-click for full screen, scroll for volume.
 - **Motion panel** (Tab, or the badge next to the controls): the frame rate on screen, dropped frames, the model in use and the size the AI runs at, the frame-cadence strip (white bars are frames from the video, gold ones are generated), the engine's status in plain words, and every smoothing choice: engine, frame rate, AI model (Auto or a fixed one) and AI size (Auto, Full, 75 %, Half).
 - **Before/after:** side by side or a split screen with a divider, labelled, to see what the engine adds.
-- **Enhance:** make a smooth copy of any file at 60 fps, 120 fps or 2× with the best model installed (or the faster live one). Files queue up, show time left, and are saved next to the original with NOVA Motion in the name. NVIDIA cards encode on the GPU (HEVC); otherwise x264 on the CPU.
+- **Enhance:** make a smooth copy of any file at 60 fps, 120 fps or 2× with the best model installed (or the faster live one). Files queue up, show time left, and are saved next to the original with NOVA Motion in the name. NVIDIA cards encode on the GPU (HEVC); otherwise x264 on the CPU. Turn on **Before/after video** for a labelled side-by-side of the original and NOVA Motion, and give a start time and length to export just that part: made for sharing.
 - **Fits the PC it runs on:** RTX cards get TensorRT at the display's refresh rate; GTX and other entry cards get 60 fps (or an even rate such as 72 on 144 Hz screens) with the AI at half size; built-in graphics get Vulkan RIFE at half size once tuning shows it keeps up, MVTools until then. Home offers tuning on every PC and explains what the graphics can do.
 - **Subtitles, audio, speed and online quality** in one panel; drop a subtitle file on the video to load it.
 
