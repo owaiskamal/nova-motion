@@ -81,7 +81,8 @@ internal static class ExportTests
               && ExportOptions.ParseTime("") is null && ExportOptions.ParseTime("abc") is null, "export: times read as 3:15 or seconds");
         var cmp = o with { Comparison = true, StartSeconds = 195, LengthSeconds = 20 };
         var cmpArgs = ExportPlan.MpvArguments(rt, "i", "o", "p", "l", cmp);
-        check(cmpArgs.Contains("--start=195") && cmpArgs.Contains("--length=20")
+        check(cmpArgs.Contains("--start=195") && cmpArgs.Contains("--length=20") && cmpArgs.Contains("--ovc=h264_nvenc")
+              && cmpArgs.Any(a => a.Contains("scale=-2:'min(720,ih)'"))
               && ExportPlan.OutputPath("/v/Tears of Steel.mkv", cmp, _ => false).EndsWith("Tears of Steel (NOVA Motion before-after 60 fps).mp4"),
               "export: a before/after part of a video: start, length and its own file name");
         check(ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o, new FrameRate(60000, 1001)).Any(x => x.EndsWith(",lavfi=[setpts=N*1001/(60000*TB)]")),

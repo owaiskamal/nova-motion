@@ -149,6 +149,8 @@ public static class ExportPlan
         // mpv times the last few engine frames by the input frames they came after; numbering every
         // frame at the engine's output rate gives the file exact, even timestamps to the end
         var stamp = rate is { } r ? $",lavfi=[setpts=N*{r.Den}/({r.Num}*TB)]" : "";
+        // Before/after videos are for sharing: 720p, so a short clip stays small enough to upload
+        if (o.Comparison) stamp += ",lavfi=[scale=-2:'min(720,ih)']";
         var args = new List<string>
         {
             "--no-config",                     // no player scripts or settings: the export is set up here
@@ -173,7 +175,14 @@ public static class ExportPlan
         if (frames is > 0) args.Add($"--frames={frames + 1}");
         if (o.StartSeconds is > 0 and var start) args.Add($"--start={start.ToString(CultureInfo.InvariantCulture)}");
         if (o.LengthSeconds is > 0 and var length) args.Add($"--length={length.ToString(CultureInfo.InvariantCulture)}");
-        if (o.HardwareEncoder)
+        if (o.Comparison)
+        {
+            // H.264 plays in every browser (GitHub, social sites); HEVC doesn't in most
+            args.Add(o.HardwareEncoder ? "--ovc=h264_nvenc" : "--ovc=libx264");
+            args.Add(o.HardwareEncoder ? "--ovcopts=preset=p6,rc=vbr,cq=24,b=0" : "--ovcopts=preset=slow,crf=22,profile=high");
+            args.Add("--ovcopts-add=pix_fmt=yuv420p");
+        }
+        else if (o.HardwareEncoder)
         {
             // NVENC HEVC at constant quality: visually lossless at this level, a fraction of the CPU
             args.Add("--ovc=hevc_nvenc");
