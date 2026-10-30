@@ -52,6 +52,10 @@ Source: "..\setup\*"; DestDir: "{app}\setup"; Flags: ignoreversion
 Source: "..\setup-tensorrt.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\prepare-engines.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\benchmark.cmd"; DestDir: "{app}"; Flags: ignoreversion
+; The app's Tune button runs tune.cmd from here; get-models and collect-logs are for support
+Source: "..\tune.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\get-models.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\collect-logs.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\extension\*"; DestDir: "{app}\extension"; Flags: ignoreversion recursesubdirs
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
@@ -59,6 +63,8 @@ Source: "..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 [Icons]
 Name: "{group}\NOVA Studio"; Filename: "{app}\NovaMotion.exe"
 Name: "{group}\Add NVIDIA TensorRT engine"; Filename: "{app}\setup-tensorrt.cmd"; WorkingDir: "{app}"
+Name: "{group}\Tune for this PC"; Filename: "{app}\tune.cmd"; WorkingDir: "{app}"
+Name: "{group}\Collect logs for a bug report"; Filename: "{app}\collect-logs.cmd"; WorkingDir: "{app}"
 Name: "{group}\Uninstall NOVA Studio"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\NOVA Studio"; Filename: "{app}\NovaMotion.exe"; Tasks: desktopicon
 
