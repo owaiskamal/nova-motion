@@ -1,0 +1,22 @@
+14:17:38.706 screen 1024x768, window 1024x720
+14:17:41.763 shot 01-home 1024x720
+14:17:42.696 shot 02-settings-smoothing 1024x720
+14:17:43.228 shot 03-settings-playback 1024x720
+14:17:43.930 generate: 'Generate needs an NVIDIA graphics card for now. AMD and Intel support depends on the models' tools.' gpu='Microsoft Hyper-V Video' vram=Unknown ram=16 GB
+14:17:43.965 shot 03b-generate 1024x720
+14:17:44.499 shot 03c-enhance 1024x720
+14:17:47.674 state: media=True engine=Active badge='25 → 60 fps' src=25 out=60 display=64 Hz video=1920 × 1080 decoder=Software title='lavfi:testsrc2=size=1920x1080:rate=25' toast=''
+14:17:47.710 shot 04-player 1024x720
+14:17:51.744 state: media=True engine=Preparing badge='Preparing' src=25 out=16 display=64 Hz video=1920 × 1080 decoder=Software title='lavfi:testsrc2=size=1920x1080:rate=25' toast=''
+14:17:51.793 shot 04b-before-after 1024x720
+14:17:54.362 shot 05-motion-panel 1024x720
+14:17:55.108 shot 06-tracks-panel 1024x720
+14:17:56.714 shot 07-fullscreen 1024x768
+14:17:59.158 shot 08-home-after-playing 1024x720
+14:17:59.159 state: media=False engine=Idle badge='' src=– out=– display=64 Hz video=– decoder=Software title='lavfi:testsrc2=size=1920x1080:rate=25' toast=''
+14:18:00.703 shot 09-export-running 1024x720
+14:18:00.705 export: Done 'Saved as export-test (NOVA Motion 60 fps).mp4' -> D:\a\_temp\export-test (NOVA Motion 60 fps).mp4
+14:18:00.735 shot 10-export-done 1024x720
+14:18:00.736 done
+exported: export-test (NOVA Motion 60 fps).mp4 fps=60.5 frames=121 size=640x360
+decoded frames: 120

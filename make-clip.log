@@ -1,0 +1,223 @@
+[   0.002][v][cplayer] mpv v0.41.0-1205-g01e2533f3 Copyright © 2000-2026 mpv/MPlayer/mplayer2 projects
+[   0.002][v][cplayer]  built on Oct 18 2026 00:18:15
+[   0.002][v][cplayer] libplacebo version: v7.376.0 (v7.360.0-171-g0df80ae-dirty)
+[   0.002][v][cplayer] FFmpeg version: N-127617-g94cba3150
+[   0.002][v][cplayer] FFmpeg library versions:
+[   0.002][v][cplayer]    libavcodec      63.20.101
+[   0.002][v][cplayer]    libavdevice     63.2.100
+[   0.002][v][cplayer]    libavfilter     12.5.100
+[   0.002][v][cplayer]    libavformat     63.10.100
+[   0.002][v][cplayer]    libavutil       61.14.100
+[   0.002][v][cplayer]    libswresample   7.3.101
+[   0.002][v][cplayer]    libswscale      10.2.100
+[   0.002][v][cplayer] Configuration: -Dprefix=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32 -Dlibdir=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32/lib -Ddefault_library=shared -Dprefer_static=true -Ddebug=true -Db_ndebug=true -Doptimization=3 -Db_lto=true -Db_lto_mode=thin -Dlibmpv=true -Dpdf-build=enabled -Dlua=enabled -Djavascript=enabled -Dsdl2-gamepad=enabled -Dlibarchive=enabled -Dlibbluray=enabled -Ddvdnav=enabled -Duchardet=enabled -Drubberband=enabled -Dlcms2=enabled -Dopenal=enabled -Dspirv-cross=enabled -Dvulkan=enabled -Dvapoursynth=enabled -Dsubrandr=enabled -Dsixel=enabled -Dgl=enabled -Degl-angle=enabled -Dlibcurl=enabled -Dc_args=-Wno-error=int-conversion --cross-file=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/meson_cross.txt
+[   0.002][v][cplayer] List of enabled features: amf build-date cplugins cuda-hwaccel cuda-interop d3d-hwaccel d3d11 d3d9-hwaccel debug direct3d dos-paths dvda dvdnav dxgi-debug-d3d11 egl-angle egl-angle-win32 ffmpeg ffnvcodec gl gl-dxinterop gl-dxinterop-d3d9 gl-win32 glob glob-win32 gpl iconv javascript jpeg lcms2 libarchive libass libavdevice libbluray libcurl libplacebo luajit openal rubberband rubberband-3 sdl2-gamepad shaderc sixel spirv-cross subrandr uchardet vaapi vaapi-win32 vapoursynth vector vk-khr-display vulkan wasapi win32 win32-desktop win32-executable win32-smtc win32-threads zimg zimg-st428 zlib
+[   0.002][v][cplayer] Built with NDEBUG.
+[   0.002][v][cplayer] Command line options: '--no-config' 'av://lavfi:testsrc2=size=640x360:rate=25:duration=2' '--o=D:\a\_temp\export-test.mp4' '--ovc=libx264' '--of=mp4' '--log-file=D:\a\nova-motion\nova-motion\uitest\make-clip.log'
+[   0.002][v][cplayer] mpv v0.41.0-1205-g01e2533f3 Copyright © 2000-2026 mpv/MPlayer/mplayer2 projects
+[   0.002][v][cplayer]  built on Oct 18 2026 00:18:15
+[   0.002][v][cplayer] libplacebo version: v7.376.0 (v7.360.0-171-g0df80ae-dirty)
+[   0.002][v][cplayer] FFmpeg version: N-127617-g94cba3150
+[   0.002][v][cplayer] FFmpeg library versions:
+[   0.002][v][cplayer]    libavcodec      63.20.101
+[   0.002][v][cplayer]    libavdevice     63.2.100
+[   0.002][v][cplayer]    libavfilter     12.5.100
+[   0.002][v][cplayer]    libavformat     63.10.100
+[   0.002][v][cplayer]    libavutil       61.14.100
+[   0.002][v][cplayer]    libswresample   7.3.101
+[   0.002][v][cplayer]    libswscale      10.2.100
+[   0.002][v][cplayer] Configuration: -Dprefix=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32 -Dlibdir=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32/lib -Ddefault_library=shared -Dprefer_static=true -Ddebug=true -Db_ndebug=true -Doptimization=3 -Db_lto=true -Db_lto_mode=thin -Dlibmpv=true -Dpdf-build=enabled -Dlua=enabled -Djavascript=enabled -Dsdl2-gamepad=enabled -Dlibarchive=enabled -Dlibbluray=enabled -Ddvdnav=enabled -Duchardet=enabled -Drubberband=enabled -Dlcms2=enabled -Dopenal=enabled -Dspirv-cross=enabled -Dvulkan=enabled -Dvapoursynth=enabled -Dsubrandr=enabled -Dsixel=enabled -Dgl=enabled -Degl-angle=enabled -Dlibcurl=enabled -Dc_args=-Wno-error=int-conversion --cross-file=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/meson_cross.txt
+[   0.002][v][cplayer] List of enabled features: amf build-date cplugins cuda-hwaccel cuda-interop d3d-hwaccel d3d11 d3d9-hwaccel debug direct3d dos-paths dvda dvdnav dxgi-debug-d3d11 egl-angle egl-angle-win32 ffmpeg ffnvcodec gl gl-dxinterop gl-dxinterop-d3d9 gl-win32 glob glob-win32 gpl iconv javascript jpeg lcms2 libarchive libass libavdevice libbluray libcurl libplacebo luajit openal rubberband rubberband-3 sdl2-gamepad shaderc sixel spirv-cross subrandr uchardet vaapi vaapi-win32 vapoursynth vector vk-khr-display vulkan wasapi win32 win32-desktop win32-executable win32-smtc win32-threads zimg zimg-st428 zlib
+[   0.003][v][cplayer] Built with NDEBUG.
+[   0.003][d][global] home path: '' -> '-'
+[   0.003][d][global] user path: '~~home/' -> ''
+[   0.003][d][global] user path: '~~old_home/' -> ''
+[   0.003][v][cplayer] Applying profile 'encoding'...
+[   0.003][v][cplayer] Setting option 'vo' = 'lavc' (flags = 4)
+[   0.003][v][cplayer] Setting option 'ao' = 'lavc' (flags = 4)
+[   0.003][v][cplayer] Setting option 'keep-open' = 'no' (flags = 4)
+[   0.003][v][cplayer] Setting option 'force-window' = 'no' (flags = 4)
+[   0.003][v][cplayer] Setting option 'gapless-audio' = 'yes' (flags = 4)
+[   0.003][v][cplayer] Setting option 'resume-playback' = 'no' (flags = 4)
+[   0.003][v][cplayer] Setting option 'load-scripts' = 'no' (flags = 4)
+[   0.003][v][cplayer] Setting option 'osc' = 'no' (flags = 4)
+[   0.003][v][cplayer] Setting option 'framedrop' = 'no' (flags = 4)
+[   0.003][v][cplayer] Setting option 'config' = 'no' (flags = 8)
+[   0.003][v][cplayer] Setting option 'o' = 'D:\a\_temp\export-test.mp4' (flags = 8)
+[   0.003][v][cplayer] Setting option 'ovc' = 'libx264' (flags = 8)
+[   0.003][v][cplayer] Setting option 'of' = 'mp4' (flags = 8)
+[   0.003][v][cplayer] Setting option 'log-file' = 'D:\a\nova-motion\nova-motion\uitest\make-clip.log' (flags = 8)
+[   0.004][d][ytdl_hook] Loading lua script @ytdl_hook.lua...
+[   0.004][d][stats] Loading lua script @stats.lua...
+[   0.004][d][console] Loading lua script @console.lua...
+[   0.004][d][auto_profiles] Loading lua script @auto_profiles.lua...
+[   0.004][d][select] Loading lua script @select.lua...
+[   0.004][d][positioning] Loading lua script @positioning.lua...
+[   0.004][d][commands] Loading lua script @commands.lua...
+[   0.004][v][clipboard] Initialized win32 clipboard backend.
+[   0.004][d][console] loading mp.defaults
+[   0.004][d][stats] loading mp.defaults
+[   0.005][v][cplayer] Waiting for scripts...
+[   0.005][d][auto_profiles] loading mp.defaults
+[   0.005][d][select] loading mp.defaults
+[   0.005][d][positioning] loading mp.defaults
+[   0.005][d][stats] loading @stats.lua
+[   0.005][d][auto_profiles] loading @auto_profiles.lua
+[   0.005][d][positioning] loading @positioning.lua
+[   0.005][d][positioning] reading options for positioning
+[   0.005][d][positioning] script-opts/positioning.conf not found.
+[   0.006][d][cplayer] Run command: define-section, flags=64, args=[name="input_positioning", contents="", flags="default"]
+[   0.006][d][cplayer] Run command: enable-section, flags=64, args=[name="input_positioning", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.006][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_positioning", contents="", flags="force"]
+[   0.006][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_positioning", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.006][d][select] loading @select.lua
+[   0.006][d][commands] loading mp.defaults
+[   0.006][d][stats] reading options for stats
+[   0.006][d][stats] script-opts/stats.conf not found.
+[   0.006][d][auto_profiles] Destroying client handle...
+[   0.007][d][commands] loading @commands.lua
+[   0.007][d][cplayer] Run command: define-section, flags=64, args=[name="input_stats", contents="", flags="default"]
+[   0.007][d][cplayer] Run command: enable-section, flags=64, args=[name="input_stats", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.007][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_stats", contents="", flags="force"]
+[   0.007][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_stats", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.007][d][ytdl_hook] loading mp.defaults
+[   0.007][d][commands] reading options for commands
+[   0.007][d][commands] script-opts/commands.conf not found.
+[   0.007][d][cplayer] Run command: define-section, flags=64, args=[name="input_commands", contents="", flags="default"]
+[   0.007][d][cplayer] Run command: enable-section, flags=64, args=[name="input_commands", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.007][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_commands", contents="", flags="force"]
+[   0.007][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_commands", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.008][d][select] reading options for select
+[   0.008][d][select] script-opts/select.conf not found.
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="input_select", contents="", flags="default"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="input_select", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_select", contents="", flags="force"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_select", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.008][d][ytdl_hook] loading @ytdl_hook.lua
+[   0.008][d][console] loading @console.lua
+[   0.009][d][ytdl_hook] reading options for ytdl_hook
+[   0.009][d][ytdl_hook] script-opts/ytdl_hook.conf not found.
+[   0.010][d][console] reading options for console
+[   0.010][d][console] script-opts/console.conf not found.
+[   0.010][v][cplayer] Done loading scripts.
+[   0.010][v][cplayer] Running hook: auto_profiles/on_before_start_file
+[   0.010][v][cplayer] Failed sending hook command auto_profiles/on_before_start_file. Removing hook.
+[   0.010][v][cplayer] Running hook: auto_profiles/on_load
+[   0.010][v][cplayer] Failed sending hook command auto_profiles/on_load. Removing hook.
+[   0.010][v][cplayer] Running hook: ytdl_hook/on_load
+[   0.011][v][cplayer] Running hook: ytdl_hook/on_load
+[   0.011][v][ytdl_hook] playlist hook
+[   0.011][d][cplayer] Run command: define-section, flags=64, args=[name="input_console", contents="", flags="default"]
+[   0.011][d][cplayer] Run command: enable-section, flags=64, args=[name="input_console", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.011][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_console", contents="", flags="force"]
+[   0.011][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_console", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.011][v][avdevice] Opening av://lavfi:testsrc2=size=640x360:rate=25:duration=2
+[   0.011][d][avdevice] resize stream to 131072 bytes, drop 0 bytes
+[   0.011][d][avdevice] Stream opened successfully.
+[   0.011][v][demux] Trying demuxers for level=request.
+[   0.011][d][demux] Trying demuxer: lavf (force-level: request)
+[   0.012][v][lavf] Found 'lavfi' at score=100 size=0 (forced).
+[   0.048][d][ffmpeg] Parsed_testsrc2_0: size:640x360 rate:25/1 duration:2.000000 sar:1/1
+[   0.048][v][lavf] Could not set AVOption user_agent='libmpv'
+[   0.048][v][lavf] Could not set AVOption tls_verify='1'
+[   0.048][v][lavf] Could not set AVOption icy='1'
+[   0.048][v][lavf] Could not set AVOption timeout='60000000'
+[   0.048][v][lavf] Could not set AVOption http_persistent='0'
+[   0.048][v][lavf] Could not set AVOption http_multiple='1'
+[   0.049][v][lavf] avformat_find_stream_info() finished after 0 bytes.
+[   0.049][v][demux] Detected file format: lavfi (libavformat)
+[   0.049][v][cplayer] Opening done: av://lavfi:testsrc2=size=640x360:rate=25:duration=2
+[   0.050][v][cplayer] Running hook: auto_profiles/on_preloaded
+[   0.050][v][cplayer] Failed sending hook command auto_profiles/on_preloaded. Removing hook.
+[   0.050][v][cplayer] Running hook: ytdl_hook/on_preloaded
+[   0.050][v][cplayer] Running hook: auto_profiles/on_loaded
+[   0.050][v][cplayer] Failed sending hook command auto_profiles/on_loaded. Removing hook.
+[   0.050][v][lavf] select track 0
+[   0.050][i][cplayer] ● Video  --vid=1  (wrapped_avframe 640x360 25 fps)
+[   0.050][v][vd] Container reported FPS: 25.000000
+[   0.051][v][vd] Codec list:
+[   0.051][v][vd]     wrapped_avframe - AVPacket to AVFrame passthrough
+[   0.051][v][vd] Opening decoder wrapped_avframe
+[   0.051][v][vd] No hardware decoding requested.
+[   0.051][v][vd] Using software decoding.
+[   0.051][v][vd] Detected 4 logical cores.
+[   0.051][v][vd] Requesting 5 threads for decoding.
+[   0.051][v][vd] Selected decoder: wrapped_avframe - AVPacket to AVFrame passthrough
+[   0.051][v][vf] User filter list:
+[   0.051][v][vf]   (empty)
+[   0.051][v][cplayer] Starting playback...
+[   0.051][v][vd] Using software decoding.
+[   0.051][v][vd] Decoder format: 640x360 yuv420p auto/auto/auto/auto/auto CL=unknown crop=640x360+0+0 A=none
+[   0.051][v][vd] Using container aspect ratio.
+[   0.051][v][vf] [in] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.051][v][vf] [userdeint] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.051][v][vf] [userdeint] (disabled)
+[   0.051][v][vf] [autovflip] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.051][v][vf] [autovflip] (disabled)
+[   0.051][v][vf] [autorotate] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.051][v][vf] [autorotate] (disabled)
+[   0.051][v][vf] [convert] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.051][v][vf] [convert] (disabled)
+[   0.052][v][vf] [out] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.052][i][cplayer] VO: [lavc] 640x360 yuv420p
+[   0.052][v][cplayer] VO: Description: video encoding using libavcodec
+[   0.052][v][vo/lavc] reconfig to 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.052][i][vo/lavc] Opening encoder: libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 [libx264]
+[   0.052][v][ffmpeg] libx264: using SAR=1/1
+[   0.052][v][ffmpeg] libx264: using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[   0.053][v][ffmpeg] libx264: profile High, level 3.0, 4:2:0, 8-bit
+[   0.053][v][ffmpeg] libx264: 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=6 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+[   0.053][i][encode] Opening output file: D:\a\_temp\export-test.mp4
+[   0.054][i][encode] Opening muxer: MP4 (MPEG-4 Part 14) [mp4]
+[   0.055][v][cplayer] first video frame after restart shown
+[   0.055][d][cplayer] starting video playback
+[   0.055][v][cplayer] playback restart complete @ 0.000000, audio=eof, video=playing
+[   0.057][d][global] user path: '~~/menu.conf' -> 'menu.conf'
+[   0.063][d][ao/wasapi] Hotplug init
+[   0.064][d][ao/wasapi] Monitoring for hotplug events
+[   0.068][v][lavf] EOF reached.
+[   0.108][v][vf] filter input EOF
+[   0.108][v][vf] filter output EOF
+[   0.108][v][cplayer] using demuxer frame duration for last frame
+[   0.108][v][cplayer] video EOF reached
+[   0.108][d][cplayer] video EOF (status=4)
+[   0.108][v][cplayer] EOF code: 1  
+[   0.108][d][vd] Uninit decoder.
+[   0.108][d][cplayer] Terminating demuxers...
+[   0.110][d][cplayer] Done terminating demuxers.
+[   0.110][v][cplayer] finished playback, success (reason 0)
+[   0.110][v][cplayer] Running hook: ytdl_hook/on_after_end_file
+[   0.112][d][cplayer] Run command: del, flags=64, args=[name="user-data/mpv/ytdl/json-subprocess-result"]
+[   0.174][v][ffmpeg] libx264: frame I:1     Avg QP:19.22  size:  8305
+[   0.174][v][ffmpeg] libx264: frame P:15    Avg QP:25.57  size:  4533
+[   0.174][v][ffmpeg] libx264: frame B:34    Avg QP:30.51  size:  3159
+[   0.174][v][ffmpeg] libx264: consecutive B-frames:  2.0% 20.0%  6.0% 72.0%
+[   0.174][v][ffmpeg] libx264: mb I  I16..4: 40.0% 45.4% 14.6%
+[   0.174][v][ffmpeg] libx264: mb P  I16..4:  1.8%  5.8%  1.1%  P16..4:  9.9%  5.2%  3.6%  0.0%  0.0%    skip:72.6%
+[   0.174][v][ffmpeg] libx264: mb B  I16..4:  0.2%  0.5%  1.2%  B16..8: 14.2%  4.8%  0.9%  direct: 1.0%  skip:77.3%  L0:47.3% L1:46.9% BI: 5.8%
+[   0.174][v][ffmpeg] libx264: 8x8 transform intra:50.9% inter:36.6%
+[   0.174][v][ffmpeg] libx264: coded y,uvDC,uvAC intra: 24.4% 33.1% 31.9% inter: 3.2% 7.4% 5.7%
+[   0.174][v][ffmpeg] libx264: i16 v,h,dc,p: 84% 14%  1%  1%
+[   0.174][v][ffmpeg] libx264: i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 19% 16% 62%  1%  1%  0%  1%  1%  1%
+[   0.174][v][ffmpeg] libx264: i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 21% 18% 27%  9%  5%  4%  6%  6%  5%
+[   0.174][v][ffmpeg] libx264: i8c dc,h,v,p: 68% 12% 18%  2%
+[   0.174][v][ffmpeg] libx264: Weighted P-Frames: Y:0.0% UV:0.0%
+[   0.174][v][ffmpeg] libx264: ref P L0: 56.5%  6.3% 22.1% 15.1%
+[   0.174][v][ffmpeg] libx264: ref B L0: 76.5% 19.2%  4.3%
+[   0.174][v][ffmpeg] libx264: ref B L1: 95.2%  4.8%
+[   0.174][v][ffmpeg] libx264: kb/s:734.83
+[   0.178][i][encode] video: encoded 184397 bytes
+[   0.178][i][encode] audio: encoded 0 bytes
+[   0.178][i][encode] muxing overhead 1480 bytes
+[   0.178][d][ffmpeg] AVIOContext: Statistics: 185881 bytes written, 2 seeks, 4 writeouts
+[   0.178][i][cplayer] Exiting... (End of file)
+[   0.178][d][ytdl_hook] Destroying client handle...
+[   0.178][d][positioning] Destroying client handle...
+[   0.178][d][stats] Destroying client handle...
+[   0.178][d][dnd] Destroying client handle...
+[   0.178][d][cplayer] Run command: del, flags=64, args=[name="user-data/mpv/console"]
+[   0.178][d][commands] Destroying client handle...
+[   0.179][d][console] Destroying client handle...
+[   0.179][d][select] Destroying client handle...
+[   0.179][d][SystemMediaTransportControls] Destroying client handle...
+[   0.180][d][ao/wasapi] Hotplug uninit

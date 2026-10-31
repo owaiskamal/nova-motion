@@ -1,0 +1,385 @@
+[   0.002][v][cplayer] mpv v0.41.0-1205-g01e2533f3 Copyright © 2000-2026 mpv/MPlayer/mplayer2 projects
+[   0.002][v][cplayer]  built on Oct 18 2026 00:18:15
+[   0.002][v][cplayer] libplacebo version: v7.376.0 (v7.360.0-171-g0df80ae-dirty)
+[   0.002][v][cplayer] FFmpeg version: N-127617-g94cba3150
+[   0.002][v][cplayer] FFmpeg library versions:
+[   0.002][v][cplayer]    libavcodec      63.20.101
+[   0.002][v][cplayer]    libavdevice     63.2.100
+[   0.002][v][cplayer]    libavfilter     12.5.100
+[   0.002][v][cplayer]    libavformat     63.10.100
+[   0.002][v][cplayer]    libavutil       61.14.100
+[   0.010][v][cplayer]    libswresample   7.3.101
+[   0.010][v][cplayer]    libswscale      10.2.100
+[   0.010][v][cplayer] Configuration: -Dprefix=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32 -Dlibdir=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32/lib -Ddefault_library=shared -Dprefer_static=true -Ddebug=true -Db_ndebug=true -Doptimization=3 -Db_lto=true -Db_lto_mode=thin -Dlibmpv=true -Dpdf-build=enabled -Dlua=enabled -Djavascript=enabled -Dsdl2-gamepad=enabled -Dlibarchive=enabled -Dlibbluray=enabled -Ddvdnav=enabled -Duchardet=enabled -Drubberband=enabled -Dlcms2=enabled -Dopenal=enabled -Dspirv-cross=enabled -Dvulkan=enabled -Dvapoursynth=enabled -Dsubrandr=enabled -Dsixel=enabled -Dgl=enabled -Degl-angle=enabled -Dlibcurl=enabled -Dc_args=-Wno-error=int-conversion --cross-file=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/meson_cross.txt
+[   0.010][v][cplayer] List of enabled features: amf build-date cplugins cuda-hwaccel cuda-interop d3d-hwaccel d3d11 d3d9-hwaccel debug direct3d dos-paths dvda dvdnav dxgi-debug-d3d11 egl-angle egl-angle-win32 ffmpeg ffnvcodec gl gl-dxinterop gl-dxinterop-d3d9 gl-win32 glob glob-win32 gpl iconv javascript jpeg lcms2 libarchive libass libavdevice libbluray libcurl libplacebo luajit openal rubberband rubberband-3 sdl2-gamepad shaderc sixel spirv-cross subrandr uchardet vaapi vaapi-win32 vapoursynth vector vk-khr-display vulkan wasapi win32 win32-desktop win32-executable win32-smtc win32-threads zimg zimg-st428 zlib
+[   0.010][v][cplayer] Built with NDEBUG.
+[   0.010][v][cplayer] Command line options: '--player-operation-mode=pseudo-gui' '--no-config' '--player-operation-mode=cplayer' '--idle=no' '--force-window=no' '--keep-open=no' '--input-ipc-server=\\.\pipe\novamotion-ba7022dccc82' '--log-file=C:\Users\runneradmin\AppData\Roaming\NovaMotion\exports\export-8c3583a9.log' '--msg-level=all=v' '--hwdec=auto-copy' '--sid=no' '--osd-level=0' '--vf=lavfi=[tpad=stop_mode=clone:stop=8],@novamotion:vapoursynth=file=%51%D:\a\nova-motion\nova-motion\runtime\novamotion.vpy:buffered-frames=24:concurrent-frames=auto,lavfi=[setpts=N*1/(60*TB)]' '--o=D:\a\_temp\export-test (NOVA Motion 60 fps).mp4' '--of=mp4' '--oac=aac' '--oacopts=b=192k' '--frames=121' '--ovc=libx264' '--ovcopts=preset=slow,crf=17' '--' 'D:\a\_temp\export-test.mp4'
+[   0.010][v][cplayer] mpv v0.41.0-1205-g01e2533f3 Copyright © 2000-2026 mpv/MPlayer/mplayer2 projects
+[   0.010][v][cplayer]  built on Oct 18 2026 00:18:15
+[   0.010][v][cplayer] libplacebo version: v7.376.0 (v7.360.0-171-g0df80ae-dirty)
+[   0.010][v][cplayer] FFmpeg version: N-127617-g94cba3150
+[   0.010][v][cplayer] FFmpeg library versions:
+[   0.010][v][cplayer]    libavcodec      63.20.101
+[   0.010][v][cplayer]    libavdevice     63.2.100
+[   0.010][v][cplayer]    libavfilter     12.5.100
+[   0.010][v][cplayer]    libavformat     63.10.100
+[   0.010][v][cplayer]    libavutil       61.14.100
+[   0.010][v][cplayer]    libswresample   7.3.101
+[   0.010][v][cplayer]    libswscale      10.2.100
+[   0.010][v][cplayer] Configuration: -Dprefix=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32 -Dlibdir=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32/lib -Ddefault_library=shared -Dprefer_static=true -Ddebug=true -Db_ndebug=true -Doptimization=3 -Db_lto=true -Db_lto_mode=thin -Dlibmpv=true -Dpdf-build=enabled -Dlua=enabled -Djavascript=enabled -Dsdl2-gamepad=enabled -Dlibarchive=enabled -Dlibbluray=enabled -Ddvdnav=enabled -Duchardet=enabled -Drubberband=enabled -Dlcms2=enabled -Dopenal=enabled -Dspirv-cross=enabled -Dvulkan=enabled -Dvapoursynth=enabled -Dsubrandr=enabled -Dsixel=enabled -Dgl=enabled -Degl-angle=enabled -Dlibcurl=enabled -Dc_args=-Wno-error=int-conversion --cross-file=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/meson_cross.txt
+[   0.010][v][cplayer] List of enabled features: amf build-date cplugins cuda-hwaccel cuda-interop d3d-hwaccel d3d11 d3d9-hwaccel debug direct3d dos-paths dvda dvdnav dxgi-debug-d3d11 egl-angle egl-angle-win32 ffmpeg ffnvcodec gl gl-dxinterop gl-dxinterop-d3d9 gl-win32 glob glob-win32 gpl iconv javascript jpeg lcms2 libarchive libass libavdevice libbluray libcurl libplacebo luajit openal rubberband rubberband-3 sdl2-gamepad shaderc sixel spirv-cross subrandr uchardet vaapi vaapi-win32 vapoursynth vector vk-khr-display vulkan wasapi win32 win32-desktop win32-executable win32-smtc win32-threads zimg zimg-st428 zlib
+[   0.010][v][cplayer] Built with NDEBUG.
+[   0.010][d][global] home path: '' -> '-'
+[   0.010][d][global] user path: '~~home/' -> ''
+[   0.010][d][global] user path: '~~old_home/' -> ''
+[   0.010][v][cplayer] Applying profile 'encoding'...
+[   0.010][v][cplayer] Setting option 'vo' = 'lavc' (flags = 4)
+[   0.010][v][cplayer] Setting option 'ao' = 'lavc' (flags = 4)
+[   0.010][v][cplayer] Setting option 'keep-open' = 'no' (flags = 4)
+[   0.010][v][cplayer] Setting option 'force-window' = 'no' (flags = 4)
+[   0.010][v][cplayer] Setting option 'gapless-audio' = 'yes' (flags = 4)
+[   0.010][v][cplayer] Setting option 'resume-playback' = 'no' (flags = 4)
+[   0.010][v][cplayer] Setting option 'load-scripts' = 'no' (flags = 4)
+[   0.010][v][cplayer] Setting option 'osc' = 'no' (flags = 4)
+[   0.010][v][cplayer] Setting option 'framedrop' = 'no' (flags = 4)
+[   0.010][v][cplayer] Setting option 'player-operation-mode' = 'pseudo-gui' (flags = 8)
+[   0.010][v][cplayer] Setting option 'config' = 'no' (flags = 8)
+[   0.010][v][cplayer] Setting option 'player-operation-mode' = 'cplayer' (flags = 8)
+[   0.010][v][cplayer] Setting option 'idle' = 'no' (flags = 8)
+[   0.010][v][cplayer] Setting option 'force-window' = 'no' (flags = 8)
+[   0.010][v][cplayer] Setting option 'keep-open' = 'no' (flags = 8)
+[   0.010][v][cplayer] Setting option 'input-ipc-server' = '\\.\pipe\novamotion-ba7022dccc82' (flags = 8)
+[   0.010][v][cplayer] Setting option 'log-file' = 'C:\Users\runneradmin\AppData\Roaming\NovaMotion\exports\export-8c3583a9.log' (flags = 8)
+[   0.010][v][cplayer] Setting option 'msg-level' = 'all=v' (flags = 8)
+[   0.010][v][cplayer] Setting option 'hwdec' = 'auto-copy' (flags = 8)
+[   0.010][v][cplayer] Setting option 'sid' = 'no' (flags = 8)
+[   0.010][v][cplayer] Setting option 'osd-level' = '0' (flags = 8)
+[   0.010][v][cplayer] Setting option 'vf' = 'lavfi=[tpad=stop_mode=clone:stop=8],@novamotion:vapoursynth=file=%51%D:\a\nova-motion\nova-motion\runtime\novamotion.vpy:buffered-frames=24:concurrent-frames=auto,lavfi=[setpts=N*1/(60*TB)]' (flags = 8)
+[   0.010][v][cplayer] Setting option 'o' = 'D:\a\_temp\export-test (NOVA Motion 60 fps).mp4' (flags = 8)
+[   0.010][v][cplayer] Setting option 'of' = 'mp4' (flags = 8)
+[   0.010][v][cplayer] Setting option 'oac' = 'aac' (flags = 8)
+[   0.010][v][cplayer] Setting option 'oacopts' = 'b=192k' (flags = 8)
+[   0.010][v][cplayer] Setting option 'frames' = '121' (flags = 8)
+[   0.010][v][cplayer] Setting option 'ovc' = 'libx264' (flags = 8)
+[   0.010][v][cplayer] Setting option 'ovcopts' = 'preset=slow,crf=17' (flags = 8)
+[   0.010][d][ytdl_hook] Loading lua script @ytdl_hook.lua...
+[   0.010][d][stats] Loading lua script @stats.lua...
+[   0.010][d][console] Loading lua script @console.lua...
+[   0.010][d][auto_profiles] Loading lua script @auto_profiles.lua...
+[   0.010][d][select] Loading lua script @select.lua...
+[   0.010][d][positioning] Loading lua script @positioning.lua...
+[   0.010][d][commands] Loading lua script @commands.lua...
+[   0.010][v][clipboard] Initialized win32 clipboard backend.
+[   0.010][d][auto_profiles] loading mp.defaults
+[   0.010][d][positioning] loading mp.defaults
+[   0.010][d][commands] loading mp.defaults
+[   0.010][v][cplayer] Waiting for scripts...
+[   0.010][d][select] loading mp.defaults
+[   0.010][d][commands] loading @commands.lua
+[   0.010][d][positioning] loading @positioning.lua
+[   0.010][d][ytdl_hook] loading mp.defaults
+[   0.010][d][positioning] reading options for positioning
+[   0.010][d][positioning] script-opts/positioning.conf not found.
+[   0.010][d][select] loading @select.lua
+[   0.010][d][cplayer] Run command: define-section, flags=64, args=[name="input_positioning", contents="", flags="default"]
+[   0.010][d][cplayer] Run command: enable-section, flags=64, args=[name="input_positioning", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.010][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_positioning", contents="", flags="force"]
+[   0.010][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_positioning", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.011][d][auto_profiles] loading @auto_profiles.lua
+[   0.011][d][commands] reading options for commands
+[   0.011][d][commands] script-opts/commands.conf not found.
+[   0.011][d][ytdl_hook] loading @ytdl_hook.lua
+[   0.011][d][console] loading mp.defaults
+[   0.011][d][console] loading @console.lua
+[   0.011][d][cplayer] Run command: define-section, flags=64, args=[name="input_commands", contents="", flags="default"]
+[   0.011][d][cplayer] Run command: enable-section, flags=64, args=[name="input_commands", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.011][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_commands", contents="", flags="force"]
+[   0.011][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_commands", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.011][d][ytdl_hook] reading options for ytdl_hook
+[   0.011][d][ytdl_hook] script-opts/ytdl_hook.conf not found.
+[   0.011][d][select] reading options for select
+[   0.011][d][select] script-opts/select.conf not found.
+[   0.011][d][cplayer] Run command: define-section, flags=64, args=[name="input_select", contents="", flags="default"]
+[   0.011][d][cplayer] Run command: enable-section, flags=64, args=[name="input_select", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.011][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_select", contents="", flags="force"]
+[   0.011][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_select", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.011][d][stats] loading mp.defaults
+[   0.011][d][auto_profiles] Destroying client handle...
+[   0.011][v][ipc] Starting IPC master
+[   0.011][d][stats] loading @stats.lua
+[   0.011][v][ipc] Listening to IPC pipe.
+[   0.011][d][console] reading options for console
+[   0.011][d][stats] reading options for stats
+[   0.011][v][ipc_0] Client connected
+[   0.011][d][stats] script-opts/stats.conf not found.
+[   0.011][d][console] script-opts/console.conf not found.
+[   0.011][d][cplayer] Run command: define-section, flags=64, args=[name="input_stats", contents="", flags="default"]
+[   0.011][d][cplayer] Run command: enable-section, flags=64, args=[name="input_stats", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.011][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_stats", contents="", flags="force"]
+[   0.011][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_stats", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.011][v][cplayer] Done loading scripts.
+[   0.011][v][cplayer] Running hook: auto_profiles/on_before_start_file
+[   0.011][v][cplayer] Failed sending hook command auto_profiles/on_before_start_file. Removing hook.
+[   0.011][v][cplayer] Running hook: auto_profiles/on_load
+[   0.011][v][cplayer] Failed sending hook command auto_profiles/on_load. Removing hook.
+[   0.011][v][cplayer] Running hook: ytdl_hook/on_load
+[   0.011][v][cplayer] Running hook: ytdl_hook/on_load
+[   0.011][v][ytdl_hook] playlist hook
+[   0.011][d][cplayer] Run command: define-section, flags=64, args=[name="input_console", contents="", flags="default"]
+[   0.011][d][cplayer] Run command: enable-section, flags=64, args=[name="input_console", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.011][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_console", contents="", flags="force"]
+[   0.011][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_console", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.012][v][ifo_dvda] Opening D:\a\_temp\export-test.mp4
+[   0.012][v][ifo_dvdnav] Opening D:\a\_temp\export-test.mp4
+[   0.012][v][bdmv/bluray] Opening D:\a\_temp\export-test.mp4
+[   0.012][v][file] Opening D:\a\_temp\export-test.mp4
+[   0.012][d][file] resize stream to 131072 bytes, drop 0 bytes
+[   0.012][d][file] Stream opened successfully.
+[   0.012][v][demux] Trying demuxers for level=normal.
+[   0.012][d][demux] Trying demuxer: directory (force-level: normal)
+[   0.013][d][demux] Trying demuxer: disc (force-level: normal)
+[   0.013][d][demux] Trying demuxer: edl (force-level: normal)
+[   0.013][d][demux] Trying demuxer: cue (force-level: normal)
+[   0.013][d][demux] Trying demuxer: rawaudio (force-level: normal)
+[   0.013][d][demux] Trying demuxer: rawvideo (force-level: normal)
+[   0.013][d][demux] Trying demuxer: mkv (force-level: normal)
+[   0.013][d][demux] Trying demuxer: libarchive (force-level: normal)
+[   0.013][d][demux] Trying demuxer: subrandr (force-level: normal)
+[   0.013][d][demux] Trying demuxer: lavf (force-level: normal)
+[   0.014][v][lavf] Found 'mov,mp4,m4a,3gp,3g2,mj2' at score=100 size=2048.
+[   0.015][v][lavf] Could not set AVOption http_persistent='0'
+[   0.015][v][lavf] Could not set AVOption http_multiple='1'
+[   0.015][v][demux] Detected file format: mov,mp4,m4a,3gp,3g2,mj2 (libavformat)
+[   0.015][v][cplayer] Opening done: D:\a\_temp\export-test.mp4
+[   0.016][v][find_files] Loading external files in D:\a\_temp\
+[   0.016][v][cplayer] Running hook: auto_profiles/on_preloaded
+[   0.016][v][cplayer] Failed sending hook command auto_profiles/on_preloaded. Removing hook.
+[   0.016][v][cplayer] Running hook: ytdl_hook/on_preloaded
+[   0.016][v][cplayer] Running hook: auto_profiles/on_loaded
+[   0.016][v][cplayer] Failed sending hook command auto_profiles/on_loaded. Removing hook.
+[   0.016][v][lavf] select track 0
+[   0.016][i][cplayer] ● Video  --vid=1  (h264 640x360 25.5102 fps 753 kbps) [default]
+[   0.016][v][vd] Container reported FPS: 25.510204
+[   0.017][v][vd] Codec list:
+[   0.017][v][vd]     h264 - H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+[   0.017][v][vd]     h264_qsv (h264) - H264 video (Intel Quick Sync Video acceleration)
+[   0.017][v][vd]     h264_amf (h264) - H264 AMD AMF video decoder
+[   0.017][v][vd]     h264_cuvid (h264) - Nvidia CUVID H264 decoder
+[   0.017][v][vd] Opening decoder h264
+[   0.017][v][vd] Looking at hwdec h264-d3d11va...
+[   0.017][v][vd] Not using this for auto-copy.
+[   0.017][v][vd] Looking at hwdec h264-nvdec...
+[   0.017][v][vd] Not using this for auto-copy.
+[   0.017][d][vd] Skipping previously attempted hwdec: h264-nvdec
+[   0.017][v][vd] Looking at hwdec h264-vaapi...
+[   0.017][v][vd] Not using this for auto-copy.
+[   0.017][v][vd] Looking at hwdec h264-d3d11va-copy...
+[   0.024][e][vd] Failed to allocate AVHWDeviceContext.
+[   0.024][v][vd] Could not create device.
+[   0.024][v][vd] Looking at hwdec h264-dxva2-copy...
+[   0.028][v][vd] Trying hardware decoding via h264-dxva2-copy.
+[   0.028][v][vd] Requesting 4 threads for decoding.
+[   0.028][v][vd] Selected decoder: h264 - H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+[   0.028][v][user_filter_wrapper] Setting option 'graph' = 'tpad=stop_mode=clone:stop=8' (flags = 0)
+[   0.029][v][user_filter_wrapper] Setting option 'file' = 'D:\a\nova-motion\nova-motion\runtime\novamotion.vpy' (flags = 0)
+[   0.029][v][user_filter_wrapper] Setting option 'buffered-frames' = '24' (flags = 0)
+[   0.029][v][user_filter_wrapper] Setting option 'concurrent-frames' = 'auto' (flags = 0)
+[   0.029][v][vapoursynth] using 4 concurrent requests.
+[   0.079][v][user_filter_wrapper] Setting option 'graph' = 'setpts=N*1/(60*TB)' (flags = 0)
+[   0.079][v][vf] User filter list:
+[   0.079][v][vf]   lavfi (lavfi.00)
+[   0.079][v][vf]   vapoursynth (novamotion)
+[   0.080][v][vf]   lavfi (lavfi.01)
+[   0.080][v][cplayer] Starting playback...
+[   0.080][v][file] stream level seek from 185877 to 48
+[   0.080][v][vd] Pixel formats supported by decoder: vulkan cuda cuarray dxva2_vld d3d11va_vld d3d11 d3d12 vaapi yuv420p
+[   0.080][v][vd] Codec profile: High (0x64)
+[   0.080][v][vd] Requesting pixfmt 'dxva2_vld' from decoder.
+[   0.080][e][ffmpeg] AVHWFramesContext: Could not create the surfaces
+[   0.080][e][ffmpeg] AVHWFramesContext: Error creating an internal frame pool
+[   0.080][e][ffmpeg/video] h264: Failed setup for format dxva2_vld: hwaccel initialisation returned error.
+[   0.080][v][vd] Pixel formats supported by decoder: vulkan cuda cuarray d3d11va_vld d3d11 d3d12 vaapi yuv420p yuv420p
+[   0.080][v][vd] Codec profile: High (0x64)
+[   0.080][v][vd] Requesting pixfmt '-' from decoder.
+[   0.080][e][ffmpeg/video] h264: no frame!
+[   0.080][v][vd] Pixel formats supported by decoder: vulkan cuda cuarray dxva2_vld d3d11va_vld d3d11 d3d12 vaapi yuv420p
+[   0.080][v][vd] Codec profile: High (0x64)
+[   0.080][v][vd] Requesting pixfmt 'dxva2_vld' from decoder.
+[   0.080][e][ffmpeg] AVHWFramesContext: Could not create the surfaces
+[   0.080][e][ffmpeg] AVHWFramesContext: Error creating an internal frame pool
+[   0.080][e][ffmpeg/video] h264: Failed setup for format dxva2_vld: hwaccel initialisation returned error.
+[   0.080][v][vd] Pixel formats supported by decoder: vulkan cuda cuarray d3d11va_vld d3d11 d3d12 vaapi yuv420p yuv420p
+[   0.080][v][vd] Codec profile: High (0x64)
+[   0.080][v][vd] Requesting pixfmt '-' from decoder.
+[   0.080][e][ffmpeg/video] h264: no frame!
+[   0.082][v][vd] Attempting next decoding method after failure of h264-dxva2-copy.
+[   0.082][d][vd] Skipping previously attempted hwdec: h264-d3d11va
+[   0.082][d][vd] Skipping previously attempted hwdec: h264-nvdec
+[   0.082][d][vd] Skipping previously attempted hwdec: h264-nvdec
+[   0.082][d][vd] Skipping previously attempted hwdec: h264-vaapi
+[   0.082][d][vd] Skipping previously attempted hwdec: h264-d3d11va-copy
+[   0.082][d][vd] Skipping previously attempted hwdec: h264-dxva2-copy
+[   0.082][v][vd] Looking at hwdec h264-nvdec-copy...
+[   0.082][e][ffmpeg] CUDA: Cannot load nvcuda.dll
+[   0.082][e][ffmpeg] CUDA: Could not dynamically load CUDA
+[   0.082][v][vd] Could not create device.
+[   0.082][d][vd] Skipping previously attempted hwdec: h264-nvdec-copy
+[   0.082][v][vd] Looking at hwdec h264-vaapi-copy...
+[   0.082][v][vaapi] libva: VA-API version 1.25.0
+[   0.082][v][vaapi] libva: Trying to open /__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32/bin\vaon12_drv_video.dll
+[   0.082][v][vaapi] libva: va_openDriver() returns -1
+[   0.082][v][vd] Could not create device.
+[   0.082][v][vd] Using software decoding.
+[   0.082][v][vd] Detected 4 logical cores.
+[   0.082][v][vd] Requesting 5 threads for decoding.
+[   0.083][d][ffmpeg/video] h264: Reinit context to 640x368, pix_fmt: yuv420p
+[   0.083][d][vd] DR parameter change to 640x386 yuv420p align=64
+[   0.083][d][vd] Allocating new (host-cached) DR image...
+[   0.083][d][vd] ...failed..
+[   0.083][v][vd] DR failed - disabling.
+[   0.085][v][vd] Using software decoding.
+[   0.085][v][vd] Decoder format: 640x360 yuv420p bt.601/auto/auto/limited/auto CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.085][v][vd] Using container aspect ratio.
+[   0.085][v][vf] [in] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.085][v][vf] [userdeint] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.085][v][vf] [userdeint] (disabled)
+[   0.085][v][vf] [lavfi] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.085][d][ffmpeg] mpv_src_in0: w:640 h:360 pixfmt:yuv420p tb:1/1000000 fr:1250/49 sar:1/1 csp:smpte170m range:tv alpha:unspecified chroma_loc:left
+[   0.085][d][lavfi] Filter graph:
+[   0.085][d][lavfi]                                                    +---------------+
+[   0.085][d][lavfi] mpv_src_in0:default--[640x360 1:1 yuv420p]--default| Parsed_tpad_0 |default--[640x360 1:1 yuv420p]--mpv_sink_out0:default
+[   0.085][d][lavfi]                                                    |    (tpad)     |
+[   0.085][d][lavfi]                                                    +---------------+
+[   0.085][d][lavfi] 
+[   0.085][d][lavfi]                                                      +---------------+
+[   0.085][d][lavfi] Parsed_tpad_0:default--[640x360 1:1 yuv420p]--default| mpv_sink_out0 |
+[   0.085][d][lavfi]                                                      | (buffersink)  |
+[   0.085][d][lavfi]                                                      +---------------+
+[   0.085][d][lavfi] 
+[   0.085][d][lavfi] +-------------+
+[   0.085][d][lavfi] | mpv_src_in0 |default--[640x360 1:1 yuv420p]--Parsed_tpad_0:default
+[   0.085][d][lavfi] |  (buffer)   |
+[   0.085][d][lavfi] +-------------+
+[   0.085][d][lavfi] 
+[   0.085][d][lavfi] 
+[   0.085][v][vf] [vapoursynth] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.086][d][vapoursynth] initializing...
+[   0.100][w][vapoursynth] Frame requested during init! This is unsupported.
+[   0.100][w][vapoursynth] Returning black dummy frame with 0 duration.
+[   0.101][w][vapoursynth] Frame requested during init! This is unsupported.
+[   0.102][w][vapoursynth] Returning black dummy frame with 0 duration.
+[   0.102][w][vapoursynth] Frame requested during init! This is unsupported.
+[   0.102][w][vapoursynth] Returning black dummy frame with 0 duration.
+[   0.102][w][vapoursynth] Frame requested during init! This is unsupported.
+[   0.102][w][vapoursynth] Returning black dummy frame with 0 duration.
+[   0.105][w][vapoursynth] Frame requested during init! This is unsupported.
+[   0.105][w][vapoursynth] Returning black dummy frame with 0 duration.
+[   0.105][w][vapoursynth] Frame requested during init! This is unsupported.
+[   0.105][w][vapoursynth] Returning black dummy frame with 0 duration.
+[   0.106][d][vapoursynth] initialized.
+[   0.107][v][vf] [lavfi] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.107][d][ffmpeg] mpv_src_in0: w:640 h:360 pixfmt:yuv420p tb:1/1000000 fr:60/1 sar:1/1 csp:smpte170m range:tv alpha:unspecified chroma_loc:left
+[   0.107][d][ffmpeg] mpv_src_in0: TB:0.000001 FRAME_RATE:60.000000 SAMPLE_RATE:nan
+[   0.107][d][lavfi] Filter graph:
+[   0.107][d][lavfi]                                                    +-----------------+
+[   0.107][d][lavfi] mpv_src_in0:default--[640x360 1:1 yuv420p]--default| Parsed_setpts_0 |default--[640x360 1:1 yuv420p]--mpv_sink_out0:default
+[   0.107][d][lavfi]                                                    |    (setpts)     |
+[   0.107][d][lavfi]                                                    +-----------------+
+[   0.107][d][lavfi] 
+[   0.107][d][lavfi]                                                        +---------------+
+[   0.107][d][lavfi] Parsed_setpts_0:default--[640x360 1:1 yuv420p]--default| mpv_sink_out0 |
+[   0.107][d][lavfi]                                                        | (buffersink)  |
+[   0.107][d][lavfi]                                                        +---------------+
+[   0.107][d][lavfi] 
+[   0.107][d][lavfi] +-------------+
+[   0.107][d][lavfi] | mpv_src_in0 |default--[640x360 1:1 yuv420p]--Parsed_setpts_0:default
+[   0.107][d][lavfi] |  (buffer)   |
+[   0.107][d][lavfi] +-------------+
+[   0.107][d][lavfi] 
+[   0.107][d][lavfi] 
+[   0.107][v][vf] [autovflip] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.107][v][vf] [autovflip] (disabled)
+[   0.107][v][vf] [autorotate] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.107][v][vf] [autorotate] (disabled)
+[   0.107][v][vf] [convert] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.108][v][vf] [convert] (disabled)
+[   0.108][v][vf] [out] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.122][v][lavf] EOF reached.
+[   0.129][v][vf] filter input EOF
+[   0.129][v][vapoursynth] initiate EOF
+[   0.129][i][cplayer] VO: [lavc] 640x360 yuv420p
+[   0.129][v][cplayer] VO: Description: video encoding using libavcodec
+[   0.129][v][vo/lavc] reconfig to 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.129][i][vo/lavc] Opening encoder: libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 [libx264]
+[   0.129][v][ffmpeg] libx264: using SAR=1/1
+[   0.129][v][ffmpeg] libx264: using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2 AVX512
+[   0.130][v][ffmpeg] libx264: profile High, level 3.1, 4:2:0, 8-bit
+[   0.130][v][ffmpeg] libx264: 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=5 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=6 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=3 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=17.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+[   0.130][i][encode] Opening output file: D:\a\_temp\export-test (NOVA Motion 60 fps).mp4
+[   0.130][i][encode] Opening muxer: MP4 (MPEG-4 Part 14) [mp4]
+[   0.131][v][cplayer] first video frame after restart shown
+[   0.131][d][cplayer] starting video playback
+[   0.131][v][cplayer] playback restart complete @ 0.000000, audio=eof, video=playing
+[   0.139][d][global] user path: '~~/menu.conf' -> 'menu.conf'
+[   0.139][d][ao/wasapi] Hotplug init
+[   0.140][d][ao/wasapi] Monitoring for hotplug events
+[   0.732][v][cplayer] video EOF reached
+[   0.732][d][cplayer] video EOF (status=4)
+[   0.732][v][cplayer] EOF code: 1  
+[   0.732][d][vd] Uninit decoder.
+[   0.740][v][vd] dropping request due to pin disconnect
+[   0.740][v][vd] dropping request due to pin disconnect
+[   0.740][v][demux_in] dropping request due to pin disconnect
+[   0.740][v][vf] dropping request due to pin disconnect
+[   0.740][v][nop] dropping request due to pin disconnect
+[   0.740][v][user_filter_wrapper] dropping request due to pin disconnect
+[   0.740][v][user_filter_wrapper] dropping request due to pin disconnect
+[   0.740][v][deint] dropping request due to pin disconnect
+[   0.740][v][deint] dropping request due to pin disconnect
+[   0.740][v][user_filter_wrapper] dropping request due to pin disconnect
+[   0.746][v][lavfi] dropping request due to pin disconnect
+[   0.746][d][vapoursynth] destroying VS filters
+[   0.746][d][vapoursynth] all requests terminated
+[   0.753][d][vapoursynth] uninitialized.
+[   0.754][v][frame_duration] dropping frame due to pin disconnect
+[   0.754][v][vf] dropping frame due to pin disconnect
+[   0.754][d][cplayer] Terminating demuxers...
+[   0.754][d][cplayer] Done terminating demuxers.
+[   0.754][v][cplayer] finished playback, success (reason 0)
+[   0.754][v][cplayer] Running hook: ytdl_hook/on_after_end_file
+[   0.755][d][cplayer] Run command: del, flags=64, args=[name="user-data/mpv/ytdl/json-subprocess-result"]
+[   0.871][v][ffmpeg] libx264: frame I:1     Avg QP:12.72  size:  9692
+[   0.871][v][ffmpeg] libx264: frame P:31    Avg QP:18.93  size:  6188
+[   0.871][v][ffmpeg] libx264: frame B:89    Avg QP:25.54  size:  2432
+[   0.871][v][ffmpeg] libx264: consecutive B-frames:  1.7%  0.0%  2.5% 95.9%
+[   0.871][v][ffmpeg] libx264: mb I  I16..4: 44.6% 41.0% 14.5%
+[   0.871][v][ffmpeg] libx264: mb P  I16..4:  1.8%  2.4%  0.3%  P16..4: 10.4%  6.6%  4.6%  0.0%  0.0%    skip:73.9%
+[   0.871][v][ffmpeg] libx264: mb B  I16..4:  0.1%  0.1%  0.0%  B16..8: 12.4%  4.0%  1.0%  direct: 2.6%  skip:79.8%  L0:48.1% L1:41.7% BI:10.2%
+[   0.871][v][ffmpeg] libx264: 8x8 transform intra:47.7% inter:19.5%
+[   0.871][v][ffmpeg] libx264: direct mvs  spatial:95.5% temporal:4.5%
+[   0.871][v][ffmpeg] libx264: coded y,uvDC,uvAC intra: 9.5% 23.7% 21.3% inter: 4.0% 12.5% 11.5%
+[   0.871][v][ffmpeg] libx264: i16 v,h,dc,p: 86% 12%  2%  0%
+[   0.871][v][ffmpeg] libx264: i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 19% 10% 67%  0%  1%  0%  1%  1%  1%
+[   0.871][v][ffmpeg] libx264: i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 36% 22% 23%  3%  2%  3%  3%  3%  4%
+[   0.871][v][ffmpeg] libx264: i8c dc,h,v,p: 65% 14% 21%  0%
+[   0.871][v][ffmpeg] libx264: Weighted P-Frames: Y:0.0% UV:0.0%
+[   0.871][v][ffmpeg] libx264: ref P L0: 48.1%  3.9% 24.7% 12.9% 10.1%  0.3%
+[   0.871][v][ffmpeg] libx264: ref B L0: 69.7% 21.8%  6.9%  1.6%
+[   0.871][v][ffmpeg] libx264: ref B L1: 92.1%  7.9%
+[   0.871][v][ffmpeg] libx264: kb/s:1658.09
+[   0.880][i][encode] video: encoded 418667 bytes
+[   0.880][i][encode] audio: encoded 0 bytes
+[   0.880][i][encode] muxing overhead 2332 bytes
+[   0.880][d][ffmpeg] AVIOContext: Statistics: 421003 bytes written, 2 seeks, 5 writeouts
+[   0.880][i][cplayer] Exiting... (End of file)
+[   0.880][d][ytdl_hook] Destroying client handle...
+[   0.880][d][positioning] Destroying client handle...
+[   0.880][d][dnd] Destroying client handle...
+[   0.881][d][ipc_0] Destroying client handle...
+[   0.881][d][commands] Destroying client handle...
+[   0.881][d][stats] Destroying client handle...
+[   0.881][d][cplayer] Run command: del, flags=64, args=[name="user-data/mpv/console"]
+[   0.881][d][console] Destroying client handle...
+[   0.882][d][select] Destroying client handle...
+[   0.882][d][SystemMediaTransportControls] Destroying client handle...
+[   0.882][d][ao/wasapi] Hotplug uninit

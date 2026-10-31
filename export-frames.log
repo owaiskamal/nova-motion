@@ -1,0 +1,658 @@
+[   0.001][v][cplayer] mpv v0.41.0-1205-g01e2533f3 Copyright © 2000-2026 mpv/MPlayer/mplayer2 projects
+[   0.002][v][cplayer]  built on Oct 18 2026 00:18:15
+[   0.002][v][cplayer] libplacebo version: v7.376.0 (v7.360.0-171-g0df80ae-dirty)
+[   0.002][v][cplayer] FFmpeg version: N-127617-g94cba3150
+[   0.002][v][cplayer] FFmpeg library versions:
+[   0.002][v][cplayer]    libavcodec      63.20.101
+[   0.002][v][cplayer]    libavdevice     63.2.100
+[   0.002][v][cplayer]    libavfilter     12.5.100
+[   0.002][v][cplayer]    libavformat     63.10.100
+[   0.002][v][cplayer]    libavutil       61.14.100
+[   0.002][v][cplayer]    libswresample   7.3.101
+[   0.002][v][cplayer]    libswscale      10.2.100
+[   0.002][v][cplayer] Configuration: -Dprefix=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32 -Dlibdir=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32/lib -Ddefault_library=shared -Dprefer_static=true -Ddebug=true -Db_ndebug=true -Doptimization=3 -Db_lto=true -Db_lto_mode=thin -Dlibmpv=true -Dpdf-build=enabled -Dlua=enabled -Djavascript=enabled -Dsdl2-gamepad=enabled -Dlibarchive=enabled -Dlibbluray=enabled -Ddvdnav=enabled -Duchardet=enabled -Drubberband=enabled -Dlcms2=enabled -Dopenal=enabled -Dspirv-cross=enabled -Dvulkan=enabled -Dvapoursynth=enabled -Dsubrandr=enabled -Dsixel=enabled -Dgl=enabled -Degl-angle=enabled -Dlibcurl=enabled -Dc_args=-Wno-error=int-conversion --cross-file=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/meson_cross.txt
+[   0.002][v][cplayer] List of enabled features: amf build-date cplugins cuda-hwaccel cuda-interop d3d-hwaccel d3d11 d3d9-hwaccel debug direct3d dos-paths dvda dvdnav dxgi-debug-d3d11 egl-angle egl-angle-win32 ffmpeg ffnvcodec gl gl-dxinterop gl-dxinterop-d3d9 gl-win32 glob glob-win32 gpl iconv javascript jpeg lcms2 libarchive libass libavdevice libbluray libcurl libplacebo luajit openal rubberband rubberband-3 sdl2-gamepad shaderc sixel spirv-cross subrandr uchardet vaapi vaapi-win32 vapoursynth vector vk-khr-display vulkan wasapi win32 win32-desktop win32-executable win32-smtc win32-threads zimg zimg-st428 zlib
+[   0.002][v][cplayer] Built with NDEBUG.
+[   0.002][v][cplayer] Command line options: '--no-config' '--vo=null' '--ao=null' '--untimed' '--vf=lavfi=[showinfo]' '--msg-level=all=no,ffmpeg=v' '--log-file=D:\a\nova-motion\nova-motion\uitest\export-frames.log' 'D:\a\_temp\export-test (NOVA Motion 60 fps).mp4'
+[   0.002][v][cplayer] mpv v0.41.0-1205-g01e2533f3 Copyright © 2000-2026 mpv/MPlayer/mplayer2 projects
+[   0.002][v][cplayer]  built on Oct 18 2026 00:18:15
+[   0.002][v][cplayer] libplacebo version: v7.376.0 (v7.360.0-171-g0df80ae-dirty)
+[   0.002][v][cplayer] FFmpeg version: N-127617-g94cba3150
+[   0.002][v][cplayer] FFmpeg library versions:
+[   0.002][v][cplayer]    libavcodec      63.20.101
+[   0.002][v][cplayer]    libavdevice     63.2.100
+[   0.002][v][cplayer]    libavfilter     12.5.100
+[   0.002][v][cplayer]    libavformat     63.10.100
+[   0.002][v][cplayer]    libavutil       61.14.100
+[   0.002][v][cplayer]    libswresample   7.3.101
+[   0.002][v][cplayer]    libswscale      10.2.100
+[   0.002][v][cplayer] Configuration: -Dprefix=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32 -Dlibdir=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/x86_64-w64-mingw32/lib -Ddefault_library=shared -Dprefer_static=true -Ddebug=true -Db_ndebug=true -Doptimization=3 -Db_lto=true -Db_lto_mode=thin -Dlibmpv=true -Dpdf-build=enabled -Dlua=enabled -Djavascript=enabled -Dsdl2-gamepad=enabled -Dlibarchive=enabled -Dlibbluray=enabled -Ddvdnav=enabled -Duchardet=enabled -Drubberband=enabled -Dlcms2=enabled -Dopenal=enabled -Dspirv-cross=enabled -Dvulkan=enabled -Dvapoursynth=enabled -Dsubrandr=enabled -Dsixel=enabled -Dgl=enabled -Degl-angle=enabled -Dlibcurl=enabled -Dc_args=-Wno-error=int-conversion --cross-file=/__w/mpv-winbuild-cmake/mpv-winbuild-cmake/build_x86_64/meson_cross.txt
+[   0.002][v][cplayer] List of enabled features: amf build-date cplugins cuda-hwaccel cuda-interop d3d-hwaccel d3d11 d3d9-hwaccel debug direct3d dos-paths dvda dvdnav dxgi-debug-d3d11 egl-angle egl-angle-win32 ffmpeg ffnvcodec gl gl-dxinterop gl-dxinterop-d3d9 gl-win32 glob glob-win32 gpl iconv javascript jpeg lcms2 libarchive libass libavdevice libbluray libcurl libplacebo luajit openal rubberband rubberband-3 sdl2-gamepad shaderc sixel spirv-cross subrandr uchardet vaapi vaapi-win32 vapoursynth vector vk-khr-display vulkan wasapi win32 win32-desktop win32-executable win32-smtc win32-threads zimg zimg-st428 zlib
+[   0.002][v][cplayer] Built with NDEBUG.
+[   0.002][d][global] home path: '' -> '-'
+[   0.002][d][global] user path: '~~home/' -> ''
+[   0.002][d][global] user path: '~~old_home/' -> ''
+[   0.002][v][cplayer] Setting option 'config' = 'no' (flags = 8)
+[   0.002][v][cplayer] Setting option 'vo' = 'null' (flags = 8)
+[   0.002][v][cplayer] Setting option 'ao' = 'null' (flags = 8)
+[   0.002][v][cplayer] Setting option 'untimed' = '' (flags = 8)
+[   0.002][v][cplayer] Setting option 'vf' = 'lavfi=[showinfo]' (flags = 8)
+[   0.002][v][cplayer] Setting option 'msg-level' = 'all=no,ffmpeg=v' (flags = 8)
+[   0.002][v][cplayer] Setting option 'log-file' = 'D:\a\nova-motion\nova-motion\uitest\export-frames.log' (flags = 8)
+[   0.003][d][osc] Loading lua script @osc.lua...
+[   0.003][d][ytdl_hook] Loading lua script @ytdl_hook.lua...
+[   0.003][d][stats] Loading lua script @stats.lua...
+[   0.003][d][console] Loading lua script @console.lua...
+[   0.003][d][auto_profiles] Loading lua script @auto_profiles.lua...
+[   0.003][d][select] Loading lua script @select.lua...
+[   0.003][d][positioning] Loading lua script @positioning.lua...
+[   0.003][d][commands] Loading lua script @commands.lua...
+[   0.003][v][clipboard] Initialized win32 clipboard backend.
+[   0.003][d][stats] loading mp.defaults
+[   0.003][d][auto_profiles] loading mp.defaults
+[   0.003][d][osc] loading mp.defaults
+[   0.003][v][cplayer] Waiting for scripts...
+[   0.003][d][console] loading mp.defaults
+[   0.004][d][ytdl_hook] loading mp.defaults
+[   0.004][d][auto_profiles] loading @auto_profiles.lua
+[   0.005][d][positioning] loading mp.defaults
+[   0.005][d][select] loading mp.defaults
+[   0.005][d][positioning] loading @positioning.lua
+[   0.005][d][select] loading @select.lua
+[   0.005][d][ytdl_hook] loading @ytdl_hook.lua
+[   0.005][d][positioning] reading options for positioning
+[   0.005][d][positioning] script-opts/positioning.conf not found.
+[   0.005][d][cplayer] Run command: define-section, flags=64, args=[name="input_positioning", contents="", flags="default"]
+[   0.005][d][cplayer] Run command: enable-section, flags=64, args=[name="input_positioning", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.005][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_positioning", contents="", flags="force"]
+[   0.005][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_positioning", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.005][d][stats] loading @stats.lua
+[   0.005][d][osc] loading @osc.lua
+[   0.005][d][ytdl_hook] reading options for ytdl_hook
+[   0.005][d][ytdl_hook] script-opts/ytdl_hook.conf not found.
+[   0.005][d][select] reading options for select
+[   0.005][d][select] script-opts/select.conf not found.
+[   0.005][d][cplayer] Run command: define-section, flags=64, args=[name="input_select", contents="", flags="default"]
+[   0.005][d][cplayer] Run command: enable-section, flags=64, args=[name="input_select", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.005][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_select", contents="", flags="force"]
+[   0.005][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_select", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.005][d][auto_profiles] Destroying client handle...
+[   0.006][d][stats] reading options for stats
+[   0.006][d][stats] script-opts/stats.conf not found.
+[   0.006][d][commands] loading mp.defaults
+[   0.006][d][console] loading @console.lua
+[   0.007][d][cplayer] Run command: define-section, flags=64, args=[name="input_stats", contents="", flags="default"]
+[   0.007][d][cplayer] Run command: enable-section, flags=64, args=[name="input_stats", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.007][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_stats", contents="", flags="force"]
+[   0.007][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_stats", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.007][d][commands] loading @commands.lua
+[   0.007][d][commands] reading options for commands
+[   0.007][d][commands] script-opts/commands.conf not found.
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="input_commands", contents="", flags="default"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="input_commands", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_commands", contents="", flags="force"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_commands", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="showhide", contents="mouse_move script-binding osc/__keybinding1\nmouse_leave script-binding osc/__keybinding2\n", flags="force"]
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="showhide_wc", contents="mouse_move script-binding osc/__keybinding3\nmouse_leave script-binding osc/__keybinding4\n", flags="force"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="showhide", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="showhide_wc", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="input", contents="mbtn_left script-binding osc/__keybinding5\nmbtn_mid script-binding osc/__keybinding6\nmbtn_right script-binding osc/__keybinding7\nshift+mbtn_left script-binding osc/__keybinding8\nwheel_up script-binding osc/__keybinding9\nwheel_down script-binding osc/__keybinding10\nmbtn_left_dbl ignore\nshift+mbtn_left_dbl ignore\nmbtn_right_dbl ignore\n", flags="force"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="input", flags=""]
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="window-controls", contents="mbtn_left script-binding osc/__keybinding11\n", flags="force"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="window-controls", flags=""]
+[   0.008][d][osc] reading options for osc
+[   0.008][d][osc] script-opts/osc.conf not found.
+[   0.009][d][console] reading options for console
+[   0.009][v][cplayer] Set property: user-data/osc/visibility="auto" -> 1
+[   0.009][d][console] script-opts/console.conf not found.
+[   0.009][d][cplayer] Run command: disable-section, flags=64, args=[name="input"]
+[   0.009][d][cplayer] Run command: disable-section, flags=64, args=[name="window-controls"]
+[   0.009][v][cplayer] Set property: sub-margin-y-offset=0 -> 1
+[   0.009][v][cplayer] Set property: osd-margin-y-offset=0 -> 1
+[   0.009][v][cplayer] Set property: sub-margin-y-offset=0 -> 1
+[   0.009][v][cplayer] Set property: osd-margin-y-offset=0 -> 1
+[   0.009][v][cplayer] Set property: user-data/osc/margins={"l":0,"r":0,"b":0,"t":0} -> 1
+[   0.009][v][cplayer] Done loading scripts.
+[   0.009][d][global] state path: 'watch_later' -> '-'
+[   0.009][v][cplayer] Running hook: auto_profiles/on_before_start_file
+[   0.009][v][cplayer] Failed sending hook command auto_profiles/on_before_start_file. Removing hook.
+[   0.009][d][global] state path: 'watch_later' -> '-'
+[   0.009][v][cplayer] Running hook: auto_profiles/on_load
+[   0.009][v][cplayer] Failed sending hook command auto_profiles/on_load. Removing hook.
+[   0.009][v][cplayer] Running hook: ytdl_hook/on_load
+[   0.010][v][cplayer] Running hook: ytdl_hook/on_load
+[   0.010][v][ytdl_hook] playlist hook
+[   0.010][v][cplayer] Set property: sub-margin-y-offset=0 -> 1
+[   0.010][v][cplayer] Set property: osd-margin-y-offset=0 -> 1
+[   0.010][v][cplayer] Set property: sub-margin-y-offset=0 -> 1
+[   0.010][v][cplayer] Set property: osd-margin-y-offset=0 -> 1
+[   0.010][v][cplayer] Set property: user-data/osc/margins={"l":0,"r":0,"b":0,"t":0} -> 1
+[   0.010][d][osc] osc_init
+[   0.010][d][cplayer] Run command: define-section, flags=64, args=[name="input_console", contents="", flags="default"]
+[   0.010][d][cplayer] Run command: enable-section, flags=64, args=[name="input_console", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.010][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_console", contents="", flags="force"]
+[   0.010][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_console", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.010][v][cplayer] Set property: sub-margin-y-offset=0 -> 1
+[   0.010][v][cplayer] Set property: osd-margin-y-offset=0 -> 1
+[   0.010][v][cplayer] Set property: sub-margin-y-offset=0 -> 1
+[   0.010][v][cplayer] Set property: osd-margin-y-offset=0 -> 1
+[   0.010][v][cplayer] Set property: user-data/osc/margins={"l":0,"r":0,"b":0,"t":0} -> 1
+[   0.010][d][osd/libass] ASS library version: 0x1705000 (runtime 0x1705000)
+[   0.010][v][ifo_dvda] Opening D:\a\_temp\export-test (NOVA Motion 60 fps).mp4
+[   0.010][v][osd/libass] libass API version: 0x1705000
+[   0.010][v][osd/libass] libass source: meson, commit: 0.17.5-11-gf61db567e6593df3470e91594bcd4ad2d0473aff
+[   0.011][v][osd/libass] Shaper: FriBidi 1.0.17 (SIMPLE) HarfBuzz-ng 14.6.0 (COMPLEX)
+[   0.011][v][osd/libass] Setting up fonts...
+[   0.011][v][ifo_dvdnav] Opening D:\a\_temp\export-test (NOVA Motion 60 fps).mp4
+[   0.011][v][bdmv/bluray] Opening D:\a\_temp\export-test (NOVA Motion 60 fps).mp4
+[   0.011][v][file] Opening D:\a\_temp\export-test (NOVA Motion 60 fps).mp4
+[   0.011][d][file] resize stream to 131072 bytes, drop 0 bytes
+[   0.011][d][file] Stream opened successfully.
+[   0.011][v][demux] Trying demuxers for level=normal.
+[   0.011][d][demux] Trying demuxer: directory (force-level: normal)
+[   0.011][d][demux] Trying demuxer: disc (force-level: normal)
+[   0.011][d][demux] Trying demuxer: edl (force-level: normal)
+[   0.011][d][demux] Trying demuxer: cue (force-level: normal)
+[   0.011][d][demux] Trying demuxer: rawaudio (force-level: normal)
+[   0.011][d][demux] Trying demuxer: rawvideo (force-level: normal)
+[   0.011][d][demux] Trying demuxer: mkv (force-level: normal)
+[   0.011][d][demux] Trying demuxer: libarchive (force-level: normal)
+[   0.011][d][demux] Trying demuxer: subrandr (force-level: normal)
+[   0.011][d][demux] Trying demuxer: lavf (force-level: normal)
+[   0.011][v][osd/libass] Using font provider directwrite (with GDI)
+[   0.011][v][osd/libass] Done.
+[   0.012][d][osc] osc_init
+[   0.012][v][cplayer] Set property: sub-margin-y-offset=0 -> 1
+[   0.012][v][cplayer] Set property: osd-margin-y-offset=0 -> 1
+[   0.012][v][cplayer] Set property: sub-margin-y-offset=0 -> 1
+[   0.012][v][cplayer] Set property: osd-margin-y-offset=0 -> 1
+[   0.012][v][cplayer] Set property: user-data/osc/margins={"l":0,"r":0,"b":0,"t":0} -> 1
+[   0.012][d][cplayer] Run command: define-section, flags=64, args=[name="input_osc", contents="", flags="default"]
+[   0.012][d][cplayer] Run command: enable-section, flags=64, args=[name="input_osc", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.012][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_osc", contents="", flags="force"]
+[   0.012][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_osc", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.013][v][lavf] Found 'mov,mp4,m4a,3gp,3g2,mj2' at score=100 size=2048.
+[   0.014][v][file] stream level seek from 131072 to 418716
+[   0.014][v][lavf] Could not set AVOption http_persistent='0'
+[   0.014][v][lavf] Could not set AVOption http_multiple='1'
+[   0.014][v][demux] Detected file format: mov,mp4,m4a,3gp,3g2,mj2 (libavformat)
+[   0.014][v][cplayer] Opening done: D:\a\_temp\export-test (NOVA Motion 60 fps).mp4
+[   0.014][v][find_files] Loading external files in D:\a\_temp\
+[   0.015][v][cplayer] Running hook: auto_profiles/on_preloaded
+[   0.015][v][cplayer] Failed sending hook command auto_profiles/on_preloaded. Removing hook.
+[   0.015][v][cplayer] Running hook: ytdl_hook/on_preloaded
+[   0.015][v][cplayer] Running hook: auto_profiles/on_loaded
+[   0.015][v][cplayer] Failed sending hook command auto_profiles/on_loaded. Removing hook.
+[   0.015][v][lavf] select track 0
+[   0.015][i][cplayer] ● Video  --vid=1  (h264 640x360 60.5 fps 1675 kbps) [default]
+[   0.015][v][vd] Container reported FPS: 60.500000
+[   0.015][v][vd] Codec list:
+[   0.015][v][vd]     h264 - H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+[   0.015][v][vd]     h264_qsv (h264) - H264 video (Intel Quick Sync Video acceleration)
+[   0.015][v][vd]     h264_amf (h264) - H264 AMD AMF video decoder
+[   0.015][v][vd]     h264_cuvid (h264) - Nvidia CUVID H264 decoder
+[   0.015][v][vd] Opening decoder h264
+[   0.015][v][vd] No hardware decoding requested.
+[   0.015][v][vd] Using software decoding.
+[   0.015][v][vd] Detected 4 logical cores.
+[   0.015][v][vd] Requesting 5 threads for decoding.
+[   0.016][v][vd] Selected decoder: h264 - H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+[   0.016][v][user_filter_wrapper] Setting option 'graph' = 'showinfo' (flags = 0)
+[   0.016][v][vf] User filter list:
+[   0.016][v][vf]   lavfi (lavfi.00)
+[   0.017][v][cplayer] Starting playback...
+[   0.017][v][file] stream level seek from 420999 to 48
+[   0.017][d][ffmpeg/video] h264: Reinit context to 640x368, pix_fmt: yuv420p
+[   0.017][d][vd] DR parameter change to 640x386 yuv420p align=64
+[   0.017][d][vd] Allocating new (host-cached) DR image...
+[   0.017][d][vd] ...failed..
+[   0.017][v][vd] DR failed - disabling.
+[   0.019][v][vd] Using software decoding.
+[   0.019][v][vd] Decoder format: 640x360 yuv420p bt.601/auto/auto/limited/auto CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.019][v][vd] Using container aspect ratio.
+[   0.019][v][vf] [in] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.019][v][vf] [userdeint] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.019][v][vf] [userdeint] (disabled)
+[   0.019][v][vf] [lavfi] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.019][d][ffmpeg] mpv_src_in0: w:640 h:360 pixfmt:yuv420p tb:1/1000000 fr:121/2 sar:1/1 csp:smpte170m range:tv alpha:unspecified chroma_loc:left
+[   0.019][v][ffmpeg] Parsed_showinfo_0: config in time_base: 1/1000000, frame_rate: 121/2
+[   0.020][v][ffmpeg] Parsed_showinfo_0: config out time_base: 0/0, frame_rate: 0/0
+[   0.020][d][lavfi] Filter graph:
+[   0.020][d][lavfi]                                                    +-------------------+
+[   0.020][d][lavfi] mpv_src_in0:default--[640x360 1:1 yuv420p]--default| Parsed_showinfo_0 |default--[640x360 1:1 yuv420p]--mpv_sink_out0:default
+[   0.020][d][lavfi]                                                    |    (showinfo)     |
+[   0.020][d][lavfi]                                                    +-------------------+
+[   0.020][d][lavfi] 
+[   0.020][d][lavfi]                                                          +---------------+
+[   0.020][d][lavfi] Parsed_showinfo_0:default--[640x360 1:1 yuv420p]--default| mpv_sink_out0 |
+[   0.020][d][lavfi]                                                          | (buffersink)  |
+[   0.020][d][lavfi]                                                          +---------------+
+[   0.020][d][lavfi] 
+[   0.020][d][lavfi] +-------------+
+[   0.020][d][lavfi] | mpv_src_in0 |default--[640x360 1:1 yuv420p]--Parsed_showinfo_0:default
+[   0.020][d][lavfi] |  (buffer)   |
+[   0.020][d][lavfi] +-------------+
+[   0.020][d][lavfi] 
+[   0.020][d][lavfi] 
+[   0.020][v][ffmpeg] Parsed_showinfo_0: n:   0 pts:      0 pts_time:0       duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:I checksum:803FD6E0 plane_checksum:[3DA3C489 6148009E E9DD11B9] mean:[125 127 125] stdev:[56.3 79.1 82.9]
+[   0.020][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.020][v][ffmpeg] Parsed_showinfo_0:   side data - H.26[45] User Data Unregistered SEI message: UUID=dc45e9bd-e6d9-48b7-962c-d820d923eeef
+[   0.020][v][ffmpeg] Parsed_showinfo_0: User Data=78323634202d20636f7265203136352072333232332030343830636230202d20482e3236342f4d5045472d342041564320636f646563202d20436f70796c65667420323030332d32303235202d20687474703a2f2f7777772e766964656f6c616e2e6f72672f783236342e68746d6c202d206f7074696f6e733a2063616261633d31207265663d35206465626c6f636b3d313a303a3020616e616c7973653d3078333a3078313133206d653d686578207375626d653d38207073793d31207073795f72643d312e30303a302e3030206d697865645f7265663d31206d655f72616e67653d3136206368726f6d615f6d653d31207472656c6c69733d32203878386463743d312063716d3d3020646561647a6f6e653d32312c313120666173745f70736b69703d31206368726f6d615f71705f6f66667365743d2d3220746872656164733d36206c6f6f6b61686561645f746872656164733d3120736c696365645f746872656164733d30206e723d3020646563696d6174653d3120696e7465726c616365643d3020626c757261795f636f6d7061743d3020636f6e73747261696e65645f696e7472613d3020626672616d65733d3320625f707972616d69643d3220625f61646170743d3120625f626961733d30206469726563743d3320776569676874623d31206f70656e5f676f703d3020776569676874703d32206b6579696e743d323530206b6579696e745f6d696e3d3235207363656e656375743d343020696e7472615f726566726573683d302072635f6c6f6f6b61686561643d35302072633d637266206d62747265653d31206372663d31372e302071636f6d703d302e36302071706d696e3d302071706d61783d3639207170737465703d342069705f726174696f3d312e34302061713d313a312e303000
+[   0.020][v][ffmpeg] Parsed_showinfo_0: 
+[   0.020][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.020][v][vf] [autovflip] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.020][v][vf] [autovflip] (disabled)
+[   0.020][v][vf] [autorotate] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.020][v][vf] [autorotate] (disabled)
+[   0.020][v][vf] [convert] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.020][v][vf] [convert] (disabled)
+[   0.020][v][vf] [out] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.020][i][cplayer] VO: [null] 640x360 yuv420p
+[   0.020][v][cplayer] VO: Description: Null video output
+[   0.020][v][vo/null] reconfig to 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.020][v][cplayer] first video frame after restart shown
+[   0.020][d][cplayer] starting video playback
+[   0.021][v][cplayer] playback restart complete @ 0.000000, audio=eof, video=playing
+[   0.021][v][ffmpeg] Parsed_showinfo_0: n:   1 pts:  16667 pts_time:0.016667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:E7F0F866 plane_checksum:[033BDF71 DA9C01B6 56A6173F] mean:[125 127 125] stdev:[56.2 79.0 82.8]
+[   0.021][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.021][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.022][v][ffmpeg] Parsed_showinfo_0: n:   2 pts:  33333 pts_time:0.033333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:8A4B004D plane_checksum:[0B6FF01A 9707F66C DA0E19A9] mean:[125 127 125] stdev:[56.2 79.0 82.7]
+[   0.022][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.022][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.022][v][ffmpeg] Parsed_showinfo_0: n:   3 pts:  50000 pts_time:0.05    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:F0863555 plane_checksum:[768B1E6E 4013F868 87B91E70] mean:[125 127 125] stdev:[56.2 79.0 82.6]
+[   0.022][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.022][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.023][d][global] user path: '~~/menu.conf' -> 'menu.conf'
+[   0.023][v][ffmpeg] Parsed_showinfo_0: n:   4 pts:  66667 pts_time:0.066667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:D4343B98 plane_checksum:[40A03136 A3DAF0CB 1F9F1988] mean:[125 127 125] stdev:[56.2 79.0 82.6]
+[   0.023][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.023][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.023][v][ffmpeg] Parsed_showinfo_0: n:   5 pts:  83333 pts_time:0.083333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:79FA600D plane_checksum:[8201569F 9446EE6A 87481AF5] mean:[125 127 125] stdev:[56.3 79.0 82.5]
+[   0.023][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.023][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.024][v][ffmpeg] Parsed_showinfo_0: n:   6 pts: 100000 pts_time:0.1     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:1FB08CB7 plane_checksum:[D62F750B C772F554 A6162249] mean:[125 127 125] stdev:[56.2 79.0 82.5]
+[   0.024][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.024][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.024][v][ffmpeg] Parsed_showinfo_0: n:   7 pts: 116667 pts_time:0.116667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:84CE9DBB plane_checksum:[31FD86DF 24CCF486 EC8E2247] mean:[125 127 125] stdev:[56.3 79.0 82.4]
+[   0.024][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.024][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.025][v][ffmpeg] Parsed_showinfo_0: n:   8 pts: 133333 pts_time:0.133333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:2FF29525 plane_checksum:[14807B2F EF2CF7D3 A67A2214] mean:[125 127 125] stdev:[56.3 79.0 82.3]
+[   0.025][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.025][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.026][v][ffmpeg] Parsed_showinfo_0: n:   9 pts: 150000 pts_time:0.15    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:AD0BC180 plane_checksum:[3FA09DCA BCCEFD35 BB342672] mean:[125 127 125] stdev:[56.3 79.0 82.3]
+[   0.026][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.026][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.026][v][ffmpeg] Parsed_showinfo_0: n:  10 pts: 166667 pts_time:0.166667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:9F74C448 plane_checksum:[DCBCA706 4973FC43 D6C420F0] mean:[125 127 125] stdev:[56.3 79.0 82.3]
+[   0.026][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.026][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.027][v][ffmpeg] Parsed_showinfo_0: n:  11 pts: 183333 pts_time:0.183333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:182BEB76 plane_checksum:[77DCBE8D E63404D8 26B62811] mean:[125 127 125] stdev:[56.3 78.9 82.2]
+[   0.027][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.027][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.027][v][ffmpeg] Parsed_showinfo_0: n:  12 pts: 200000 pts_time:0.2     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:58CCFA06 plane_checksum:[DDC1B774 5E46085A C64B3A38] mean:[125 127 125] stdev:[56.3 79.0 82.3]
+[   0.027][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.027][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.028][v][ffmpeg] Parsed_showinfo_0: n:  13 pts: 216667 pts_time:0.216667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:7BC00777 plane_checksum:[BB68B88C FB0D104D 262A3E8F] mean:[125 127 125] stdev:[56.2 78.9 82.2]
+[   0.028][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.028][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.028][v][ffmpeg] Parsed_showinfo_0: n:  14 pts: 233333 pts_time:0.233333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:0192EF24 plane_checksum:[4C359BED 14F513AD E59C3F8A] mean:[125 127 125] stdev:[56.3 78.9 82.1]
+[   0.028][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.028][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.029][v][ffmpeg] Parsed_showinfo_0: n:  15 pts: 250000 pts_time:0.25    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:3ECA0D0A plane_checksum:[B4A49D50 C03C1EED 103250BE] mean:[125 128 125] stdev:[56.3 78.9 82.2]
+[   0.029][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.029][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.029][d][osc] osc_init
+[   0.029][v][ffmpeg] Parsed_showinfo_0: n:  16 pts: 266667 pts_time:0.266667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:27C3F44F plane_checksum:[5A5E8B99 32751E6E 08024A48] mean:[125 128 125] stdev:[56.3 78.9 82.1]
+[   0.029][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.029][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.030][v][ffmpeg] Parsed_showinfo_0: n:  17 pts: 283333 pts_time:0.283333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:22E31339 plane_checksum:[739F9FD9 363B238E EC684FC3] mean:[125 128 125] stdev:[56.3 78.9 82.0]
+[   0.030][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.030][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.030][v][cplayer] Set property: sub-margin-y-offset=0 -> 1
+[   0.030][v][cplayer] Set property: osd-margin-y-offset=0 -> 1
+[   0.030][v][cplayer] Set property: sub-margin-y-offset=0 -> 1
+[   0.030][v][cplayer] Set property: osd-margin-y-offset=0 -> 1
+[   0.030][v][cplayer] Set property: user-data/osc/margins={"l":0,"r":0,"b":0,"t":0} -> 1
+[   0.030][v][ffmpeg] Parsed_showinfo_0: n:  18 pts: 300000 pts_time:0.3     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:68E51A52 plane_checksum:[74589CF7 302A2D26 B14F5026] mean:[125 128 125] stdev:[56.2 78.9 82.1]
+[   0.030][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.030][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.031][v][ffmpeg] Parsed_showinfo_0: n:  19 pts: 316667 pts_time:0.316667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:A06910CF plane_checksum:[28CA984F 670D303D 68954834] mean:[125 128 125] stdev:[56.3 78.9 82.1]
+[   0.031][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.031][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.032][v][ffmpeg] Parsed_showinfo_0: n:  20 pts: 333333 pts_time:0.333333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:846DFE51 plane_checksum:[DFC5908D 783F3583 896C3841] mean:[125 128 125] stdev:[56.2 78.8 81.9]
+[   0.032][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.032][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.032][v][ffmpeg] Parsed_showinfo_0: n:  21 pts: 350000 pts_time:0.35    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:ECBB1CC3 plane_checksum:[5896A0DC 9F7744AF 51933729] mean:[125 128 125] stdev:[56.2 78.8 82.0]
+[   0.032][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.032][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.033][v][ffmpeg] Parsed_showinfo_0: n:  22 pts: 366667 pts_time:0.366667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:35AF0415 plane_checksum:[FA749405 54DC48CD EF812734] mean:[125 128 125] stdev:[56.2 78.8 82.0]
+[   0.033][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.033][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.033][d][ao/wasapi] Hotplug init
+[   0.034][d][ao/wasapi] Monitoring for hotplug events
+[   0.035][v][ffmpeg] Parsed_showinfo_0: n:  23 pts: 383333 pts_time:0.383333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:CF7F2E00 plane_checksum:[0E5AAD4F 6ED353D9 8EEF2CC9] mean:[125 128 125] stdev:[56.1 78.8 81.8]
+[   0.035][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.035][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.035][v][ffmpeg] Parsed_showinfo_0: n:  24 pts: 400000 pts_time:0.4     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:F198369E plane_checksum:[88CBC3D2 5033587C 3D5F1A41] mean:[125 128 125] stdev:[56.2 78.8 82.0]
+[   0.035][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.035][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.036][v][ffmpeg] Parsed_showinfo_0: n:  25 pts: 416667 pts_time:0.416667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:2F68196D plane_checksum:[5890A9F3 CC865F0F 4DA3105C] mean:[125 128 125] stdev:[56.1 78.8 81.9]
+[   0.036][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.036][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.036][v][ffmpeg] Parsed_showinfo_0: n:  26 pts: 433333 pts_time:0.433333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:2D8EEF59 plane_checksum:[E7AC8B69 4D785D6C 4DB90684] mean:[125 128 125] stdev:[56.1 78.7 81.8]
+[   0.036][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.036][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.037][v][ffmpeg] Parsed_showinfo_0: n:  27 pts: 450000 pts_time:0.45    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:D0DAED8C plane_checksum:[D95983FB 8B71688E 6C880103] mean:[125 128 125] stdev:[56.1 78.7 81.9]
+[   0.037][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.037][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.037][v][ffmpeg] Parsed_showinfo_0: n:  28 pts: 466667 pts_time:0.466667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:2BA4CCB2 plane_checksum:[AB886795 789F69CF 0F61FB3F] mean:[125 128 125] stdev:[56.1 78.7 81.9]
+[   0.037][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.037][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.038][v][ffmpeg] Parsed_showinfo_0: n:  29 pts: 483333 pts_time:0.483333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:5DADD31B plane_checksum:[E4F66869 E1F77276 A7A5F82D] mean:[125 128 125] stdev:[56.1 78.7 81.8]
+[   0.038][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.038][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.038][v][ffmpeg] Parsed_showinfo_0: n:  30 pts: 500000 pts_time:0.5     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:D876EA16 plane_checksum:[8DCA77AE 1D837713 27A3FB46] mean:[125 128 125] stdev:[56.1 78.7 81.8]
+[   0.038][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.038][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.039][v][ffmpeg] Parsed_showinfo_0: n:  31 pts: 516667 pts_time:0.516667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:69FDE3B0 plane_checksum:[083778AF C9DD747D ADF2F675] mean:[125 128 125] stdev:[56.1 78.7 81.9]
+[   0.039][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.039][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.039][v][ffmpeg] Parsed_showinfo_0: n:  32 pts: 533333 pts_time:0.533333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:D46CE879 plane_checksum:[67B18A86 16E8680F F94CF5D5] mean:[125 128 125] stdev:[56.1 78.7 81.8]
+[   0.039][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.039][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.040][v][ffmpeg] Parsed_showinfo_0: n:  33 pts: 550000 pts_time:0.55    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:5825139F plane_checksum:[9111B4FD 376863AA A422FADA] mean:[125 128 125] stdev:[56.1 78.7 81.9]
+[   0.040][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.040][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.040][v][ffmpeg] Parsed_showinfo_0: n:  34 pts: 566667 pts_time:0.566667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:11AA1B7C plane_checksum:[6292C3DF 9F785A54 68ACFD2B] mean:[125 128 125] stdev:[56.1 78.7 81.9]
+[   0.040][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.040][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.041][v][ffmpeg] Parsed_showinfo_0: n:  35 pts: 583333 pts_time:0.583333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:11E62FC1 plane_checksum:[4514C73E 58075DFB 7FCA0A79] mean:[125 128 125] stdev:[56.1 78.7 81.8]
+[   0.041][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.041][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.041][v][ffmpeg] Parsed_showinfo_0: n:  36 pts: 600000 pts_time:0.6     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:61FA37D3 plane_checksum:[B6F4C63E A8485D3E 4ED51448] mean:[125 128 125] stdev:[56.2 78.8 82.0]
+[   0.041][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.041][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.042][v][ffmpeg] Parsed_showinfo_0: n:  37 pts: 616667 pts_time:0.616667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:EA592FB4 plane_checksum:[0B3DC768 3E525003 83BA183A] mean:[125 128 125] stdev:[56.1 78.8 82.0]
+[   0.042][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.042][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.042][v][ffmpeg] Parsed_showinfo_0: n:  38 pts: 633333 pts_time:0.633333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:D2502210 plane_checksum:[9B90C0C6 D55B445D 36CF1CDE] mean:[125 128 125] stdev:[56.2 78.8 82.0]
+[   0.042][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.043][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.043][v][ffmpeg] Parsed_showinfo_0: n:  39 pts: 650000 pts_time:0.65    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:FA463914 plane_checksum:[BA92D014 70653F45 504729AC] mean:[125 128 125] stdev:[56.2 78.8 82.0]
+[   0.043][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.043][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.043][v][ffmpeg] Parsed_showinfo_0: n:  40 pts: 666667 pts_time:0.666667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:0C54227F plane_checksum:[2095C441 8C423193 24E12C9C] mean:[125 128 125] stdev:[56.2 78.8 82.1]
+[   0.043][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.043][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.044][v][ffmpeg] Parsed_showinfo_0: n:  41 pts: 683333 pts_time:0.683333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:42AA288B plane_checksum:[36EEBFF3 01353355 C4453534] mean:[125 128 125] stdev:[56.2 78.8 82.0]
+[   0.044][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.044][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.044][v][ffmpeg] Parsed_showinfo_0: n:  42 pts: 700000 pts_time:0.7     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:3FB741AA plane_checksum:[244AD67F 768D31D6 A6B23946] mean:[125 128 125] stdev:[56.2 78.8 82.1]
+[   0.044][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.044][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.045][v][ffmpeg] Parsed_showinfo_0: n:  43 pts: 716667 pts_time:0.716667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:9733358F plane_checksum:[C831D480 19882770 59153990] mean:[125 128 125] stdev:[56.3 78.9 82.1]
+[   0.045][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.045][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.045][v][ffmpeg] Parsed_showinfo_0: n:  44 pts: 733333 pts_time:0.733333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:FF86215E plane_checksum:[0A83CF5E 3F3F1E0B E5A633E6] mean:[125 128 125] stdev:[56.3 78.9 82.0]
+[   0.045][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.045][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.045][v][ffmpeg] Parsed_showinfo_0: n:  45 pts: 750000 pts_time:0.75    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:1A242B08 plane_checksum:[1D2CE107 F52A1D34 55F12CBE] mean:[125 128 125] stdev:[56.3 78.9 82.1]
+[   0.045][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.045][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.046][v][ffmpeg] Parsed_showinfo_0: n:  46 pts: 766667 pts_time:0.766667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:F8FE1844 plane_checksum:[5BD8E436 0CD510EB B78F2314] mean:[125 127 125] stdev:[56.3 78.9 82.1]
+[   0.046][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.046][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.046][v][ffmpeg] Parsed_showinfo_0: n:  47 pts: 783333 pts_time:0.783333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:FD0C22F5 plane_checksum:[46FBFB67 C1190845 EE931F3A] mean:[125 127 125] stdev:[56.3 78.9 82.0]
+[   0.046][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.046][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.046][v][ffmpeg] Parsed_showinfo_0: n:  48 pts: 800000 pts_time:0.8     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:09E92572 plane_checksum:[6C56099D 77E801AA AE1A1A2B] mean:[125 127 125] stdev:[56.3 79.0 82.3]
+[   0.046][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.046][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.047][v][ffmpeg] Parsed_showinfo_0: n:  49 pts: 816667 pts_time:0.816667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:11BF19CF plane_checksum:[8AB9FA72 CDC90148 2F351E06] mean:[125 127 125] stdev:[56.3 79.0 82.2]
+[   0.047][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.047][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.047][v][ffmpeg] Parsed_showinfo_0: n:  50 pts: 833333 pts_time:0.833333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:7C37F3E4 plane_checksum:[5527E432 0507FA39 BF2A156A] mean:[125 127 125] stdev:[56.3 79.0 82.2]
+[   0.047][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.047][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.048][v][ffmpeg] Parsed_showinfo_0: n:  51 pts: 850000 pts_time:0.85    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:1ADDEF62 plane_checksum:[AFBEDC57 8585F237 737220C5] mean:[125 127 125] stdev:[56.3 79.0 82.2]
+[   0.048][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.048][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.048][v][ffmpeg] Parsed_showinfo_0: n:  52 pts: 866667 pts_time:0.866667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:517ACD9E plane_checksum:[B4EEC6AC 649BEB30 1AF21BB3] mean:[125 127 125] stdev:[56.3 79.0 82.3]
+[   0.048][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.048][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.048][v][ffmpeg] Parsed_showinfo_0: n:  53 pts: 883333 pts_time:0.883333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:4045DA94 plane_checksum:[23BFD1B1 1AE7E924 9F031FB0] mean:[125 127 125] stdev:[56.3 79.0 82.2]
+[   0.048][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.048][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.048][v][lavf] EOF reached.
+[   0.049][v][ffmpeg] Parsed_showinfo_0: n:  54 pts: 900000 pts_time:0.9     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:3554C751 plane_checksum:[63EDCA8C 8EB7E354 C3191962] mean:[125 127 125] stdev:[56.3 79.1 82.3]
+[   0.049][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.049][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.049][v][ffmpeg] Parsed_showinfo_0: n:  55 pts: 916667 pts_time:0.916667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:464FA124 plane_checksum:[676FB8C0 0AE3DA7E 4C560DD7] mean:[125 127 125] stdev:[56.3 79.1 82.4]
+[   0.049][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.049][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.049][v][ffmpeg] Parsed_showinfo_0: n:  56 pts: 933333 pts_time:0.933333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:907C8A43 plane_checksum:[A6C2BA57 84AECDF2 F6DA01EB] mean:[125 127 125] stdev:[56.3 79.1 82.3]
+[   0.049][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.049][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.050][v][ffmpeg] Parsed_showinfo_0: n:  57 pts: 950000 pts_time:0.95    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:BFF78E9A plane_checksum:[6E8DC812 3354CBE3 D9F8FA87] mean:[125 127 125] stdev:[56.3 79.1 82.3]
+[   0.050][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.050][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.050][v][ffmpeg] Parsed_showinfo_0: n:  58 pts: 966667 pts_time:0.966667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:49656DB4 plane_checksum:[259ABF0C 66C2C731 A2CDE759] mean:[125 127 125] stdev:[56.3 79.1 82.4]
+[   0.050][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.050][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.050][v][ffmpeg] Parsed_showinfo_0: n:  59 pts: 983333 pts_time:0.983333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:E8F4783B plane_checksum:[0C76D4C4 C38DC429 81EADF30] mean:[125 127 125] stdev:[56.3 79.1 82.3]
+[   0.050][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.050][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.051][v][ffmpeg] Parsed_showinfo_0: n:  60 pts:1000000 pts_time:1       duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:E4D3812D plane_checksum:[96BCF06A 4F14BB85 58C0D520] mean:[125 127 125] stdev:[56.4 79.2 82.5]
+[   0.051][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.051][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.051][v][ffmpeg] Parsed_showinfo_0: n:  61 pts:1016667 pts_time:1.016667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:35FA93B0 plane_checksum:[6DDCE969 49BDC192 9600E897] mean:[125 127 125] stdev:[56.3 79.1 82.4]
+[   0.051][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.051][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.052][v][ffmpeg] Parsed_showinfo_0: n:  62 pts:1033333 pts_time:1.033333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:87C280DA plane_checksum:[C2E0C971 56C1C572 ADC3F1D9] mean:[125 127 125] stdev:[56.3 79.1 82.3]
+[   0.052][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.052][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.052][v][ffmpeg] Parsed_showinfo_0: n:  63 pts:1050000 pts_time:1.05    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:858F94B6 plane_checksum:[A956C898 D096D1BF 8468FA41] mean:[125 127 125] stdev:[56.3 79.1 82.3]
+[   0.052][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.052][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.053][v][ffmpeg] Parsed_showinfo_0: n:  64 pts:1066667 pts_time:1.066667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:0BB17887 plane_checksum:[CF69A8D9 E792D5BA 013AF9D6] mean:[125 127 125] stdev:[56.3 79.1 82.3]
+[   0.053][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.053][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.053][v][ffmpeg] Parsed_showinfo_0: n:  65 pts:1083333 pts_time:1.083333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:722395FB plane_checksum:[387BB532 0CA9DBEA A05804D0] mean:[125 127 125] stdev:[56.3 79.0 82.3]
+[   0.053][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.053][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.053][v][ffmpeg] Parsed_showinfo_0: n:  66 pts:1100000 pts_time:1.1     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:B56EA97F plane_checksum:[4FCAB6EB 2049E111 CE531174] mean:[125 127 125] stdev:[56.3 79.0 82.2]
+[   0.053][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.053][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.054][v][ffmpeg] Parsed_showinfo_0: n:  67 pts:1116667 pts_time:1.116667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:C61EA697 plane_checksum:[3C7EADCA EAA4E5EB 40BB12D3] mean:[125 127 125] stdev:[56.3 79.0 82.2]
+[   0.054][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.054][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.054][v][ffmpeg] Parsed_showinfo_0: n:  68 pts:1133333 pts_time:1.133333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:78DF892E plane_checksum:[41D08BD9 4DD7E524 9D5B1822] mean:[125 127 125] stdev:[56.3 79.0 82.2]
+[   0.054][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.054][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.054][v][ffmpeg] Parsed_showinfo_0: n:  69 pts:1150000 pts_time:1.15    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:7115B89F plane_checksum:[5091A00B 29B9F3C6 8F5D24BF] mean:[125 127 125] stdev:[56.3 79.0 82.2]
+[   0.054][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.054][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.055][v][ffmpeg] Parsed_showinfo_0: n:  70 pts:1166667 pts_time:1.166667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:5E6DBD28 plane_checksum:[19159BAE 22C9FAF7 38672674] mean:[125 127 125] stdev:[56.3 79.0 82.2]
+[   0.055][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.055][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.055][v][ffmpeg] Parsed_showinfo_0: n:  71 pts:1183333 pts_time:1.183333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:A87DD36E plane_checksum:[E8A79EA7 C1B10412 103C30B5] mean:[125 127 125] stdev:[56.3 79.0 82.1]
+[   0.055][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.055][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.056][v][ffmpeg] Parsed_showinfo_0: n:  72 pts:1200000 pts_time:1.2     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:4B69D9EB plane_checksum:[B9AD9506 0BD00408 627C40DD] mean:[125 127 125] stdev:[56.4 79.0 82.3]
+[   0.056][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.056][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.056][v][ffmpeg] Parsed_showinfo_0: n:  73 pts:1216667 pts_time:1.216667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:51F9EC19 plane_checksum:[688395BC 9AA00944 2BA04D19] mean:[125 127 125] stdev:[56.3 79.0 82.1]
+[   0.056][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.056][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.056][v][ffmpeg] Parsed_showinfo_0: n:  74 pts:1233333 pts_time:1.233333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:84CCCF2A plane_checksum:[A4776FCF 894511CC BD8C4D8F] mean:[125 127 125] stdev:[56.3 78.9 82.1]
+[   0.056][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.056][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.057][v][ffmpeg] Parsed_showinfo_0: n:  75 pts:1250000 pts_time:1.25    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:5535E8EB plane_checksum:[30467B39 FD701899 86475519] mean:[125 128 126] stdev:[56.3 78.9 82.1]
+[   0.057][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.057][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.057][v][ffmpeg] Parsed_showinfo_0: n:  76 pts:1266667 pts_time:1.266667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:D2B5DB09 plane_checksum:[043D668B 617E1806 03D35C78] mean:[125 128 126] stdev:[56.3 78.9 82.0]
+[   0.057][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.057][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.058][v][ffmpeg] Parsed_showinfo_0: n:  77 pts:1283333 pts_time:1.283333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:E890FB95 plane_checksum:[EDF177DF A3A01E4F 00E76567] mean:[125 128 126] stdev:[56.3 78.9 82.0]
+[   0.058][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.058][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.058][v][ffmpeg] Parsed_showinfo_0: n:  78 pts:1300000 pts_time:1.3     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:051A12F1 plane_checksum:[3A8E7C60 036C28D8 44566DAA] mean:[125 128 126] stdev:[56.3 78.9 82.0]
+[   0.058][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.058][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.058][v][ffmpeg] Parsed_showinfo_0: n:  79 pts:1316667 pts_time:1.316667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:F5160ED0 plane_checksum:[46B2638F A13631B1 4D397981] mean:[125 128 126] stdev:[56.3 78.9 82.0]
+[   0.058][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.058][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.059][v][ffmpeg] Parsed_showinfo_0: n:  80 pts:1333333 pts_time:1.333333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:086BFE0D plane_checksum:[3D6B566F 5621315F 653F763F] mean:[125 128 126] stdev:[56.3 78.8 81.9]
+[   0.059][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.059][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.059][v][ffmpeg] Parsed_showinfo_0: n:  81 pts:1350000 pts_time:1.35    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:FB382151 plane_checksum:[1EAE6671 5E9B3CF6 F4547DDB] mean:[125 128 126] stdev:[56.3 78.8 81.9]
+[   0.059][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.059][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.059][v][ffmpeg] Parsed_showinfo_0: n:  82 pts:1366667 pts_time:1.366667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:1B681BCA plane_checksum:[EC954C6B C9A84702 0555884E] mean:[125 128 126] stdev:[56.3 78.8 81.9]
+[   0.059][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.059][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.060][v][ffmpeg] Parsed_showinfo_0: n:  83 pts:1383333 pts_time:1.383333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:96EB393D plane_checksum:[DB9D5E60 11DB533F 87B1878F] mean:[125 128 126] stdev:[56.2 78.8 81.8]
+[   0.060][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.060][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.060][v][ffmpeg] Parsed_showinfo_0: n:  84 pts:1400000 pts_time:1.4     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:08C65161 plane_checksum:[F1915C24 225860E5 EBFE9449] mean:[125 128 126] stdev:[56.3 78.9 81.9]
+[   0.060][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.060][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.061][v][ffmpeg] Parsed_showinfo_0: n:  85 pts:1416667 pts_time:1.416667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:18774E74 plane_checksum:[29355751 4199649B E3219279] mean:[125 128 126] stdev:[56.2 78.8 81.8]
+[   0.061][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.061][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.061][v][ffmpeg] Parsed_showinfo_0: n:  86 pts:1433333 pts_time:1.433333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:2D4A3118 plane_checksum:[2ED33D7F AFF96718 53208C72] mean:[125 128 126] stdev:[56.3 78.8 81.8]
+[   0.061][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.061][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.061][v][ffmpeg] Parsed_showinfo_0: n:  87 pts:1450000 pts_time:1.45    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:1C074AA0 plane_checksum:[11183448 AC7A7730 17E99F19] mean:[125 128 126] stdev:[56.2 78.8 81.7]
+[   0.061][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.061][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.062][v][ffmpeg] Parsed_showinfo_0: n:  88 pts:1466667 pts_time:1.466667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:65823B6C plane_checksum:[99D41CB2 98557F65 059C9F46] mean:[125 128 126] stdev:[56.2 78.8 81.7]
+[   0.062][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.062][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.062][v][ffmpeg] Parsed_showinfo_0: n:  89 pts:1483333 pts_time:1.483333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:6CA04B46 plane_checksum:[87B014F1 E215846F D71BB1D7] mean:[125 128 126] stdev:[56.3 78.7 81.7]
+[   0.062][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.062][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.063][v][ffmpeg] Parsed_showinfo_0: n:  90 pts:1500000 pts_time:1.5     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:CE8C60AF plane_checksum:[57F2202B 476F8B8F 697AB4E6] mean:[125 128 126] stdev:[56.2 78.8 81.7]
+[   0.063][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.063][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.063][v][ffmpeg] Parsed_showinfo_0: n:  91 pts:1516667 pts_time:1.516667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:A19149E8 plane_checksum:[35291543 8DB08586 413CAF10] mean:[125 128 126] stdev:[56.3 78.8 81.7]
+[   0.063][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.063][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.063][v][ffmpeg] Parsed_showinfo_0: n:  92 pts:1533333 pts_time:1.533333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:0C88518A plane_checksum:[28212EB9 66237DA1 825CA521] mean:[125 128 126] stdev:[56.2 78.8 81.7]
+[   0.063][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.063][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.064][v][ffmpeg] Parsed_showinfo_0: n:  93 pts:1550000 pts_time:1.55    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:336C4D7B plane_checksum:[CAAC3A09 C674796E E65899F5] mean:[125 128 126] stdev:[56.2 78.8 81.7]
+[   0.064][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.064][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.064][v][ffmpeg] Parsed_showinfo_0: n:  94 pts:1566667 pts_time:1.566667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:C5504C5F plane_checksum:[17BB51E6 5D607525 068F8545] mean:[125 128 126] stdev:[56.2 78.8 81.7]
+[   0.064][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.064][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.064][v][ffmpeg] Parsed_showinfo_0: n:  95 pts:1583333 pts_time:1.583333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:2F8E2BA7 plane_checksum:[044E495F C08B6E33 5D777406] mean:[125 128 126] stdev:[56.2 78.8 81.7]
+[   0.064][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.064][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.064][v][ffmpeg] Parsed_showinfo_0: n:  96 pts:1600000 pts_time:1.6     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:ECB46023 plane_checksum:[C9907BEA D33C6A2F 70A079FB] mean:[125 128 126] stdev:[56.3 78.9 81.9]
+[   0.064][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.064][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.065][v][ffmpeg] Parsed_showinfo_0: n:  97 pts:1616667 pts_time:1.616667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:779B3139 plane_checksum:[52305D71 EC2E6810 8A946BA9] mean:[125 128 126] stdev:[56.2 78.9 81.8]
+[   0.065][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.065][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.065][v][ffmpeg] Parsed_showinfo_0: n:  98 pts:1633333 pts_time:1.633333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:3EE10A7C plane_checksum:[7A943FD5 E8E86376 08516722] mean:[125 128 126] stdev:[56.3 78.9 81.8]
+[   0.065][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.065][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.065][v][ffmpeg] Parsed_showinfo_0: n:  99 pts:1650000 pts_time:1.65    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:8B380BAA plane_checksum:[095150DC 24535931 A7E8618E] mean:[125 128 126] stdev:[56.3 78.9 81.8]
+[   0.066][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.066][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.066][v][ffmpeg] Parsed_showinfo_0: n: 100 pts:1666667 pts_time:1.666667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:828603B7 plane_checksum:[21845CCF 12CE5418 739F52C1] mean:[125 128 125] stdev:[56.3 78.9 81.9]
+[   0.066][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.066][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.066][v][ffmpeg] Parsed_showinfo_0: n: 101 pts:1683333 pts_time:1.683333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:99890F34 plane_checksum:[D85C7353 DDC94AAE 55105124] mean:[125 128 125] stdev:[56.3 78.9 81.9]
+[   0.066][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.066][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.067][v][ffmpeg] Parsed_showinfo_0: n: 102 pts:1700000 pts_time:1.7     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:B68514F1 plane_checksum:[CBB68782 7DC64A99 A27F42C7] mean:[125 128 125] stdev:[56.3 78.9 81.9]
+[   0.067][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.067][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.068][v][ffmpeg] Parsed_showinfo_0: n: 103 pts:1716667 pts_time:1.716667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:41730226 plane_checksum:[D90D7FE4 2F074871 382B39C2] mean:[125 128 125] stdev:[56.3 78.9 81.9]
+[   0.068][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.068][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.068][v][ffmpeg] Parsed_showinfo_0: n: 104 pts:1733333 pts_time:1.733333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:6B90E44A plane_checksum:[A31B7615 027B4118 3F612D1D] mean:[125 128 125] stdev:[56.3 79.0 81.9]
+[   0.068][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.068][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.068][v][ffmpeg] Parsed_showinfo_0: n: 105 pts:1750000 pts_time:1.75    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:4311F526 plane_checksum:[369B8B4C 084342A9 1A772731] mean:[125 128 125] stdev:[56.3 79.0 81.9]
+[   0.068][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.068][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.069][v][ffmpeg] Parsed_showinfo_0: n: 106 pts:1766667 pts_time:1.766667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:FE46DB1A plane_checksum:[376188ED 41463AF4 53111739] mean:[125 128 125] stdev:[56.3 79.0 81.9]
+[   0.069][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.069][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.069][v][ffmpeg] Parsed_showinfo_0: n: 107 pts:1783333 pts_time:1.783333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:30A8E9A1 plane_checksum:[DE35A871 D36E3208 E6CB0F28] mean:[125 128 125] stdev:[56.3 79.0 81.9]
+[   0.069][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.069][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.070][v][ffmpeg] Parsed_showinfo_0: n: 108 pts:1800000 pts_time:1.8     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:C25CE253 plane_checksum:[FF3BB227 912B2861 F3F207CB] mean:[125 128 125] stdev:[56.4 79.1 82.1]
+[   0.070][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.070][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.070][v][ffmpeg] Parsed_showinfo_0: n: 109 pts:1816667 pts_time:1.816667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:C560E40D plane_checksum:[D8DAB87D 6DFE203E 9BC00B52] mean:[125 128 125] stdev:[56.3 79.1 82.0]
+[   0.070][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.070][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.071][v][ffmpeg] Parsed_showinfo_0: n: 110 pts:1833333 pts_time:1.833333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:0A4BC0E3 plane_checksum:[511BA75F AF2A146A 96A0051A] mean:[125 127 125] stdev:[56.3 79.1 82.1]
+[   0.071][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.071][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.072][v][ffmpeg] Parsed_showinfo_0: n: 111 pts:1850000 pts_time:1.85    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:193DD738 plane_checksum:[BAF2BC12 C8130C99 72F80E8D] mean:[125 127 125] stdev:[56.3 79.1 82.1]
+[   0.072][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.072][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.072][v][ffmpeg] Parsed_showinfo_0: n: 112 pts:1866667 pts_time:1.866667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:C241BB6C plane_checksum:[C382B9DD CAC2023D D990FF43] mean:[125 127 125] stdev:[56.3 79.1 82.1]
+[   0.072][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.072][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.073][v][ffmpeg] Parsed_showinfo_0: n: 113 pts:1883333 pts_time:1.883333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:A9F8C041 plane_checksum:[7AF9B8DA 0F930146 497D0621] mean:[125 127 125] stdev:[56.3 79.1 82.2]
+[   0.073][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.073][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.073][v][ffmpeg] Parsed_showinfo_0: n: 114 pts:1900000 pts_time:1.9     duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:72D0A7FE plane_checksum:[789AAF85 63FDF97E 1F38FEDD] mean:[125 127 125] stdev:[56.3 79.1 82.2]
+[   0.073][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.073][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.073][v][ffmpeg] Parsed_showinfo_0: n: 115 pts:1916667 pts_time:1.916667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:263895DE plane_checksum:[2CFEAD27 DD70F1D4 EE34F6C5] mean:[125 127 125] stdev:[56.4 79.1 82.2]
+[   0.073][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.073][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.074][v][ffmpeg] Parsed_showinfo_0: n: 116 pts:1933333 pts_time:1.933333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:P checksum:B0718756 plane_checksum:[FDB1A5CA 60E0EE00 E6FAF36E] mean:[125 127 125] stdev:[56.4 79.2 82.3]
+[   0.074][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.074][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.074][v][ffmpeg] Parsed_showinfo_0: n: 117 pts:1950000 pts_time:1.95    duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:AC248771 plane_checksum:[5D61A5A1 4848EE31 9E57F381] mean:[125 127 125] stdev:[56.4 79.2 82.3]
+[   0.074][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.074][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.075][v][ffmpeg] Parsed_showinfo_0: n: 118 pts:1966667 pts_time:1.966667 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:EFA88716 plane_checksum:[D81BA580 D87DEE20 CE24F358] mean:[125 127 125] stdev:[56.4 79.2 82.3]
+[   0.075][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.075][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.075][v][ffmpeg] Parsed_showinfo_0: n: 119 pts:1983333 pts_time:1.983333 duration:      0 duration_time:0       fmt:yuv420p cl:left sar:1/1 s:640x360 i:P iskey:0 type:B checksum:77C58774 plane_checksum:[1E81A5A5 630EEE30 66B8F381] mean:[125 127 125] stdev:[56.4 79.2 82.3]
+[   0.075][v][ffmpeg] Parsed_showinfo_0:   side data - 3x3 displaymatrix: rotation of -0.00 degrees
+[   0.075][v][ffmpeg] Parsed_showinfo_0: color_range:tv color_space:smpte170m color_primaries:bt709 color_trc:bt709
+[   0.075][v][vf] filter input EOF
+[   0.076][v][vf] filter output EOF
+[   0.076][v][cplayer] video EOF reached
+[   0.076][d][cplayer] video EOF (status=4)
+[   0.076][v][cplayer] EOF code: 1  
+[   0.076][v][cplayer] Running hook: osc/on_unload
+[   0.076][d][vd] Uninit decoder.
+[   0.076][v][vd] dropping request due to pin disconnect
+[   0.076][v][vd] dropping request due to pin disconnect
+[   0.076][v][demux_in] dropping request due to pin disconnect
+[   0.076][v][vf] dropping request due to pin disconnect
+[   0.076][v][nop] dropping request due to pin disconnect
+[   0.076][v][user_filter_wrapper] dropping request due to pin disconnect
+[   0.076][v][user_filter_wrapper] dropping request due to pin disconnect
+[   0.076][v][deint] dropping request due to pin disconnect
+[   0.076][v][deint] dropping request due to pin disconnect
+[   0.076][v][user_filter_wrapper] dropping request due to pin disconnect
+[   0.076][v][lavfi] dropping request due to pin disconnect
+[   0.077][v][cplayer] finished playback, success (reason 0)
+[   0.077][v][cplayer] Running hook: ytdl_hook/on_after_end_file
+[   0.078][d][cplayer] Run command: del, flags=64, args=[name="user-data/mpv/ytdl/json-subprocess-result"]
+[   0.078][i][cplayer] Exiting... (End of file)
+[   0.080][d][ytdl_hook] Destroying client handle...
+[   0.080][v][cplayer] Set property: sub-margin-y-offset=0 -> 1
+[   0.080][d][stats] Destroying client handle...
+[   0.080][v][cplayer] Set property: osd-margin-y-offset=0 -> 1
+[   0.080][d][cplayer] Run command: del, flags=64, args=[name="user-data/osc"]
+[   0.080][d][cplayer] Run command: del, flags=64, args=[name="user-data/mpv/console"]
+[   0.080][d][SystemMediaTransportControls] Destroying client handle...
+[   0.080][d][osc] Destroying client handle...
+[   0.080][d][positioning] Destroying client handle...
+[   0.080][d][console] Destroying client handle...
+[   0.080][d][dnd] Destroying client handle...
+[   0.080][d][commands] Destroying client handle...
+[   0.080][d][select] Destroying client handle...
+[   0.081][d][ao/wasapi] Hotplug uninit
