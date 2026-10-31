@@ -212,7 +212,7 @@ def affordable_rate(dst, src, capacity):
     for k in range(int(float(dst) / float(src)), 1, -1):
         if float(src) * (k - 1) * 1.1 <= capacity:
             return src * k
-    return dst
+    return min(dst, src * 2)    # not even 2x keeps up: the lightest rate still drops the fewest frames
 
 
 def even_rate(want, src, display):
@@ -234,6 +234,29 @@ def even_rate(want, src, display):
         if k >= 2 and abs(share - float(src) * k) / share < 0.005:   # display-resample covers 0.1 %
             return src * k
     return want
+
+
+# Live playback on GTX 16 and integrated graphics: the engine works on video no larger than 1080p.
+# A 4K stream on a 1080p laptop screen looks the same as 1080p but is four times the AI work, and
+# tuning and the TensorRT engines are made for 1080p video.
+LIVE_MAX_SIZE = (1920, 1080)
+
+
+def live_size(cfg, width, height):
+    """The size live playback works at: the video's own, or fitted within 1080p on entry and
+    integrated graphics, and on any card when the screen itself is no larger than 1080p."""
+    limit = cfg.get("gpu_class") in ("entry", "integrated")
+    res = globals().get("display_res")
+    try:
+        dw, dh = int(res[0]), int(res[1])
+        if 0 < dw <= LIVE_MAX_SIZE[0] and 0 < dh <= LIVE_MAX_SIZE[1]:
+            limit = True
+    except (TypeError, ValueError, IndexError, KeyError):
+        pass
+    k = min(LIVE_MAX_SIZE[0] / max(1, width), LIVE_MAX_SIZE[1] / max(1, height))
+    if not limit or k >= 1:
+        return width, height
+    return max(2, int(width * k) // 2 * 2), max(2, int(height * k) // 2 * 2)
 
 
 def matrix_for(clip):
@@ -537,6 +560,10 @@ def build_engine(clip):
 
     dst = target_fps(cfg, src)
     if globals().get("display_fps"):    # live playback: never ask for more than tuning says this PC makes
+        w, h = live_size(cfg, clip.width, clip.height)
+        if (w, h) != (clip.width, clip.height):
+            dbg(f"{clip.width}x{clip.height} is more than this PC needs to smooth live; working at {w}x{h}")
+            clip = core.resize.Bicubic(clip, w, h)
         lower = affordable_rate(dst, src, ai_capacity(cfg, clip.width, clip.height))
         if lower != dst:
             dbg(f"{dst} needs more AI frames than this PC makes; playing {lower} instead")

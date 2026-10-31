@@ -15,7 +15,7 @@
 ## What it does
 
 - **Real AI frames, live.** RIFE, an open AI model, makes the in-between frames while you watch. The frames from the video itself are never touched.
-- **Fits your graphics card.** A one-time tuning run measures each model on your PC and the engine uses the best one that keeps up. On cards like a GTX 1650 the AI works on a half-size copy and only its frames are scaled up.
+- **Fits your graphics card.** A one-time tuning run measures each model on your PC and the engine uses the best one that keeps up. On cards like a GTX 1650 the AI works on a half-size copy and only its frames are scaled up, and 4K video is smoothed at 1080p (online video is fetched at 1080p at most while smoothing), which looks the same on a 1080p laptop screen at a quarter of the work.
 - **YouTube and 1,000+ sites.** Paste a link, or send the video you're watching from Chrome or Edge with the browser extension. It picks up where you stopped.
 - **Steady, never stuck.** If frames start dropping it switches to a lighter setting on its own instead of stuttering; **Play without smoothing** is always one click away.
 - **Enhance.** Save a smooth copy of any video that plays anywhere, or a labelled before/after clip to share.
@@ -92,6 +92,7 @@ Real playback, 1080p video, with the setting the engine picked on its own:
 | RTX 4070 desktop, 60 Hz screen | 24 fps film to 60 | Smooth, RIFE 4.6 on TensorRT at full size |
 | GTX 1650 laptop, 144 Hz screen | 24 fps film to 72 | Smooth, RIFE 4.6 on TensorRT with the AI at half size |
 | GTX 1650 laptop, 144 Hz screen | 25 fps video | Plays at 50: 75 needs about 50 AI frames a second, more than this card makes |
+| GTX 1650 laptop, 1080p screen | 4K YouTube film, 24 fps | Was dropping frames: the AI ran at 1920×1080, 4× the work. Now fetched and smoothed at 1080p |
 
 Frames-per-second benchmarks are being measured again. Earlier figures came from a still test clip, which the engine processes faster than real video because it skips repeated frames, so they overstated speed; tuning and `benchmark.cmd` now use moving test frames. Measure your own PC with `benchmark.cmd`, and share the result in an issue to help others with the same card.
 

@@ -348,6 +348,13 @@ internal static class ViewModelTests
         check(!YtDlp.Due(ys, now) && YtDlp.Due(new AppSettings(), now) && !YtDlp.Due(new AppSettings { AutoUpdateYtDlp = false }, now),
               "yt-dlp: checked at most once a day, and only when enabled");
         check(MpvPlayer.YtdlFormat(720).StartsWith("bestvideo[height<=?720][vcodec!*=av01]"), "online format string");
+        var light = AppSettings.CreateDefaults();
+        light.OnlineMaxHeight = 2160;
+        foreach (var p in light.Profiles) p.Engine.GpuClass = "entry";
+        check(light.OnlineHeight == 1080, "online: a GTX 16 card fetches 1080p at most while smoothing, even with 4K chosen");
+        light.Active.Engine.Enabled = false;
+        check(light.OnlineHeight == 2160, "online: with smoothing off the chosen 4K is fetched");
+        check(new AppSettings { OnlineMaxHeight = 2160 }.OnlineHeight == 2160, "online: other cards get the chosen quality");
 
         var q = new PlayQueue();
         q.Set(new[] { "a", "b", "c", "d" });

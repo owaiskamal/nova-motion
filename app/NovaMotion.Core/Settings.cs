@@ -88,6 +88,22 @@ public sealed class AppSettings
     public Profile Active =>
         Profiles.FirstOrDefault(p => p.Name == ActiveProfile) ?? Profiles.FirstOrDefault() ?? new Profile();
 
+    /// <summary>Most a GTX 16 card or integrated graphics fetches online while smoothing: 4K is four
+    /// times the work for the AI and the decoder, and the engine works at 1080p on these cards anyway.</summary>
+    public const int LightGpuOnlineHeight = 1080;
+
+    /// <summary>The height actually asked of yt-dlp: the chosen quality, capped on light graphics
+    /// while smoothing is on.</summary>
+    public int OnlineHeight
+    {
+        get
+        {
+            var e = Active.Engine;
+            return e.Enabled && (e.GpuClass is "entry" or "integrated")
+                ? Math.Min(OnlineMaxHeight, LightGpuOnlineHeight) : OnlineMaxHeight;
+        }
+    }
+
     public static AppSettings CreateDefaults(GpuInfo? gpu = null)
     {
         var s = new AppSettings { DefaultsVersion = CurrentDefaults };

@@ -17,14 +17,14 @@ core = vs.core
 SCRIPT = sys.argv[1]
 src_text = open(SCRIPT).read()
 
-def run(cfg, fps=23.976, display=60.0, fmt=vs.YUV420P8, w=1280, h=720, frames=48):
+def run(cfg, fps=23.976, display=60.0, fmt=vs.YUV420P8, w=1280, h=720, frames=48, **inject):
     d = tempfile.mkdtemp()
     p = os.path.join(d, "engine.json"); json.dump(cfg, open(p, "w"))
     os.environ["NOVAMOTION_ENGINE_CONFIG"] = p
     # moving gradient so motion search has something to track
     base = core.std.BlankClip(width=w, height=h, format=fmt, length=frames, fpsnum=24000, fpsden=1001)
     clip = core.std.FrameEval(base, lambda n: core.std.BlankClip(base, color=[(n*5) % 200 + 20, 128, 128], length=frames))
-    g = {"video_in": clip, "container_fps": fps, "display_fps": display, "__file__": SCRIPT}
+    g = {"video_in": clip, "container_fps": fps, "display_fps": display, "__file__": SCRIPT, **inject}
     vs.clear_outputs()
     exec(compile(src_text, SCRIPT, "exec"), g)
     out = vs.get_output(0)
@@ -343,11 +343,23 @@ ar = _ns2["affordable_rate"]
 check(ar(Fraction(75), Fraction(25), 71.6) == Fraction(75), "affordable: 25 -> 75 needs 50/s, a 72/s card keeps it")
 check(ar(Fraction(72), Fraction(25), 40.0) == Fraction(50), "affordable: a card making 40/s plays 25 -> 50 (25/s) instead of 72 (71/s)")
 check(ar(Fraction(60), Fraction(24), None) == Fraction(60), "affordable: untuned, nothing changes")
+check(ar(Fraction(72), Fraction(24), 18.8) == Fraction(48), "affordable: when not even 2x keeps up, the lightest rate (48), not 72")
+ls = _ns2["live_size"]
+check(ls({"gpu_class": "entry"}, 3840, 2160) == (1920, 1080), "live size: 4K on a GTX 16 card works at 1080p")
+check(ls({"gpu_class": "entry"}, 1920, 1080) == (1920, 1080), "live size: 1080p is left alone")
+check(ls({"gpu_class": "integrated"}, 3840, 1600) == (1920, 800), "live size: a 2.4:1 4K film keeps its shape")
+check(ls({"gpu_class": ""}, 3840, 2160) == (3840, 2160), "live size: an RTX card on a 4K screen keeps 4K")
 sr = _ns2["step_rate"]
 check(sr(Fraction(75), Fraction(25), 1) == Fraction(50) and sr(Fraction(75), Fraction(25), 3) == Fraction(50)
       and sr(Fraction(60), Fraction(25), 1) == Fraction(50) and sr(Fraction(144), Fraction(24), 2) == Fraction(96)
       and sr(Fraction(60), Fraction(24), 0) == Fraction(60),
       "rate steps: 75 -> 50 for 25 fps (never under 2x), 60 -> 50, 144 -> 96 for 24 fps, none when not asked")
+o = run({"engine": "mvtools", "target": 60, "gpu_class": "entry"}, fps=24.0, w=2560, h=1440, frames=24)
+check((o.width, o.height) == (1920, 1080), f"live: 1440p on an entry card is smoothed at 1080p ({o.width}x{o.height})")
+o = run({"engine": "mvtools", "target": 60}, fps=24.0, w=2560, h=1440, frames=24, display_res=[1920, 1080])
+check((o.width, o.height) == (1920, 1080), "live: any card on a 1080p screen works at 1080p at most")
+o = run({"engine": "mvtools", "target": 60}, fps=24.0, w=2560, h=1440, frames=24, display_res=[3840, 2160])
+check((o.width, o.height) == (2560, 1440), "live: a 4K screen keeps the video's size")
 o = run({"engine": "mvtools", "target": "display/2", "rate_step": 1}, fps=25.0, display=144.0, frames=48)
 check(o.fps == Fraction(50), f"rate step in the engine: 25 fps on 144 Hz plays at 50 after one step ({o.fps})")
 

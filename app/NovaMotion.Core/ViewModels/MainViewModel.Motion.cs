@@ -685,7 +685,7 @@ public sealed partial class MainViewModel
         _settings.OnlineMaxHeight = h;
         SyncMotion();
         _store.Save(_settings);
-        await Send("set_property", "ytdl-format", MpvPlayer.YtdlFormat(h));
+        await Send("set_property", "ytdl-format", MpvPlayer.YtdlFormat(_settings.OnlineHeight));
         if (IsOnline && _current is not null && !_state.Idle)
         {
             var at = _state.Position;

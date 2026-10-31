@@ -80,7 +80,7 @@ public sealed class MpvPlayer : IPlayerBackend
         {
             $"--input-ipc-server={pipePath}",
             $"--script-opts=novamotion-vpy={_runtime.EngineScript},novamotion-config={_store.EngineConfigPath},ytdl_hook-ytdl_path={_runtime.YtDlpExe}",
-            $"--ytdl-format={YtdlFormat(settings.OnlineMaxHeight)}",
+            $"--ytdl-format={YtdlFormat(settings.OnlineHeight)}",
             $"--log-file={Path.Combine(_store.Directory, "mpv.log")}",
         };
         if (WindowHandle is { } wid)
