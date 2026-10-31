@@ -31,6 +31,7 @@ public partial class MainWindow : Window, IUiHost
     private bool _quitting;
     private Rect _restoreBounds;
     private WindowState _restoreState;
+    private int _ticks;
 
     public MainViewModel ViewModel => _vm;
 
@@ -45,11 +46,13 @@ public partial class MainWindow : Window, IUiHost
         DataContext = _vm;
         _vm.PropertyChanged += OnVmChanged;
 
-        _tick.Tick += (_, _) => _vm.Tick();
+        _tick.Tick += (_, _) => { _vm.Tick(); if (++_ticks % 4 == 0) CheckScreen(); };
         _tick.Start();
+        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Post(CheckScreen);
+        Closed += (_, _) => _tick.Stop();
         Loaded += async (_, _) => await OnLoadedAsync();
         Activated += (_, _) => _vm.CheckClipboard();
-        LocationChanged += (_, _) => PlaceOverlay();
+        LocationChanged += (_, _) => { PlaceOverlay(); CheckScreen(); };
         SizeChanged += (_, _) => PlaceOverlay();
         StateChanged += (_, _) => OnStateChanged();
         Video.SizeChanged += (_, _) => PlaceOverlay();
@@ -60,6 +63,10 @@ public partial class MainWindow : Window, IUiHost
         Drop += (_, e) => HandleDrop(e);
         SetupTray();
     }
+
+    /// <summary>Tells the player when the screen's refresh rate changed: a TV switched from 30 to 60 Hz,
+    /// or the window moved to another screen. The player inside the window isn't told by Windows.</summary>
+    private void CheckScreen() => _vm.SetScreenRefresh(ScreenRefresh.Of(new WindowInteropHelper(this).Handle));
 
     private IPlayerBackend CreatePlayer()
     {

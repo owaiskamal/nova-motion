@@ -279,6 +279,8 @@
                                                TextWrapping="Wrap" ToolTip="{Binding ModelWhy}"/>
                                 </StackPanel>
                             </UniformGrid>
+                            <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Nova}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                       Visibility="{Binding HasScreenLimit, Converter={StaticResource BoolToVis}}" Text="{Binding ScreenLimitText}"/>
 
                             <Border Style="{StaticResource Divider}"/>
                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding SmoothingEnabled}" Margin="0,0,0,18">

@@ -103,6 +103,21 @@ internal static class ViewModelTests
         check(vm.PositionText == "0:42" && vm.DurationText == "10:00" && Math.Abs(vm.SeekValue - 42.5) < 1e-9, "vm: time readouts and seek bar follow playback");
         check(vm.EngineState == EngineState.Preparing, "vm: engine preparing right after load");
 
+        // A TV over HDMI at 30 Hz, then switched to 60: the player inside the window isn't told by Windows
+        vm.SetScreenRefresh(60);
+        check(fake.LastSet("display-fps-override") is null, "screen: nothing sent while the player's rate is right");
+        fake.Prop("display-fps", 30);
+        check(vm.HasScreenLimit && vm.ScreenLimitText.Contains("30 Hz"), "screen: a 30 Hz screen is named as the limit");
+        vm.SetScreenRefresh(30);
+        fake.Applied = null;
+        vm.SetScreenRefresh(60);
+        await Task.Delay(20);
+        check(fake.LastSet("display-fps-override")?[2] is double hz && hz == 60 && fake.Applied is not null,
+              "screen: a stale 30 Hz is corrected to 60 and the engine rebuilt");
+        fake.Prop("display-fps", 60);
+        check(!vm.HasScreenLimit, "screen: no note at 60 Hz");
+        check(Math.Abs(MainViewModel.PreciseRefresh(59) - 59.94) < 0.01 && MainViewModel.PreciseRefresh(144) == 144, "screen: 59 Hz is 59.94");
+
         fake.Prop("vf", JsonNode.Parse("[{\"label\":\"novamotion\",\"name\":\"vapoursynth\",\"enabled\":true}]"));
         fake.Prop("estimated-vf-fps", 59.9);
         check(vm.EngineState == EngineState.Active && vm.BadgeText == "25 → 60 fps", $"vm: active engine badge ({vm.BadgeText})");

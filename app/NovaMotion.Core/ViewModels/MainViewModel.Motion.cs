@@ -314,7 +314,53 @@ public sealed partial class MainViewModel
         Raise(nameof(EngineActive), nameof(EngineWorking), nameof(EngineProblem), nameof(BadgeText), nameof(EngineStatusText),
               nameof(OutputFpsText), nameof(SourceFpsText), nameof(DisplayText), nameof(VideoSizeText), nameof(DecoderText),
               nameof(GeneratedShareText), nameof(CadenceTicks), nameof(EngineSizeHint),
-              nameof(ShowDemoLabels), nameof(DemoLeftLabel), nameof(DemoRightLabel));
+              nameof(ShowDemoLabels), nameof(DemoLeftLabel), nameof(DemoRightLabel), nameof(HasScreenLimit), nameof(ScreenLimitText));
+    }
+
+    private double _screenHz;
+
+    /// <summary>A screen this slow caps every video: a TV or Duplicate mode often runs at 30 Hz.</summary>
+    public bool HasScreenLimit => _state.DisplayFps is > 0 and < 50;
+    public string ScreenLimitText => HasScreenLimit
+        ? $"Your screen is running at {_state.DisplayFps:0.##} Hz, so it shows at most {Math.Round(_state.DisplayFps):0} frames a second. " +
+          "For smooth video set it to 60 Hz or more in Windows: Settings, System, Display, Advanced display. " +
+          "On a TV, also press Win+P and choose Second screen only or Extend instead of Duplicate."
+        : "";
+
+    /// <summary>Windows reports refresh rates as whole numbers; 59 and 23 are really 59.94 and 23.976.</summary>
+    public static double PreciseRefresh(int hz) =>
+        hz is 23 or 29 or 47 or 59 or 119 or 239 ? (hz + 1) * 1000.0 / 1001 : hz;
+
+    /// <summary>The refresh rate Windows reports for the screen the window is on, whenever it may have
+    /// changed. The player sits inside the app's window and isn't told when a TV switches from 30 to
+    /// 60 Hz, so it would keep making frames for the old rate; when its figure is off, it gets the new
+    /// one and the engine is rebuilt for it.</summary>
+    public void SetScreenRefresh(int hz)
+    {
+        if (hz <= 1) return;
+        var precise = PreciseRefresh(hz);
+        if (Math.Abs(precise - _screenHz) < 0.01) return;
+        _screenHz = precise;
+        if (_backend is not { IsRunning: true } || _state.DisplayFps <= 0 || Math.Abs(_state.DisplayFps - precise) < 1.5) return;
+        _ = ApplyScreenRefreshAsync(precise);
+    }
+
+    private async Task ApplyScreenRefreshAsync(double hz)
+    {
+        var backend = _backend;
+        if (backend is null) return;
+        try
+        {
+            await backend.CommandAsync("set_property", "display-fps-override", hz);
+            if (HasMedia && Eng.Enabled) await backend.ApplyAsync(Eng);
+        }
+        catch (Exception ex) when (ex is MpvException or TimeoutException or InvalidOperationException or IOException)
+        {
+            return;
+        }
+        _engineChangedAt = _clock();
+        ShowToast($"Screen changed to {hz:0.##} Hz, smoothing for it");
+        UpdateEngineState();
     }
 
     /// <summary>Warns before a long TensorRT build: no engine built yet for this video size.</summary>

@@ -79,6 +79,7 @@ The full list is in Settings → Keyboard shortcuts.
 
 ## When something isn't smooth
 
+- **On a TV or second screen**, check its refresh rate: many TVs come up at 30 Hz over HDMI, and Duplicate mode (Win+P) can hold both screens there. A 30 Hz screen shows at most 30 frames a second, and the Motion panel says so. Choose 60 Hz in Settings → System → Display → Advanced display; NOVA Motion picks up the change while playing.
 - Run **`tune.cmd`** after a driver update or a new graphics card, so the engine knows what your PC really keeps up with. Setup and the app also offer it.
 - **`benchmark.cmd`** measures every engine on your PC (results in `runtime\benchmark.log`). Sharing the result in an issue helps others with the same card.
 - **`collect-logs.cmd`** puts the player and engine logs, settings, tuning results and graphics info into `nova-motion-logs.zip` on your Desktop, to attach to an [issue](https://github.com/owaiskamal/nova-motion/issues).
