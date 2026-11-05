@@ -157,7 +157,7 @@ def fix_compression(clip, cfg, matrix, strength=20.0):
     pad_w, pad_h = pad_w + tw, pad_h + th
     size, overlap = tiles(rgb.width, rgb.height, tile=DPIR_TILE)
     import jobs
-    with jobs.Job("Preparing an AI model for this graphics card (once)", "Fix compression (DPIR)",
+    with jobs.preparing(jobs.DEFAULT_TITLE, "Fix compression (DPIR)",
                   key="enhance:drunet_deblocking_color.onnx", gpu_class=cfg.get("gpu_class")):
         out = vsmlrt.DPIR(rgb, strength=strength, model=vsmlrt.DPIRModel.drunet_deblocking_color,
                           tilesize=size, overlap=overlap, backend=be)
@@ -182,7 +182,7 @@ def upscale(clip, cfg, e, matrix):
     small, pw, ph = pad_to_tile(small, TILE)
     size, overlap = tiles(small.width, small.height)
     import jobs
-    with jobs.Job("Preparing an AI model for this graphics card (once)", os.path.basename(path)[:-5],
+    with jobs.preparing(jobs.DEFAULT_TITLE, os.path.basename(path)[:-5],
                   key=f"enhance:{os.path.basename(path)}", gpu_class=cfg.get("gpu_class")):
         big = vsmlrt.inference(small, path, overlap=overlap, tilesize=size, backend=be)
     if pw or ph:

@@ -50,6 +50,47 @@ check(os.listdir(jobs.JOBS_DIR) == [] and jobs.expected_seconds("enhance:c.onnx"
 check(jobs.weight("enhance:up2x-latest-denoise3x.onnx") == 3 and jobs.expected_seconds("enhance:up2x-latest-no-denoise.onnx") > jobs.expected_seconds("enhance:new.onnx"),
       "Real-CUGAN expects a longer build than the compact models")
 
+# --- Builds: progress only for real builds, one at a time, and no second build of the same engine
+import threading, time, types  # noqa: E401,E402
+jobs.LOCK = os.path.join(d, "trt-engines", "build.lock")
+fake = types.ModuleType("fakevsmlrt")
+fake.subprocess = __import__("subprocess")
+calls = []
+engine = os.path.join(d, "m.engine")
+
+
+def fake_run(args, *a, **k):
+    calls.append(os.listdir(jobs.JOBS_DIR))
+    with open(engine, "wb") as f:
+        f.write(b"x" * 2048)
+    return fake.subprocess.CompletedProcess(args, 0)
+
+
+jobs.install(fake)
+fake.subprocess._real = types.SimpleNamespace(run=fake_run, CompletedProcess=__import__("subprocess").CompletedProcess)
+check(jobs.install(fake).subprocess._real.run is fake_run, "install is idempotent")
+with jobs.preparing("Preparing AI models", "up2x-latest-no-denoise", key="enhance:up2x.onnx", module=fake):
+    pass
+check(os.listdir(jobs.JOBS_DIR) == [], "a ready model (no build) shows no progress")
+
+seen_wait = []
+with jobs._lock_file():                       # another process is building
+    def other():
+        with jobs.preparing("Preparing AI models", "up2x-latest-no-denoise", key="enhance:up2x.onnx", module=fake):
+            fake.subprocess.run(["trtexec", "--onnx=x/up2x.onnx", f"--saveEngine={engine}"])
+    t = threading.Thread(target=other)
+    t.start()
+    time.sleep(1.5)
+    files = os.listdir(jobs.JOBS_DIR)
+    seen_wait = [json.load(open(os.path.join(jobs.JOBS_DIR, f)))["detail"] for f in files]
+    check(calls == [], "a second build waits while another is in progress")
+t.join(10)
+check(any("waiting for another" in x for x in seen_wait), f"and says it's waiting ({seen_wait})")
+check(len(calls) == 1 and len(calls[0]) == 1, "then builds, with progress showing")
+with jobs.preparing("Preparing AI models", "up2x-latest-no-denoise", module=fake):
+    fake.subprocess.run(["trtexec", "--onnx=x/up2x.onnx", f"--saveEngine={engine}"])
+check(len(calls) == 1, "an engine another process made meanwhile isn't built again")
+
 print()
 print("ALL PASSED" if not fails else f"{fails} FAILED")
 sys.exit(1 if fails else 0)

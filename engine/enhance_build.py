@@ -63,8 +63,9 @@ def main(argv):
         path = path_of(name)
         t0 = time.time()
         say(f"    [{i}/{len(names)}] preparing {os.path.basename(path)} ...")
-        job = jobs.Job("Preparing AI models for this graphics card", os.path.basename(path)[:-5], step=i, steps=len(names),
-                       key=f"enhance:{os.path.basename(path)}", gpu_class="entry", say=say)
+        # Shows progress only while it really builds; waits its turn if a preview or export is building
+        job = jobs.preparing("Preparing AI models for this graphics card", os.path.basename(path)[:-5], step=i, steps=len(names),
+                             key=f"enhance:{os.path.basename(path)}", gpu_class="entry", say=say)
         try:
             with job:
               backend = enhance.backend({}, *enhance.TILE)

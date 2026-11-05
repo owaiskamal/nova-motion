@@ -547,7 +547,7 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
     _log("loading TensorRT engine (vsmlrt.RIFEMerge)", t0)
     if building:
         import jobs
-        with jobs.Job("Preparing smoothing for this video size", f"RIFE {chosen} at {clip.width}x{clip.height}",
+        with jobs.preparing("Preparing smoothing for this video size", f"RIFE {chosen} at {clip.width}x{clip.height}",
                       key=f"rife:{model.name}:{clip.width}x{clip.height}", gpu_class=gpu_class):
             merged = RIFEMerge(left, right, mask, model=model, backend=backend(gpu, streams))
     else:
