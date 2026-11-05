@@ -1,6 +1,6 @@
 # Third-party notices
 
-NOVA Motion's own code is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE)). At setup time it downloads and runs the following components, each under its own licence. Apart from the two fonts, none of them is stored in this repository.
+NOVA Motion's own code is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE)). At setup time it downloads and runs the following components, each under its own licence. Apart from the two fonts and the Anime4K shaders, none of them is stored in this repository.
 
 | Component | Used for | Licence | Source |
 | --- | --- | --- | --- |
@@ -13,6 +13,7 @@ NOVA Motion's own code is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE
 | RIFE (Practical-RIFE) | Interpolation model | MIT | https://github.com/hzwer/Practical-RIFE |
 | MVTools for VapourSynth | Motion-vector interpolation | GPL-2.0 | https://github.com/dubhater/vapoursynth-mvtools |
 | akarin plugin | Fractional frame-rate steps for vs-mlrt | See project | https://github.com/AkarinVS/vapoursynth-plugin |
+| Anime4K shaders (bundled in `engine/mpv/shaders`) | Live enhance: Anime | MIT | https://github.com/bloc97/Anime4K |
 | Real-ESRGAN general and AnimeVideo v3 models | Enhance: upscaling (converted to ONNX by `tools/realesrgan_to_onnx.py`) | BSD-3-Clause | https://github.com/xinntao/Real-ESRGAN |
 | Real-CUGAN models | Enhance: anime and art upscaling | MIT | https://github.com/bilibili/ailab |
 | DPIR deblocking model | Enhance: fixing compression | MIT | https://github.com/cszn/DPIR |

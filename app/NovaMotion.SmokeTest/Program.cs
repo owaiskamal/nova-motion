@@ -94,6 +94,17 @@ await server;
 var mpvArgs = player.BuildArguments("https://youtu.be/x", s);
 Check(mpvArgs[^1] == "https://youtu.be/x" && mpvArgs[^2] == "--", "target passed after -- (no option injection)");
 Check(mpvArgs.Any(a => a.StartsWith("--ytdl-format=bestvideo[height<=?1080]")), "ytdl format honours max height");
+Check(!mpvArgs.Any(a => a.StartsWith("--glsl-shaders")), "live enhance off: no shaders");
+s.LiveEnhance = "anime";
+var animeArgs = player.BuildArguments(null, s).Where(a => a.StartsWith("--glsl-shaders-append=")).ToList();
+Check(animeArgs.Count == 6 && animeArgs[1] == "--glsl-shaders-append=~~/shaders/Anime4K_Restore_CNN_M.glsl", "live enhance anime: Anime4K Mode A (Fast), in order");
+s.LiveEnhance = "crisp";
+Check(player.BuildArguments(null, s).Contains("--glsl-shaders-append=~~/shaders/nova-crisp.glsl"), "live enhance crisp: the sharpening shader");
+var shaderDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "engine", "mpv", "shaders");
+if (Directory.Exists(shaderDir))
+    Check(new[] { "off", "crisp", "crisp-strong", "anime" }.SelectMany(LiveEnhance.Shaders).All(p => File.Exists(Path.Combine(shaderDir, p[11..]))),
+          "live enhance: every shader file is in engine/mpv/shaders");
+s.LiveEnhance = "off";
 
 Directory.Delete(dir, true);
 await ViewModelTests.RunAsync(Check);

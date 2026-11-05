@@ -168,6 +168,35 @@ public sealed partial class MainViewModel
     public string DemoLeftLabel => _state.SourceFps > 0 ? $"Original · {FormatFps(_state.SourceFps)} fps" : "Original";
     public string DemoRightLabel => EngineActive ? $"NOVA Motion · {OutputFpsText} fps" : "NOVA Motion";
 
+    public ObservableCollection<OptionItem> LiveEnhanceOptions { get; } = new(LiveEnhance.Options.Select(c => new OptionItem(c)));
+    public Command SelectLiveEnhanceCommand => _selectLiveEnhance ??= new Command(p => { if (p is OptionItem o) SetLiveEnhance(o.Value); });
+    private Command? _selectLiveEnhance;
+    public string LiveEnhanceNote => LiveEnhance.Options.FirstOrDefault(o => o.Value == _settings.LiveEnhance)?.Description ?? "";
+
+    /// <summary>Live enhance: shaders mpv runs on every frame it shows, switched without restarting playback.</summary>
+    public void SetLiveEnhance(string mode)
+    {
+        if (LiveEnhance.Options.All(o => o.Value != mode)) mode = "off";
+        _settings.LiveEnhance = mode;
+        _store.Save(_settings);
+        SyncLiveEnhance();
+        if (_backend is { IsRunning: true } b)
+        {
+            _ = Task.Run(async () =>
+            {
+                try { await b.CommandAsync("change-list", "glsl-shaders", "set", LiveEnhance.Joined(mode)); }
+                catch (Exception ex) when (ex is MpvException or TimeoutException or InvalidOperationException or IOException) { }
+            });
+            if (HasMedia) ShowToast("Live enhance: " + LiveEnhance.Name(mode));
+        }
+    }
+
+    private void SyncLiveEnhance()
+    {
+        foreach (var o in LiveEnhanceOptions) o.IsSelected = o.Value == (_settings.LiveEnhance ?? "off");
+        Raise(nameof(LiveEnhanceNote));
+    }
+
     public bool RtxVsr { get => Eng.RtxVsr; set { if (Eng.RtxVsr == value) return; Eng.RtxVsr = value; Raise(); _ = SaveAndApplyAsync(); } }
 
     public bool CloseToTray { get => _settings.CloseToTray; set { _settings.CloseToTray = value; Raise(); _store.Save(_settings); } }

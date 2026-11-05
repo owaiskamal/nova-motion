@@ -53,6 +53,7 @@ Options: `build.cmd -Yes` answers every question with yes; `-NoTensorRT`, `-NoEn
 ## Using it
 
 - **Home:** paste a link or drop files. Recently played videos resume a few seconds before where you stopped, and opening an episode queues the rest of its folder.
+- **Live enhance** (Motion panel): *Crisp* and *Extra crisp* sharpen film and video adaptively, without halos and with almost no GPU cost; *Anime* runs Anime4K, which restores line art and enlarges anime to your screen. They run on any graphics card, after smoothing, and switch without restarting the video.
 - **On the video:** controls that hide while you watch, a seek bar with buffered range, chapters and hover time, double-click for full screen, scroll for volume.
 - **Motion panel** (Tab): the frame rate on screen, dropped frames, the model in use and the size the AI runs at, the cadence strip (white bars are frames from the video, amber ones are generated), and every smoothing choice: engine, frame rate, AI model (Auto or a fixed one) and AI size (Auto, Full, 75 %, Half).
 - **Before/after** (Ctrl+D): side by side or a split screen, labelled, to see what the engine adds.

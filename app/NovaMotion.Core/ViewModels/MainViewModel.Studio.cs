@@ -25,6 +25,7 @@ public sealed partial class MainViewModel
         RebuildGenerate();
         InitAnimate();
         InitEnhance();
+        SyncLiveEnhance();
     }
 
     public Command SelectModuleCommand { get; private set; } = null!;

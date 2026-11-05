@@ -161,6 +161,25 @@
                              ToolTip="Left half original, right half smoothed"/>
             </UniformGrid>
         </Border>
+        <TextBlock Style="{StaticResource Text.Strong}" Text="Live enhance" Margin="0,18,0,10"/>
+        <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+            <ItemsControl ItemsSource="{Binding LiveEnhanceOptions}" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="1"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <RadioButton Style="{StaticResource Segment}" GroupName="live-enhance" Content="{Binding Label}" ToolTip="{Binding Description}"
+                                     IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                     Command="{Binding DataContext.SelectLiveEnhanceCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                     CommandParameter="{Binding}"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+        <TextBlock Style="{StaticResource Text.Small}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding LiveEnhanceNote}"/>
         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding RtxVsr}" Margin="0,12,0,0">
             <StackPanel>
                 <TextBlock Style="{StaticResource Text.Body}" Text="RTX Video Super Resolution"/>

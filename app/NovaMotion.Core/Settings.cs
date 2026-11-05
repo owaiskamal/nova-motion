@@ -106,6 +106,8 @@ public sealed class AppSettings
     public string VideoSync { get; set; } = "";
     /// <summary>The "tune for this PC" card on Home was closed.</summary>
     public bool TunePromptDismissed { get; set; }
+    /// <summary>Live enhance in Motion: "off", "crisp", "crisp-strong" or "anime" (see LiveEnhance).</summary>
+    public string LiveEnhance { get; set; } = "off";
     /// <summary>The Enhance choices last used, so the page opens as it was left.</summary>
     public EnhanceSettings Enhance { get; set; } = new();
 

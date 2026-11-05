@@ -88,6 +88,16 @@ internal static class EnhanceTests
         check(run.Out.StartsWith(vm.PreviewFolder), $"preview: made in a temporary folder ({run.Out})");
         check(backend.Last("loadfile")?[1] as string == run.Out && vm.IsMotionModule, "preview: plays in Motion when ready");
 
+        // ---- live enhance in Motion: switched on the running player, remembered
+        vm.SetLiveEnhance("crisp");
+        await Task.Delay(50);
+        check(backend.Commands.Any(c => c[0] as string == "change-list" && c[1] as string == "glsl-shaders" && (c[3] as string)!.EndsWith("nova-crisp.glsl")),
+              "live enhance: sent to the running player");
+        check(vm.Settings.LiveEnhance == "crisp" && vm.LiveEnhanceOptions.Single(o => o.IsSelected).Value == "crisp" && vm.LiveEnhanceNote.Contains("sharpening"),
+              "live enhance: chosen and described");
+        vm.SetLiveEnhance("nonsense");
+        check(vm.Settings.LiveEnhance == "off", "live enhance: unknown modes are off");
+
         // ---- not set up: offers setup, exports go ahead without AI enhance
         var bare = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "s2")), RuntimeLayout.Find(Path.GetTempPath()) ?? null, () => backend, () => DateTime.UtcNow, exporter);
         bare.SelectEnhancePresetCommand.Execute(bare.EnhancePresets.Single(p => p.Value == "film"));
