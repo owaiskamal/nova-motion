@@ -579,18 +579,32 @@ def build_engine(clip):
             dbg(f"enhance: fix compression skipped at {clip.height}p (for videos up to {enhance.FIX_COMPRESSION_MAX_HEIGHT}p)")
         else:
             dbg("enhance: fixing compression (DPIR)")
-            clip = enhance.fix_compression(clip, cfg, matrix_for(clip))
+            if cfg.get("demo"):
+                # A before/after shows only the middle: only that part (with room for motion) is cleaned
+                fb = enhance.preview_plan(clip.width, clip.height, boost)["fix_box"]
+                clip = enhance.paste_box(clip, enhance.fix_compression(enhance.crop_box(clip, fb), cfg, matrix_for(clip)), fb)
+            else:
+                clip = enhance.fix_compression(clip, cfg, matrix_for(clip))
 
     smooth, dst = smoothed(clip, cfg, src)
     if boost:
         dbg(f"enhance: {boost}")
-        smooth = enhance.finish(enhance.upscale(smooth, cfg, boost, matrix_for(original)), boost)
         if cfg.get("demo"):
+            # Previews (before/after clips and frames) show only the middle of the finished frame:
+            # only that part is enhanced, about an eighth of the AI work for the same picture
+            out_h = enhance.output_size(original.width, original.height, boost["height"])[1]
+            plan = enhance.preview_plan(original.width, original.height, boost)
+            dbg(f"enhance: preview of part {plan['box']} of the frame")
+            after = enhance.finish(enhance.upscale(enhance.crop_box(smooth, plan["box"]), cfg, boost, matrix_for(original),
+                                                   full=(original.width, original.height)), boost)
+            before = enhance.crop_box(repeat_to_fps(original, src, dst) if dst != src else original, plan["box"])
             words = (f"BEFORE: original  {fps_words(src)} fps",
-                     f"AFTER: {enhance.label_text(boost, smooth.height)}  {fps_words(dst)} fps")
-            smooth = enhance.demo(repeat_to_fps(original, src, dst) if dst != src else original, smooth,
-                                  labeller=label if cfg.get("demo_labels") else None, words=words,
-                                  bar=lambda like: divider(like, max(8, (like.width // 60) & ~1), amber=True))
+                     f"AFTER: {enhance.label_text(boost, out_h)}  {fps_words(dst)} fps")
+            smooth = enhance.demo(before, after, labeller=label if cfg.get("demo_labels") else None, words=words,
+                                  bar=lambda like: divider(like, max(8, (like.width // 60) & ~1), amber=True),
+                                  view=plan["view"])
+        else:
+            smooth = enhance.finish(enhance.upscale(smooth, cfg, boost, matrix_for(original)), boost)
     elif cfg.get("demo") and dst != src:
         smooth = demo_split(original, smooth, src, dst, cfg.get("demo_mode", "side"), bool(cfg.get("demo_labels")))
     # Every output frame must say it lasts 1/dst s. Frames copied straight from the source

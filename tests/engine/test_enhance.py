@@ -240,6 +240,22 @@ o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"pr
 fed = [c for c in calls if c[0] == "inference"]
 check((o.width, o.height) == (2560, 1440) and fed and fed[0][3] == (640, 384), f"1440p at 1440p: finished at 1440p, the model fed half size ({fed[:1]})")
 
+# Previews enhance only the part they show, and it comes out as in the whole frame
+calls.clear()
+e = {"preset": "film", "height": 2160, "detail": 0.7, "grain": 0, "fix_compression": True}
+prev = run({"engine": "mvtools", "target": 60, "source_frames": 12, "demo": True, "enhance": e}, w=1920, h=1080, frames=12)
+fed = [c for c in calls if c[0] == "inference"]
+fixed = [c for c in calls if c[0] == "dpir"]
+check(fed and fed[0][5] < 1920 // 2 and fed[0][6] < 1080 * 2 // 3 and fixed and fixed[0][1] < 1920,
+      f"preview: only the part it shows is cleaned and enlarged ({fed[:1]}, {fixed[:1]})")
+whole = run({"engine": "mvtools", "target": 60, "source_frames": 12, "enhance": e}, w=1920, h=1080, frames=12)
+x, y, cw, ch = enhance.demo_view(whole.width, whole.height)
+a = core.std.Crop(whole, left=x, right=whole.width - x - cw, top=y, bottom=whole.height - y - ch)
+b = core.std.Crop(prev, left=prev.width - cw, right=0)
+diff = core.std.PlaneStats(a[5], b[5]).get_frame(0).props["PlaneStatsDiff"]
+check((a.width, a.height) == (b.width, b.height) and diff < 0.002,
+      f"preview: the enhanced part matches the same part of a full export (difference {diff:.5f})")
+
 # Frame preview: one source frame, enhanced, as the before/after crop
 o = run({"engine": "mvtools", "target": 60, "source_frames": 1, "enabled": False, "demo": True, "demo_labels": True,
          "enhance": {"preset": "film", "height": 2160}}, w=1920, h=1080)

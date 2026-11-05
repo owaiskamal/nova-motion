@@ -166,13 +166,22 @@ def fix_compression(clip, cfg, matrix, strength=20.0):
     return core.resize.Bicubic(out, format=clip.format.id, matrix_s=matrix, dither_type="error_diffusion")
 
 
-def upscale(clip, cfg, e, matrix):
+def upscale(clip, cfg, e, matrix, full=None):
     """The AI model, then a fit to the chosen size. At the video's own size the model's result is
-    scaled back down: a cleaner, crisper picture at the same resolution."""
+    scaled back down: a cleaner, crisper picture at the same resolution.
+
+    full=(width, height): clip is a part of a frame that size (a preview's crop); it's enlarged
+    exactly as it would be within the whole frame, with the same model."""
     import vsmlrt
-    out_w, out_h = output_size(clip.width, clip.height, e["height"])
-    in_w, in_h = ai_input_size(clip.width, clip.height, out_w, out_h)
-    path, scale = model_plan(e, in_w, in_h)
+    fw, fh = full or (clip.width, clip.height)
+    fo_w, fo_h = output_size(fw, fh, e["height"])
+    fi_w, fi_h = ai_input_size(fw, fh, fo_w, fo_h)
+    path, scale = model_plan(e, fi_w, fi_h)
+
+    def part(n, whole, of):
+        return max(2, int(round(n * whole / of / 2)) * 2)
+    out_w, out_h = (part(clip.width, fo_w, fw), part(clip.height, fo_h, fh)) if full else (fo_w, fo_h)
+    in_w, in_h = (part(clip.width, fi_w, fw), part(clip.height, fi_h, fh)) if full else (fi_w, fi_h)
     if not os.path.exists(path):
         raise vs.Error(f"Enhance model missing: {os.path.basename(path)} (run setup-enhance.cmd)")
     be = backend(cfg, clip.width, clip.height)
@@ -234,17 +243,75 @@ def label_text(e, out_h):
     return f"NOVA Enhance  {size}"
 
 
-def demo(before, after, labeller=None, words=("Original", "NOVA Enhance"), bar=None):
+def demo_view(w, h):
+    """The part of a finished w x h frame a before/after shows: the middle, a quarter of the width
+    and half the height, as (x, y, width, height)."""
+    cw, ch = (w // 4) & ~1, (h // 2) & ~1
+    return ((w - cw) // 2) & ~1, ((h - ch) // 2) & ~1, cw, ch
+
+
+# Pixels of picture kept around a preview's part, at the video's size: the AI model and the resizers
+# look a few pixels beyond what they make, so the edges of the part come out as in the whole frame.
+PREVIEW_MARGIN = 32
+# Fix compression runs before smoothing, which may move picture in from further away
+PREVIEW_FIX_MARGIN = 96
+
+
+def preview_plan(width, height, e):
+    """Previews show only demo_view of the finished frame, so only that part (and a margin) is
+    cleaned and enlarged, about an eighth of the work for the same picture.
+
+    {"box": the part of the video frame to enhance (x0, y0, x1, y1), "view": (x, y, w, h) to cut
+    from the enlarged part, "fix_box": the part Fix compression cleans}."""
+    out_w, out_h = output_size(width, height, e["height"])
+    kx, ky = out_w / width, out_h / height
+    x, y, cw, ch = demo_view(out_w, out_h)
+
+    def box(margin):
+        x0 = max(0, int(x / kx) - margin) & ~3
+        y0 = max(0, int(y / ky) - margin) & ~3
+        x1 = min(width, -int(-(x + cw) // kx) + margin)
+        y1 = min(height, -int(-(y + ch) // ky) + margin)
+        x1 = x1 if x1 == width else x1 + (-(x1 - x0)) % 4
+        y1 = y1 if y1 == height else y1 + (-(y1 - y0)) % 4
+        return x0, y0, min(width, x1), min(height, y1)
+    b = box(PREVIEW_MARGIN)
+    left = int(round(x - b[0] * kx)) & ~1
+    top = int(round(y - b[1] * ky)) & ~1
+    return {"box": b, "view": (left, top, cw, ch), "fix_box": box(PREVIEW_FIX_MARGIN)}
+
+
+def crop_box(clip, b):
+    x0, y0, x1, y1 = b
+    if (x0, y0, x1, y1) == (0, 0, clip.width, clip.height):
+        return clip
+    return core.std.Crop(clip, left=x0, right=clip.width - x1, top=y0, bottom=clip.height - y1)
+
+
+def paste_box(whole, part, b):
+    """whole with part put back at box b (same format)."""
+    x0, y0, x1, y1 = b
+    w, h = whole.width, whole.height
+    row = ([crop_box(whole, (0, y0, x0, y1))] if x0 > 0 else []) + [part] + \
+          ([crop_box(whole, (x1, y0, w, y1))] if x1 < w else [])
+    middle = core.std.StackHorizontal(row) if len(row) > 1 else part
+    rows = ([crop_box(whole, (0, 0, w, y0))] if y0 > 0 else []) + [middle] + \
+           ([crop_box(whole, (0, y1, w, h))] if y1 < h else [])
+    return core.std.StackVertical(rows) if len(rows) > 1 else middle
+
+
+def demo(before, after, labeller=None, words=("Original", "NOVA Enhance"), bar=None, view=None):
     """Before/after for Enhance at full size: the same middle part of the picture, the original
     enlarged plainly next to the enhanced one, each a quarter of the width and half the height, so the
-    clip shows detail as it really is instead of shrinking it."""
+    clip shows detail as it really is instead of shrinking it. view: the part to show, when after is
+    already only a part of the frame (preview_plan)."""
     if (before.width, before.height) != (after.width, after.height):
         before = core.resize.Bicubic(before, after.width, after.height)
     if before.format.id != after.format.id:
         before = core.resize.Bicubic(before, format=after.format.id)
     w, h = after.width, after.height
-    cw, ch = (w // 4) & ~1, (h // 2) & ~1
-    x, y = ((w - cw) // 2) & ~1, ((h - ch) // 2) & ~1
+    x, y, cw, ch = view or demo_view(w, h)
+    x, y = max(0, min(x, w - cw)) & ~1, max(0, min(y, h - ch)) & ~1
 
     def crop(c):
         return core.std.Crop(c, left=x, right=w - x - cw, top=y, bottom=h - y - ch)
