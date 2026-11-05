@@ -328,6 +328,12 @@ public sealed class ExportRunner : IExportRunner
 
         if ((mpv.ExitCode == 0 || options.Still) && File.Exists(output) && new FileInfo(output).Length > 1024)
         {
+            // mpv drops a filter that fails and goes on: the file would be the plain video, labelled enhanced
+            if (EngineFailure(log) is { } why)
+            {
+                TryDelete(output);
+                return why;
+            }
             progress.Report(1);
             if (Environment.GetEnvironmentVariable("NOVAMOTION_UITEST") is null) TryDelete(log);
             return null;
@@ -374,6 +380,28 @@ public sealed class ExportRunner : IExportRunner
     }
 
     /// <summary>The most useful line of mpv's log for a failed export.</summary>
+    /// <summary>Why the engine script failed, if it did: mpv keeps going without the filter, so the export
+    /// would otherwise "succeed" with neither smoothing nor enhancement.</summary>
+    public static string? EngineFailure(string log)
+    {
+        try
+        {
+            if (!File.Exists(log)) return null;
+            var lines = File.ReadAllLines(log);
+            var failed = lines.Any(l => l.Contains("Disabling filter", StringComparison.Ordinal)
+                                        || (l.Contains("[vapoursynth]", StringComparison.Ordinal) && (l.Contains("[e]", StringComparison.Ordinal) || l.Contains("[f]", StringComparison.Ordinal))));
+            if (!failed) return null;
+            // The Python error's last line: "vapoursynth.Error: Enhance model missing: …" or "SomeError: …"
+            var why = lines.Where(l => l.Contains("[vapoursynth]", StringComparison.Ordinal))
+                           .Select(l => l[(l.IndexOf("[vapoursynth]", StringComparison.Ordinal) + "[vapoursynth]".Length)..].Trim())
+                           .LastOrDefault(l => System.Text.RegularExpressions.Regex.IsMatch(l, @"^[\w.]*(Error|Exception)\b.*:"));
+            if (why is not null) why = why[(why.IndexOf(':') + 1)..].Trim();
+            return "The AI engine didn't run, so nothing was enhanced" + (string.IsNullOrEmpty(why) ? "." : ": " + why)
+                   + " Details are in the exports folder; collect-logs.cmd gathers them.";
+        }
+        catch (IOException) { return null; }
+    }
+
     internal static string Reason(string log)
     {
         try

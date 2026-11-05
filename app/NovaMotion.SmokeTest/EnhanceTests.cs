@@ -105,6 +105,22 @@ internal static class EnhanceTests
         vm.SetLiveEnhance("nonsense");
         check(vm.Settings.LiveEnhance == "off", "live enhance: unknown modes are off");
 
+        // ---- an engine script that failed: mpv went on without it, so the export must not pass as enhanced
+        var failLog = Path.Combine(dir, "export-fail.log");
+        File.WriteAllLines(failLog, new[]
+        {
+            "[   2.1][e][vapoursynth] Script evaluation failed:",
+            "[   2.1][e][vapoursynth] Traceback (most recent call last):",
+            "[   2.1][e][vapoursynth] vapoursynth.Error: Enhance model missing: realesr-general-mid-x4v3.onnx (run setup-enhance.cmd)",
+            "[   2.2][w][vf] Disabling filter novamotion because it has failed.",
+        });
+        var fail = ExportRunner.EngineFailure(failLog);
+        check(fail?.Contains("Enhance model missing: realesr-general-mid-x4v3.onnx") == true && fail.StartsWith("The AI engine didn't run"),
+              $"export: a failed engine script is reported, not passed off as enhanced ({fail})");
+        var okLog = Path.Combine(dir, "export-ok.log");
+        File.WriteAllLines(okLog, new[] { "[   1.0][v][vapoursynth] script loaded", "[   9.0][i][cplayer] Exiting... (End of file)" });
+        check(ExportRunner.EngineFailure(okLog) is null, "export: a clean log passes");
+
         // ---- one before/after frame: a PNG in seconds, no smoothing
         var still = new ExportOptions { Still = true, Enhance = film, StartSeconds = 12.5 };
         var stillEngine = ExportPlan.Engine(new EngineSettings(), still, new EngineAvailability(true, 1, true, true, Array.Empty<string>()), Array.Empty<string>());

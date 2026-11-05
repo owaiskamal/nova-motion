@@ -7,6 +7,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$app = Join-Path $env:APPDATA 'NovaMotion';" ^
   "foreach ($f in 'mpv.log','engine-debug.log','engine.json','engine-state.json','settings.json') { $p = Join-Path $app $f; if (Test-Path $p) { Copy-Item $p $tmp } };" ^
   "foreach ($f in 'tuning.json','tune.log','benchmark.log','setup.log','setup-tensorrt.log','setup-studio.log','setup-enhance.log','animate.log','versions.json') { $p = Join-Path 'runtime' $f; if (Test-Path $p) { Copy-Item $p $tmp } };" ^
+  "$ex = Join-Path $app 'exports'; if (Test-Path $ex) { Get-ChildItem $ex -Filter 'export-*.log' | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | Copy-Item -Destination $tmp };" ^
   "if (Test-Path 'runtime\trt-engines\background-build.log') { Copy-Item 'runtime\trt-engines\background-build.log' $tmp };" ^
   "if (Test-Path 'runtime\trt-engines') { Get-ChildItem 'runtime\trt-engines' | Select-Object Name, Length, LastWriteTime | Out-File (Join-Path $tmp 'trt-engines.txt') };" ^
   "if (Test-Path 'runtime\mpv\vs-plugins\models\rife') { Get-ChildItem 'runtime\mpv\vs-plugins\models\rife' | Select-Object Name, Length | Out-File (Join-Path $tmp 'models.txt') };" ^
