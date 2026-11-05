@@ -469,10 +469,22 @@ def repeat_to_fps(clip, src, dst):
     return core.std.FrameEval(base, pick)
 
 
-def divider(like, width=4):
-    """A bright vertical bar in the clip's own format, to mark where before ends and after begins."""
+# NOVA's amber (#FFB84D) as limited-range BT.709 Y'CbCr at 8 bits, and as RGB 0..1
+AMBER_YUV8 = (180, 74, 163)
+AMBER_RGB = (1.0, 0.722, 0.302)
+
+
+def divider(like, width=4, amber=False):
+    """A vertical bar in the clip's own format, to mark where before ends and after begins:
+    white, or NOVA's amber where the before/after has to be told apart at a glance."""
     bar = core.std.Crop(like, right=like.width - width)
     fmt = bar.format
+    if amber and fmt.sample_type == vs.INTEGER and fmt.color_family == vs.YUV:
+        shift = fmt.bits_per_sample - 8
+        return core.std.Expr(bar, [str(v << shift) for v in AMBER_YUV8])
+    if amber and fmt.color_family == vs.RGB:
+        peak = 1.0 if fmt.sample_type == vs.FLOAT else (1 << fmt.bits_per_sample) - 1
+        return core.std.Expr(bar, [f"{c * peak:.4f}" if fmt.sample_type == vs.FLOAT else str(int(c * peak)) for c in AMBER_RGB])
     if fmt.sample_type == vs.FLOAT:
         exprs = ["0.95"] if fmt.color_family != vs.YUV else ["0.95", "0"]
     else:
@@ -571,11 +583,11 @@ def build_engine(clip):
         dbg(f"enhance: {boost}")
         smooth = enhance.finish(enhance.upscale(smooth, cfg, boost, matrix_for(original)), boost)
         if cfg.get("demo"):
-            words = (f"Original  {fps_words(src)} fps",
-                     f"{enhance.label_text(boost, smooth.height)}  {fps_words(dst)} fps")
+            words = (f"BEFORE: original  {fps_words(src)} fps",
+                     f"AFTER: {enhance.label_text(boost, smooth.height)}  {fps_words(dst)} fps")
             smooth = enhance.demo(repeat_to_fps(original, src, dst) if dst != src else original, smooth,
                                   labeller=label if cfg.get("demo_labels") else None, words=words,
-                                  bar=lambda like: divider(like, 4))
+                                  bar=lambda like: divider(like, max(8, (like.width // 60) & ~1), amber=True))
     elif cfg.get("demo") and dst != src:
         smooth = demo_split(original, smooth, src, dst, cfg.get("demo_mode", "side"), bool(cfg.get("demo_labels")))
     # Every output frame must say it lasts 1/dst s. Frames copied straight from the source

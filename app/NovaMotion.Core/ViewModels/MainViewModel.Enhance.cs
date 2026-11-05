@@ -136,7 +136,7 @@ public sealed partial class MainViewModel
     private void ShowFramePreview(string file)
     {
         _framePreview = file;
-        FramePreviewStatus = $"{Path.GetFileName(_previewVideo ?? file)}: original on the left, enhanced on the right, at full size. Click to open it larger.";
+        FramePreviewStatus = $"{Path.GetFileName(_previewVideo ?? file)}: the same part of the picture twice, at full size. Left of the amber line is the original, right is AI enhanced. Click to open it larger.";
         Raise(nameof(FramePreview), nameof(HasFramePreview));
         OpenFramePreviewCommand.Refresh();
         ShowToast("Frame preview ready");

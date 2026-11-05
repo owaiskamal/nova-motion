@@ -176,7 +176,7 @@ check((o.width, o.height) == (1280, 720) and o.fps.numerator == 24, f"export: up
 
 o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "demo": True, "demo_labels": True,
          "enhance": {"preset": "film", "height": 2160}}, w=1920, h=1080)
-check((o.width, o.height) == (1920 + 4, 1080), f"before/after: full-size crops of the middle, side by side ({o.width}x{o.height})")
+check((o.width, o.height) == (1920 + 16, 1080), f"before/after: full-size crops of the middle, side by side ({o.width}x{o.height})")
 check(o.fps.numerator == 60, "before/after: at the smoothed rate")
 
 o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 720, "detail": 1, "grain": 0.5}})
@@ -213,7 +213,7 @@ check((o.width, o.height) == (2560, 1440) and fed and fed[0][3] == (640, 384), f
 # Frame preview: one source frame, enhanced, as the before/after crop
 o = run({"engine": "mvtools", "target": 60, "source_frames": 1, "enabled": False, "demo": True, "demo_labels": True,
          "enhance": {"preset": "film", "height": 2160}}, w=1920, h=1080)
-check(o.num_frames >= 1 and (o.width, o.height) == (1924, 1080) and o.fps.numerator == 24,
+check(o.num_frames >= 1 and (o.width, o.height) == (1936, 1080) and o.fps.numerator == 24,
       f"frame preview: the before/after crop of an unsmoothed frame ({o.width}x{o.height}, {o.fps})")
 
 # Live playback never runs Enhance

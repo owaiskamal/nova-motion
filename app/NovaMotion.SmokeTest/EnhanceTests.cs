@@ -120,7 +120,7 @@ internal static class EnhanceTests
         await Task.Delay(80);
         run = exporter.Runs.Last();
         check(run.Options.Still && run.Out.EndsWith(".png") && run.Out.StartsWith(vm.PreviewFolder), $"frame preview: queued as a still ({run.Out})");
-        check(vm.HasFramePreview && vm.FramePreview == run.Out && vm.FramePreviewStatus.Contains("original on the left"),
+        check(vm.HasFramePreview && vm.FramePreview == run.Out && vm.FramePreviewStatus.Contains("Left of the amber line is the original"),
               $"frame preview: shown on the page ({vm.FramePreviewStatus})");
         Directory.CreateDirectory(Path.GetDirectoryName(run.Out)!);
         File.WriteAllText(run.Out, "png");      // the fake export makes no file

@@ -183,8 +183,23 @@
                                 <Border.InputBindings>
                                     <MouseBinding MouseAction="LeftClick" Command="{Binding OpenFramePreviewCommand}"/>
                                 </Border.InputBindings>
-                                <Image Source="{Binding FramePreview}" MaxHeight="440" Stretch="Uniform" HorizontalAlignment="Left"
-                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                <!-- The grid takes the picture's size, so the badges sit on its two halves -->
+                                <Grid HorizontalAlignment="Left">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Image Grid.ColumnSpan="2" Source="{Binding FramePreview}" MaxHeight="440" Stretch="Uniform"
+                                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,12" CornerRadius="8" Padding="12,5"
+                                            Background="#E60F1424">
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#E6E9F2" Text="Before · original"/>
+                                    </Border>
+                                    <Border Grid.Column="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,12" CornerRadius="8" Padding="12,5"
+                                            Background="{StaticResource Nova}">
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#0F1424" Text="After · AI enhanced"/>
+                                    </Border>
+                                </Grid>
                             </Border>
                         </StackPanel>
                         <Border Style="{StaticResource Divider}"/>
