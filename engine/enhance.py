@@ -14,10 +14,13 @@ Models (all allow commercial use), in vs-plugins/models:
     cugan/up2x-latest-{no-denoise, conservative, denoise3x}.onnx and pro-*  Real-CUGAN, MIT: anime, art
     RealESRGANv2/realesr-animevideov3.onnx  Real-ESRGAN AnimeVideo v3, BSD-3: anime, big enlargements
     dpir/drunet_deblocking_color.onnx  DPIR, MIT: compression blocks and ringing
+    enhance/RealESRGAN_x4plus{,_anime_6B}.onnx  Real-ESRGAN x4plus, BSD-3: "Max detail" for photos, a full
+        RRDB network that adds far more texture than the compact models, and is 10-15x heavier
 
 The "enhance" setting:
     {"preset": "film" | "anime" | "off", "height": 2160 (0: the video's own), "clean": "off" | "light" | "strong",
-     "strength": "natural" | "balanced" | "full", "fix_compression": false, "detail": 0..1, "grain": 0..1}
+     "strength": "natural" | "balanced" | "full", "fix_compression": false, "detail": 0..1, "grain": 0..1,
+     "model": "standard" | "max"}
 """
 import os
 
@@ -36,6 +39,8 @@ MIX = {"film": {"natural": 0.35, "balanced": 0.5, "full": 1.0},
        "anime": {"natural": 0.6, "balanced": 0.8, "full": 1.0}}
 
 FILM_MODELS = {"off": "realesr-general-wdn-x4v3", "light": "realesr-general-mid-x4v3", "strong": "realesr-general-x4v3"}
+# "Max detail": one heavy model per preset, used as they are (the clean-up setting doesn't apply)
+MAX_MODELS = {"film": "RealESRGAN_x4plus", "anime": "RealESRGAN_x4plus_anime_6B"}
 ANIME_MODELS = {"off": ("no-denoise", "pro-no-denoise3x"), "light": ("conservative", "pro-conservative"),
                 "strong": ("denoise3x", "pro-denoise3x")}
 
@@ -47,7 +52,8 @@ def settings(cfg):
         return None
     out = {"preset": e["preset"], "height": int(e.get("height") or 0), "clean": e.get("clean", "light"),
            "fix_compression": bool(e.get("fix_compression")), "detail": float(e.get("detail") or 0),
-           "grain": float(e.get("grain") or 0), "strength": e.get("strength", "balanced")}
+           "grain": float(e.get("grain") or 0), "strength": e.get("strength", "balanced"),
+           "model": "max" if e.get("model") == "max" else "standard"}
     if out["clean"] not in CLEAN:
         out["clean"] = "light"
     if out["strength"] not in STRENGTHS:
@@ -86,6 +92,10 @@ def model_plan(e, width, height, models=None):
     models = models or models_dir()
     out_w, out_h = output_size(width, height, e["height"])
     need = out_h / height
+    if e.get("model") == "max":
+        path = os.path.join(models, "enhance", MAX_MODELS[e["preset"]] + ".onnx")
+        if os.path.exists(path):
+            return path, 4
     if e["preset"] == "film":
         return os.path.join(models, "enhance", FILM_MODELS[e["clean"]] + ".onnx"), 4
     # Anime: Real-CUGAN at 2x for up to 2.5x (the best line art); AnimeVideo v3 at 4x beyond that
@@ -96,6 +106,10 @@ def model_plan(e, width, height, models=None):
     if os.path.exists(pro_path):
         return pro_path, 2
     return os.path.join(models, "cugan", f"up2x-latest-{legacy}.onnx"), 2
+
+
+def has_max_model(e, models=None):
+    return os.path.exists(os.path.join(models or models_dir(), "enhance", MAX_MODELS[e["preset"]] + ".onnx"))
 
 
 def backend(cfg, width, height):
@@ -175,7 +189,10 @@ def upscale(clip, cfg, e, matrix, full=None):
     import vsmlrt
     fw, fh = full or (clip.width, clip.height)
     fo_w, fo_h = output_size(fw, fh, e["height"])
-    fi_w, fi_h = ai_input_size(fw, fh, fo_w, fo_h)
+    # Photos: the model sees the whole picture, and its output is scaled to the size (as Real-ESRGAN's
+    # own tool does), while that output stays within memory; videos cap it at half the finished size
+    fi_w, fi_h = (fw, fh) if e.get("keep_input") and max(fw, fh) * 4 <= PHOTO_MODEL_OUTPUT_MAX \
+        else ai_input_size(fw, fh, fo_w, fo_h)
     path, scale = model_plan(e, fi_w, fi_h)
 
     def part(n, whole, of):
@@ -248,6 +265,10 @@ def demo_view(w, h):
     and half the height, as (x, y, width, height)."""
     cw, ch = (w // 4) & ~1, (h // 2) & ~1
     return ((w - cw) // 2) & ~1, ((h - ch) // 2) & ~1, cw, ch
+
+
+# Longest side of a model's output for a photo seen whole: 12288 px is about 0.9 GB in half floats
+PHOTO_MODEL_OUTPUT_MAX = 12288
 
 
 # Pixels of picture kept around a preview's part, at the video's size: the AI model and the resizers

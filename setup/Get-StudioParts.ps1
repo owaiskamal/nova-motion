@@ -14,7 +14,7 @@
     powershell -ExecutionPolicy Bypass -File setup\Get-StudioParts.ps1 [-Force]
 #>
 [CmdletBinding()]
-param([switch]$Force)
+param([switch]$Force, [switch]$PackagesOnly)
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference    = "SilentlyContinue"
@@ -54,7 +54,9 @@ function Info($msg) { Write-Host "    $msg" }
 if (-not (Test-Path $Python)) { throw "The player runtime isn't set up: run build.cmd first" }
 
 Step "Python packages (numpy, Pillow, onnxruntime with DirectML)"
-foreach ($w in $Wheels) {
+# -PackagesOnly (Enhance a photo): just numpy and Pillow, no depth model or DirectML runtime
+$Wanted = if ($PackagesOnly) { @($Wheels | Where-Object { $_.Name -in "numpy", "pillow" }) } else { $Wheels }
+foreach ($w in $Wanted) {
     $marker = Join-Path $Packages ("{0}-{1}.installed" -f $w.Name, $w.Version)
     if ((Test-Path $marker) -and -not $Force) { Info "have    $($w.Name) $($w.Version)"; continue }
     $meta = Invoke-RestMethod -Uri "https://pypi.org/pypi/$($w.Name)/$($w.Version)/json" -UseBasicParsing
@@ -76,6 +78,13 @@ foreach ($w in $Wheels) {
     Get-ChildItem $Packages -Filter ("{0}-*.installed" -f $w.Name) | Remove-Item -Force
     Set-Content $marker $w.Version
     Info "added   $($w.Name) $($w.Version)"
+}
+
+if ($PackagesOnly) {
+    & $Python -c "import sys; sys.path.insert(0, r'$Packages'); import numpy, PIL; print('numpy', numpy.__version__, 'Pillow', PIL.__version__)"
+    if ($LASTEXITCODE -ne 0) { throw "numpy or Pillow doesn't load" }
+    Stop-Transcript | Out-Null
+    exit 0
 }
 
 Step "Depth Anything V2 Small (depth model, Apache-2.0)"

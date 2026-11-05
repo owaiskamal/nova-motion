@@ -16,7 +16,7 @@
     powershell -ExecutionPolicy Bypass -File setup\Get-EnhanceModels.ps1 [-Force]
 #>
 [CmdletBinding()]
-param([switch]$Force, [string]$Tag = "enhance-models-v1", [switch]$NoPrepare)
+param([switch]$Force, [string]$Tag = "enhance-models-v2", [switch]$NoPrepare)
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference    = "SilentlyContinue"
@@ -33,7 +33,7 @@ $Repo     = "owaiskamal/nova-motion"
 
 # Where each model goes, by name: the folders vs-mlrt looks in
 function Folder-For([string]$name) {
-    if ($name -like "realesr-general*") { return "enhance" }
+    if ($name -like "realesr-general*" -or $name -like "RealESRGAN_x4plus*") { return "enhance" }
     if ($name -like "up2x-*" -or $name -like "pro-*") { return "cugan" }
     if ($name -like "realesr-animevideo*") { return "RealESRGANv2" }
     if ($name -like "drunet*") { return "dpir" }
@@ -59,7 +59,15 @@ $SevenZip = @((Join-Path $MpvDir "7z.exe"), (Join-Path $Runtime ".cache\7zr.exe"
 
 Step "Enhance models ($Tag)"
 try { $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -Headers $Headers }
-catch { throw "The Enhance models ($Tag) aren't published yet. Smoothing works meanwhile." }
+catch {
+    # v2 adds the Max detail models for photos; until it's published, v1 has everything else
+    if ($Tag -ne "enhance-models-v1") {
+        Info "$Tag isn't published yet; using enhance-models-v1 (everything but Max detail)"
+        $Tag = "enhance-models-v1"
+        try { $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -Headers $Headers }
+        catch { throw "The Enhance models aren't published yet. Smoothing works meanwhile." }
+    } else { throw "The Enhance models ($Tag) aren't published yet. Smoothing works meanwhile." }
+}
 $sumsAsset = $rel.assets | Where-Object { $_.name -eq "SHA256SUMS" } | Select-Object -First 1
 if (-not $sumsAsset) { throw "$Tag has no SHA256SUMS" }
 $sums = @{}
@@ -129,6 +137,12 @@ if (-not $hasScript -or (-not $hasTrt -and -not $hasNcnn)) {
 Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\enhance_build.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\jobs.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\photo.py") $Runtime -Force
+
+# Enhance a photo reads and writes pictures with numpy and Pillow (shared with Animate a picture)
+Step "Picture support for Enhance a photo (numpy, Pillow)"
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "Get-StudioParts.ps1") -PackagesOnly
+if ($LASTEXITCODE -ne 0) { Write-Warning "numpy and Pillow couldn't be added; Enhance a photo needs them (videos don't)." }
 
 # TensorRT prepares each model for this graphics card once. Done here, so the first export doesn't wait
 if ((Test-Path (Join-Path $Plugins "vstrt.dll")) -and -not $NoPrepare) {

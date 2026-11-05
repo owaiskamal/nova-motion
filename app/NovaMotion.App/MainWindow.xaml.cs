@@ -285,6 +285,12 @@ public partial class MainWindow : Window, IUiHost
                 _vm.SetAnimateImage(picture);
             return;
         }
+        // A picture dropped on the Enhance page: Enhance a photo
+        if (_vm.IsEnhanceModule && e.Data.GetData(DataFormats.FileDrop) is string[] pics && pics.Length > 0 && pics.All(Animate.IsImage))
+        {
+            _vm.SetPhoto(pics[0]);
+            return;
+        }
         if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
         {
             foreach (var f in files)

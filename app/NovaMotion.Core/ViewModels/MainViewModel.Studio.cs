@@ -25,6 +25,7 @@ public sealed partial class MainViewModel
         RebuildGenerate();
         InitAnimate();
         InitEnhance();
+        InitPhoto();
         SyncLiveEnhance();
     }
 
@@ -51,7 +52,7 @@ public sealed partial class MainViewModel
         IsExportOpen = module == StudioModule.Enhance;
         IsGenerateOpen = module == StudioModule.Generate;
         if (module == StudioModule.Generate) RefreshAnimate();
-        if (module == StudioModule.Enhance) RefreshEnhance();
+        if (module == StudioModule.Enhance) { RefreshEnhance(); RefreshPhoto(); }
         RaiseModule();
     }
 

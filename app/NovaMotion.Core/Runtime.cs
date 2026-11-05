@@ -17,6 +17,8 @@ public sealed class RuntimeLayout
     /// <summary>Generate's Animate a picture: its script, depth model and Python packages.</summary>
     public string ParallaxScript => Path.Combine(Root, "parallax.py");
     public string StudioDir => Path.Combine(Root, "studio");
+    /// <summary>Enhance a photo (engine/photo.py).</summary>
+    public string PhotoScript => Path.Combine(Root, "photo.py");
     public string DepthModel => Path.Combine(StudioDir, "depth-anything-v2-small.onnx");
     public string StudioPackages => Path.Combine(StudioDir, "packages");
     public string PythonExe => OperatingSystem.IsWindows() ? Path.Combine(MpvDir, "python.exe") : "python3";

@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Novabit
-"""Converts Real-ESRGAN's compact models (SRVGGNetCompact, e.g. realesr-general-x4v3, BSD-3-Clause)
-from their PyTorch .pth files to ONNX, without PyTorch: the .pth is a zip of a pickle and raw tensor
-data, read here with numpy, and the network is small enough to write out layer by layer.
+"""Converts Real-ESRGAN's models (BSD-3-Clause) from their PyTorch .pth files to ONNX: the compact
+SRVGGNetCompact ones (realesr-general-x4v3) and the full RRDBNet ones (RealESRGAN_x4plus and
+x4plus_anime_6B), without PyTorch: the .pth is a zip of a pickle and raw tensor
+data, read here with numpy, and each network is written out layer by layer.
 
     python tools/realesrgan_to_onnx.py realesr-general-x4v3.pth realesr-general-x4v3.onnx [--blend other.pth 0.5]
 
@@ -108,6 +109,84 @@ def build_onnx(state, opset=17):
     return model, scale
 
 
+def is_rrdb(state):
+    return "conv_first.weight" in state
+
+
+def describe_rrdb(state):
+    """(blocks, features, growth) of an RRDBNet (Real-ESRGAN x4plus and x4plus anime 6B)."""
+    blocks = 1 + max(int(m.group(1)) for k in state if (m := re.match(r"body\.(\d+)\.rdb1\.conv1\.weight$", k)))
+    return blocks, state["conv_first.weight"].shape[0], state["body.0.rdb1.conv1.weight"].shape[0]
+
+
+def build_rrdb_onnx(state, opset=17):
+    """Real-ESRGAN's RRDBNet at 4x (BasicSR's arch, which the x4plus models use):
+        feat = conv_first(x); feat += conv_body(RRDB x blocks (feat))
+        two times: feat = lrelu(conv_up(nearest 2x (feat)))
+        out = conv_last(lrelu(conv_hr(feat)))
+    RRDB(x) = 0.2 * RDB3(RDB2(RDB1(x))) + x, and each RDB is five dense 3x3 convolutions:
+        x1 = lrelu(c1(x)), x2 = lrelu(c2([x, x1])), ... x5 = c5([x, x1..x4]); RDB(x) = 0.2 * x5 + x
+    LeakyReLU's slope is 0.2."""
+    from onnx import TensorProto, helper, numpy_helper
+    blocks, feat, grow = describe_rrdb(state)
+    nodes, inits = [], []
+    names = set()
+
+    def conv(x, key, out):
+        if key not in names:
+            inits.extend([numpy_helper.from_array(state[key + ".weight"], key + ".weight"),
+                          numpy_helper.from_array(state[key + ".bias"], key + ".bias")])
+            names.add(key)
+        nodes.append(helper.make_node("Conv", [x, key + ".weight", key + ".bias"], [out], pads=[1, 1, 1, 1], kernel_shape=[3, 3]))
+        return out
+
+    def lrelu(x, out):
+        nodes.append(helper.make_node("LeakyRelu", [x], [out], alpha=0.2))
+        return out
+
+    def scaled_add(a, b, out):
+        nodes.append(helper.make_node("Mul", [a, "k02"], [out + "_s"]))
+        nodes.append(helper.make_node("Add", [out + "_s", b], [out]))
+        return out
+
+    inits.append(numpy_helper.from_array(np.array(0.2, np.float32), "k02"))
+    x = conv("input", "conv_first", "feat0")
+    first = x
+    for b in range(blocks):
+        block_in = x
+        for r in (1, 2, 3):
+            key = f"body.{b}.rdb{r}"
+            parts = [x]
+            for c in range(1, 6):
+                cat = parts[0] if len(parts) == 1 else None
+                if cat is None:
+                    cat = f"{key}.cat{c}"
+                    nodes.append(helper.make_node("Concat", list(parts), [cat], axis=1))
+                y = conv(cat, f"{key}.conv{c}", f"{key}.c{c}")
+                if c < 5:
+                    y = lrelu(y, f"{key}.x{c}")
+                    parts.append(y)
+            x = scaled_add(y, x, f"{key}.out")
+        x = scaled_add(x, block_in, f"body.{b}.out")
+    body = conv(x, "conv_body", "body_feat")
+    nodes.append(helper.make_node("Add", [first, body], ["feat1"]))
+    inits.append(numpy_helper.from_array(np.array([1, 1, 2, 2], np.float32), "scale2x"))
+    x = "feat1"
+    for i in (1, 2):
+        nodes.append(helper.make_node("Resize", [x, "", "scale2x"], [f"up{i}_r"], mode="nearest"))
+        x = lrelu(conv(f"up{i}_r", f"conv_up{i}", f"up{i}_c"), f"up{i}")
+    x = lrelu(conv(x, "conv_hr", "hr"), "hr_a")
+    conv(x, "conv_last", "output")
+    graph = helper.make_graph(
+        nodes, "RRDBNet",
+        [helper.make_tensor_value_info("input", TensorProto.FLOAT, ["N", 3, "H", "W"])],
+        [helper.make_tensor_value_info("output", TensorProto.FLOAT, ["N", 3, "H4", "W4"])],
+        initializer=inits)
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", opset)], producer_name="nova-motion")
+    model.ir_version = 8
+    return model, 4
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("pth")
@@ -122,10 +201,16 @@ def main(argv=None):
         if other.keys() != state.keys() or any(other[k].shape != state[k].shape for k in state):
             raise SystemExit("the two models don't have the same layers")
         state = {k: (1 - w) * state[k] + w * other[k] for k in state}
-    model, scale = build_onnx(state)
+    if is_rrdb(state):
+        model, scale = build_rrdb_onnx(state)
+        blocks, feat, grow = describe_rrdb(state)
+        what = f"RRDBNet, {blocks} blocks, {feat} features"
+    else:
+        model, scale = build_onnx(state)
+        what = f"{len(describe(state)[0])} convolutions"
     onnx.checker.check_model(model)
     onnx.save(model, a.onnx)
-    print(f"{a.onnx}: {len(describe(state)[0])} convolutions, x{scale}")
+    print(f"{a.onnx}: {what}, x{scale}")
     return 0
 
 

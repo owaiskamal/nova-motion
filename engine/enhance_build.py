@@ -22,7 +22,9 @@ for p in (HERE, os.path.join(HERE, "mpv")):
 ALL = ["enhance/realesr-general-mid-x4v3", "cugan/up2x-latest-conservative",
        "enhance/realesr-general-wdn-x4v3", "enhance/realesr-general-x4v3",
        "cugan/up2x-latest-no-denoise", "cugan/up2x-latest-denoise3x", "RealESRGANv2/realesr-animevideov3",
-       "cugan/pro-conservative-up2x", "cugan/pro-no-denoise3x-up2x", "cugan/pro-denoise3x-up2x", "dpir"]
+       "cugan/pro-conservative-up2x", "cugan/pro-no-denoise3x-up2x", "cugan/pro-denoise3x-up2x", "dpir",
+       # Max detail for photos: the heaviest, last
+       "enhance/RealESRGAN_x4plus_anime_6B", "enhance/RealESRGAN_x4plus"]
 
 
 LOG = os.path.join(HERE, "prepare-models.log")

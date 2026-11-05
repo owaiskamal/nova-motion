@@ -3,6 +3,8 @@
 # licence allows commercial use; THIRD_PARTY_NOTICES.md lists them.
 #   - Real-ESRGAN realesr-general-x4v3 and -wdn-x4v3 (BSD-3-Clause), converted to ONNX here by
 #     tools/realesrgan_to_onnx.py, plus the half-and-half blend Real-ESRGAN uses by default
+#   - Real-ESRGAN x4plus and x4plus anime 6B (BSD-3-Clause), the full RRDB networks behind "Max
+#     detail" for photos, converted the same way and checked against a PyTorch run of the original
 #   - Real-CUGAN up2x (MIT), Real-ESRGAN AnimeVideo v3 (BSD-3-Clause), DPIR deblocking (MIT), as ONNX
 #     from vs-mlrt's model releases
 name: Enhance models
@@ -12,7 +14,7 @@ on:
     inputs:
       tag:
         description: Release to create or update
-        default: enhance-models-v1
+        default: enhance-models-v2
 
 permissions:
   contents: write
@@ -42,6 +44,22 @@ jobs:
           python tools/realesrgan_to_onnx.py pth/x4v3.pth out/realesr-general-x4v3.onnx
           python tools/realesrgan_to_onnx.py pth/wdn.pth out/realesr-general-wdn-x4v3.onnx
           python tools/realesrgan_to_onnx.py pth/x4v3.pth out/realesr-general-mid-x4v3.onnx --blend pth/wdn.pth 0.5
+
+      - name: Real-ESRGAN x4plus models (Max detail), converted to ONNX
+        run: |
+          set -e
+          curl -sSLf -o pth/x4plus.pth https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth
+          curl -sSLf -o pth/x4plus_anime_6B.pth https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth
+          echo "4fa0d38905f75ac06eb49a7951b426670021be3018265fd191d2125df9d682f1  pth/x4plus.pth" | sha256sum -c
+          echo "f872d837d3c90ed2e05227bed711af5671a6fd1c9f7d7e91c911a61f155e99da  pth/x4plus_anime_6B.pth" | sha256sum -c
+          python tools/realesrgan_to_onnx.py pth/x4plus.pth out/RealESRGAN_x4plus.onnx
+          python tools/realesrgan_to_onnx.py pth/x4plus_anime_6B.pth out/RealESRGAN_x4plus_anime_6B.onnx
+
+      - name: Check the RRDB conversion against PyTorch
+        run: |
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          python tools/check_rrdb_onnx.py pth/x4plus.pth out/RealESRGAN_x4plus.onnx
+          python tools/check_rrdb_onnx.py pth/x4plus_anime_6B.pth out/RealESRGAN_x4plus_anime_6B.onnx
 
       - name: Anime and clean-up models from vs-mlrt's model releases
         run: |
@@ -86,7 +104,7 @@ jobs:
           cd out
           sha256sum *.onnx | tee SHA256SUMS
           while read -r sum name; do echo "::notice title=$name::$sum"; done < SHA256SUMS
-          notes="AI models for NOVA Studio's Enhance, gathered and pinned for setup/Get-EnhanceModels.ps1. Real-ESRGAN (BSD-3-Clause, https://github.com/xinntao/Real-ESRGAN), Real-CUGAN (MIT, https://github.com/bilibili/ailab), DPIR (MIT, https://github.com/cszn/DPIR); ONNX files from vs-mlrt (https://github.com/AmusementClub/vs-mlrt) and converted by tools/realesrgan_to_onnx.py."
+          notes="AI models for NOVA Studio's Enhance, gathered and pinned for setup/Get-EnhanceModels.ps1. Real-ESRGAN general, x4plus and x4plus anime 6B (BSD-3-Clause, https://github.com/xinntao/Real-ESRGAN), Real-CUGAN (MIT, https://github.com/bilibili/ailab), DPIR (MIT, https://github.com/cszn/DPIR); ONNX files from vs-mlrt (https://github.com/AmusementClub/vs-mlrt) and converted by tools/realesrgan_to_onnx.py."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" *.onnx SHA256SUMS --clobber
           else
