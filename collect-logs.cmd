@@ -9,6 +9,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "foreach ($f in 'tuning.json','tune.log','benchmark.log','setup.log','setup-tensorrt.log','setup-studio.log','setup-enhance.log','animate.log','versions.json') { $p = Join-Path 'runtime' $f; if (Test-Path $p) { Copy-Item $p $tmp } };" ^
   "$ex = Join-Path $app 'exports'; if (Test-Path $ex) { Get-ChildItem $ex -Filter 'export-*.log' | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | Copy-Item -Destination $tmp };" ^
   "if (Test-Path 'runtime\trt-engines\background-build.log') { Copy-Item 'runtime\trt-engines\background-build.log' $tmp };" ^
+  "if (Test-Path 'runtime\prepare-models.log') { Copy-Item 'runtime\prepare-models.log' $tmp };" ^
+  "Get-ChildItem $env:TEMP -Filter 'trtexec_*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | Copy-Item -Destination $tmp;" ^
+  "if (Test-Path 'runtime\mpv\vs-plugins\models') { Get-ChildItem 'runtime\mpv\vs-plugins\models' -Recurse -Filter '*.engine' | Select-Object Directory, Name, Length, LastWriteTime | Format-Table -AutoSize | Out-String -Width 400 | Out-File (Join-Path $tmp 'enhance-engines.txt') };" ^
   "if (Test-Path 'runtime\trt-engines') { Get-ChildItem 'runtime\trt-engines' | Select-Object Name, Length, LastWriteTime | Out-File (Join-Path $tmp 'trt-engines.txt') };" ^
   "if (Test-Path 'runtime\mpv\vs-plugins\models\rife') { Get-ChildItem 'runtime\mpv\vs-plugins\models\rife' | Select-Object Name, Length | Out-File (Join-Path $tmp 'models.txt') };" ^
   "& { Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion, AdapterRAM; Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores; (Get-CimInstance Win32_Battery | Select-Object BatteryStatus, EstimatedChargeRemaining); git log --oneline -3 } | Out-File (Join-Path $tmp 'system.txt');" ^

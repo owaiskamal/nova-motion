@@ -208,8 +208,10 @@ internal static class EnhanceTests
         var job = new JobInfo("Preparing AI models for this graphics card", "realesr-general-x4v3", 2, 4, t0, 180);
         check(Math.Abs(job.Fraction(t0.AddSeconds(60)) - (1 + 60.0 / 180) / 4) < 1e-9, "progress: steps done plus the current one by time");
         check(job.Fraction(t0.AddSeconds(900)) < 0.5, "progress: an overrunning step stays short of done");
+        check(job.Fraction(t0.AddSeconds(600)) > job.Fraction(t0.AddSeconds(300)) && job.Fraction(t0.AddSeconds(300)) > job.Fraction(t0.AddSeconds(170)),
+              "progress: an overrunning step keeps moving instead of stopping at 97%");
         check(job.Status(t0.AddSeconds(60)) == "2 of 4 · realesr-general-x4v3 · about 8 min left", $"progress: says where it is ({job.Status(t0.AddSeconds(60))})");
-        check(job.Status(t0.AddSeconds(400)).Contains("taking longer than usual"), "progress: honest when it overruns");
+        check(job.Status(t0.AddSeconds(400)).Contains("taking longer than usual") && job.Status(t0.AddSeconds(400)).Contains("7 min so far"), "progress: honest when it overruns");
         var jobNow = t0.AddSeconds(30);
         var jobList = new List<JobInfo> { job };
         var jvm = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "s4")), rt, () => new FakeBackend(), () => jobNow, exporter)

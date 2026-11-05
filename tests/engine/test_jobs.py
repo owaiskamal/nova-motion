@@ -47,6 +47,9 @@ except RuntimeError:
     pass
 check(os.listdir(jobs.JOBS_DIR) == [] and jobs.expected_seconds("enhance:c.onnx") != 0.0, "a failed build removes its job and records nothing")
 
+check(jobs.weight("enhance:up2x-latest-denoise3x.onnx") == 3 and jobs.expected_seconds("enhance:up2x-latest-no-denoise.onnx") > jobs.expected_seconds("enhance:new.onnx"),
+      "Real-CUGAN expects a longer build than the compact models")
+
 print()
 print("ALL PASSED" if not fails else f"{fails} FAILED")
 sys.exit(1 if fails else 0)

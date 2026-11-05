@@ -25,13 +25,27 @@ ALL = ["enhance/realesr-general-mid-x4v3", "cugan/up2x-latest-conservative",
        "cugan/pro-conservative-up2x", "cugan/pro-no-denoise3x-up2x", "cugan/pro-denoise3x-up2x", "dpir"]
 
 
+LOG = os.path.join(HERE, "prepare-models.log")
+
+
+def say(line):
+    """To the console and to runtime/prepare-models.log (collect-logs.cmd sends it): PowerShell's
+    transcript of setup-enhance doesn't record what this script prints."""
+    print(line, flush=True)
+    try:
+        with open(LOG, "a", encoding="utf-8") as f:
+            f.write(time.strftime("%Y-%m-%d %H:%M:%S ") + line.strip() + "\n")
+    except OSError:
+        pass
+
+
 def main(argv):
     import vapoursynth as vs
     import vsmlrt
     import enhance
     core = vs.core
     if not hasattr(core, "trt"):
-        print("No TensorRT on this PC: the models run on Vulkan, which needs no preparing.")
+        say("No TensorRT on this PC: the models run on Vulkan, which needs no preparing.")
         return 0
     import jobs
     names = [n for n in argv[1:] if n != "all"] or ALL
@@ -42,15 +56,15 @@ def main(argv):
 
     names = [n for n in names if os.path.isfile(path_of(n))]     # installed ones (Real-CUGAN Pro may not be)
     total = sum(jobs.expected_seconds(f"enhance:{os.path.basename(path_of(n))}", "entry") for n in names)
-    print(f"    {len(names)} models; about {total / 60:.0f} minutes on a GTX 16 card the first time, much less after"
-          " (a model that's ready takes seconds). A line appears every 30 s while one is being prepared.", flush=True)
+    say(f"    {len(names)} models; about {total / 60:.0f} minutes on a GTX 16 card the first time, much less after"
+        " (a model that's ready takes seconds). A line appears every 30 s while one is being prepared.")
     failed = 0
     for i, name in enumerate(names, 1):
         path = path_of(name)
         t0 = time.time()
-        print(f"    [{i}/{len(names)}] preparing {os.path.basename(path)} ...", flush=True)
+        say(f"    [{i}/{len(names)}] preparing {os.path.basename(path)} ...")
         job = jobs.Job("Preparing AI models for this graphics card", os.path.basename(path)[:-5], step=i, steps=len(names),
-                       key=f"enhance:{os.path.basename(path)}", gpu_class="entry", say=lambda m: print(m, flush=True))
+                       key=f"enhance:{os.path.basename(path)}", gpu_class="entry", say=say)
         try:
             with job:
               backend = enhance.backend({}, *enhance.TILE)
@@ -63,10 +77,10 @@ def main(argv):
                   frame = core.std.BlankClip(width=enhance.TILE[0], height=enhance.TILE[1], format=vs.RGBH, length=1)
                   out = vsmlrt.inference(frame, path, overlap=(0, 0), tilesize=enhance.TILE, backend=backend)
               out.get_frame(0)
-            print(f"    ready  {os.path.basename(path)} ({time.time() - t0:.0f} s)", flush=True)
+            say(f"    ready  {os.path.basename(path)} ({time.time() - t0:.0f} s)")
         except Exception as e:          # noqa: BLE001 - the export prepares it later instead
             failed += 1
-            print(f"    failed {os.path.basename(path)}: {type(e).__name__}: {e}", flush=True)
+            say(f"    failed {os.path.basename(path)}: {type(e).__name__}: {e}")
     return 1 if failed else 0
 
 

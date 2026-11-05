@@ -12,7 +12,10 @@ public sealed record JobInfo(string Title, string Detail, int Step, int Steps, D
     /// held below its end until it really finishes.</summary>
     public double Fraction(DateTime now)
     {
-        var part = ExpectedSeconds > 0 ? Math.Min((now - Started).TotalSeconds / ExpectedSeconds, 0.97) : 0.5;
+        // Past 90% of the expected time it keeps creeping towards the end instead of stopping, so a
+        // build that overruns its estimate still looks alive
+        var r = ExpectedSeconds > 0 ? (now - Started).TotalSeconds / ExpectedSeconds : 0.5;
+        var part = r <= 0.9 ? r : 0.9 + 0.095 * (1 - Math.Exp(-(r - 0.9) / 1.5));
         return Math.Clamp((Step - 1 + Math.Max(part, 0)) / Math.Max(Steps, 1), 0, 1);
     }
 
@@ -22,7 +25,7 @@ public sealed record JobInfo(string Title, string Detail, int Step, int Steps, D
         var spent = (now - Started).TotalSeconds;
         var left = Math.Max(ExpectedSeconds - spent, 0) + Math.Max(Steps - Step, 0) * ExpectedSeconds;
         var step = Steps > 1 ? $"{Step} of {Steps} · " : "";
-        var time = spent > ExpectedSeconds * 1.2 ? "taking longer than usual on this card, still working"
+        var time = spent > ExpectedSeconds * 1.2 ? $"taking longer than usual on this card ({Math.Round(spent / 60)} min so far), still working"
                  : left >= 90 ? $"about {Math.Round(left / 60)} min left"
                  : left >= 20 ? "about a minute left" : "nearly done";
         return $"{step}{Detail} · {time}";

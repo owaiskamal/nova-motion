@@ -30,14 +30,26 @@ def _load_times():
         return {}
 
 
+def weight(key):
+    """How long a network takes to prepare next to a compact one (Real-ESRGAN v3, RIFE): Real-CUGAN is
+    a full U-Net and took over 10 minutes on a GTX 1650 where the compact models take 3-6."""
+    k = key.lower()
+    if "cugan" in k or "up2x" in k or "pro-" in k:
+        return 3.0
+    if "drunet" in k or "dpir" in k:
+        return 2.0
+    return 1.0
+
+
 def expected_seconds(key, gpu_class=None):
     times = _load_times()
     if isinstance(times.get(key), (int, float)):
         return float(times[key])
-    known = sorted(v for v in times.values() if isinstance(v, (int, float)))
+    # The typical build on this PC, scaled to this network
+    known = sorted(v / weight(k) for k, v in times.items() if isinstance(v, (int, float)))
     if known:
-        return known[len(known) // 2]
-    return FIRST_GUESS.get(gpu_class or "", 60.0)
+        return known[len(known) // 2] * weight(key)
+    return FIRST_GUESS.get(gpu_class or "", 60.0) * weight(key)
 
 
 def record_seconds(key, seconds):
