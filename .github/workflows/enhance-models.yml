@@ -1,0 +1,90 @@
+# Gathers the AI models Enhance uses into one release of this repository ("enhance-models-v1"), so
+# setup downloads a few small pinned files instead of vs-mlrt's 800 MB model archive. Every model's
+# licence allows commercial use; THIRD_PARTY_NOTICES.md lists them.
+#   - Real-ESRGAN realesr-general-x4v3 and -wdn-x4v3 (BSD-3-Clause), converted to ONNX here by
+#     tools/realesrgan_to_onnx.py, plus the half-and-half blend Real-ESRGAN uses by default
+#   - Real-CUGAN up2x (MIT), Real-ESRGAN AnimeVideo v3 (BSD-3-Clause), DPIR deblocking (MIT), as ONNX
+#     from vs-mlrt's model releases
+name: Enhance models
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release to create or update
+        default: enhance-models-v1
+
+permissions:
+  contents: write
+
+jobs:
+  models:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ github.event.inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy==2.2.6 onnx==1.18.0 onnxruntime==1.22.0 && sudo apt-get install -y p7zip-full >/dev/null
+
+      - name: Real-ESRGAN general models, converted to ONNX
+        run: |
+          set -e
+          mkdir -p out pth
+          base=https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0
+          curl -sSLf -o pth/x4v3.pth $base/realesr-general-x4v3.pth
+          curl -sSLf -o pth/wdn.pth $base/realesr-general-wdn-x4v3.pth
+          echo "8dc7edb9ac80ccdc30c3a5dca6616509367f05fbc184ad95b731f05bece96292  pth/x4v3.pth" | sha256sum -c
+          echo "1641f8c4464b9f097c9fdda5589273713f67cf59f3d909e0bd688f0cee269dca  pth/wdn.pth" | sha256sum -c
+          python tools/realesrgan_to_onnx.py pth/x4v3.pth out/realesr-general-x4v3.onnx
+          python tools/realesrgan_to_onnx.py pth/wdn.pth out/realesr-general-wdn-x4v3.onnx
+          python tools/realesrgan_to_onnx.py pth/x4v3.pth out/realesr-general-mid-x4v3.onnx --blend pth/wdn.pth 0.5
+
+      - name: Anime and clean-up models from vs-mlrt's model releases
+        run: |
+          set -e
+          want="up2x-latest-conservative.onnx up2x-latest-no-denoise.onnx up2x-latest-denoise3x.onnx realesr-animevideov3.onnx drunet_deblocking_color.onnx"
+          mkdir -p x
+          for tag in model-20211209 model-20220923; do
+            for url in $(gh api repos/AmusementClub/vs-mlrt/releases/tags/$tag -q '.assets[] | select(.name|test("(?i)cugan|realesrgan|dpir")) | .browser_download_url'); do
+              echo "download $url"
+              curl -sSLf -o dl.7z "$url"
+              7z x -y -ox dl.7z >/dev/null
+              rm dl.7z
+            done
+          done
+          for f in $want; do
+            hit=$(find x -name "$f" | head -1)
+            if [ -z "$hit" ]; then echo "::error::$f not found in vs-mlrt's model releases"; find x -name '*.onnx' | head -50; exit 1; fi
+            cp "$hit" out/
+          done
+
+      - name: Check every model runs
+        run: |
+          python - <<'EOF'
+          import glob, numpy as np, onnxruntime as ort
+          for f in sorted(glob.glob("out/*.onnx")):
+              s = ort.InferenceSession(f, providers=["CPUExecutionProvider"])
+              ins = s.get_inputs()
+              feed = {i.name: np.random.rand(1, 3, 64, 64).astype(np.float32) for i in ins[:1]}
+              if len(ins) > 1:      # DPIR: a second input, the strength map
+                  feed[ins[1].name] = np.full((1, 1, 64, 64), 5 / 255, np.float32)
+              y = s.run(None, feed)[0]
+              print(f, [i.name for i in ins], y.shape)
+          EOF
+
+      - name: Publish
+        run: |
+          set -e
+          cd out
+          sha256sum *.onnx | tee SHA256SUMS
+          while read -r sum name; do echo "::notice title=$name::$sum"; done < SHA256SUMS
+          notes="AI models for NOVA Studio's Enhance, gathered and pinned for setup/Get-EnhanceModels.ps1. Real-ESRGAN (BSD-3-Clause, https://github.com/xinntao/Real-ESRGAN), Real-CUGAN (MIT, https://github.com/bilibili/ailab), DPIR (MIT, https://github.com/cszn/DPIR); ONNX files from vs-mlrt (https://github.com/AmusementClub/vs-mlrt) and converted by tools/realesrgan_to_onnx.py."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" *.onnx SHA256SUMS --clobber
+          else
+            gh release create "$TAG" *.onnx SHA256SUMS --target "$GITHUB_SHA" --title "Enhance models ($TAG)" --notes "$notes" --prerelease
+          fi
