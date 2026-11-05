@@ -75,13 +75,14 @@ def fake_vsmlrt(with_pro=True):
         return (-(-width // tiles) + overlap_w, -(-height // tiles) + overlap_h), (overlap_w, overlap_h)
 
     def inference(clip, path, overlap=(0, 0), tilesize=None, backend=None):
+        assert tilesize is None or (tilesize[0] <= clip.width and tilesize[1] <= clip.height), "tile bigger than the picture"
         name = os.path.basename(path)
         scale = 4 if ("x4" in name or "animevideov3" in name) else 2
         calls.append(("inference", name, clip.format.name, tilesize, type(backend).__name__))
         assert clip.format.color_family == vs.RGB and clip.format.sample_type == vs.FLOAT
         return core.resize.Point(clip, clip.width * scale, clip.height * scale)
 
-    def DPIR(clip, strength, model, tiles=None, backend=None):
+    def DPIR(clip, strength, model, tiles=None, tilesize=None, overlap=None, backend=None):
         calls.append(("dpir", clip.width, clip.height))
         assert clip.width % 8 == 0 and clip.height % 8 == 0, "DPIR needs multiples of 8"
         return clip
@@ -185,10 +186,17 @@ o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"pr
 check(any(c[0] == "inference" and c[2] == "RGBS" for c in calls), "Vulkan (ncnn): full floats")
 
 calls.clear()
-o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "gpu_class": "entry", "enhance": {"preset": "film", "height": 2160}},
+o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 2160}},
         w=1920, h=1080)
 tiled = [c for c in calls if c[0] == "inference"]
-check(tiled and tiled[0][3] == (976, 556), f"GTX 16 cards: 2 x 2 tiles with overlap ({tiled[:1]})")
+check(tiled and tiled[0][3] == (640, 384), f"every video: one fixed tile size, so one engine per model ({tiled[:1]})")
+calls.clear()
+o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 1080}},
+        w=480, h=270)
+small = [c for c in calls if c[0] == "inference"]
+check(small and small[0][3] == (480, 270), f"a picture smaller than a tile: the whole picture ({small[:1]})")
+check(enhance.tiles(1920, 1080) == ((640, 384), (16, 16)) and enhance.tiles(640, 1080) == ((640, 384), (0, 16)),
+      "tiles overlap only where the picture is split")
 
 # Live playback never runs Enhance
 os.environ["NOVAMOTION_ENGINE_CONFIG"] = os.path.join(tempfile.mkdtemp(), "e.json")

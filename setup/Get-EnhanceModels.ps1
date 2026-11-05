@@ -16,7 +16,7 @@
     powershell -ExecutionPolicy Bypass -File setup\Get-EnhanceModels.ps1 [-Force]
 #>
 [CmdletBinding()]
-param([switch]$Force, [string]$Tag = "enhance-models-v1")
+param([switch]$Force, [string]$Tag = "enhance-models-v1", [switch]$NoPrepare)
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference    = "SilentlyContinue"
@@ -127,6 +127,14 @@ if (-not $hasScript -or (-not $hasTrt -and -not $hasNcnn)) {
     Info "runs on $(if ($hasTrt) { 'TensorRT' } else { 'Vulkan (vsncnn)' })"
 }
 Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\enhance_build.py") $Runtime -Force
+
+# TensorRT prepares each model for this graphics card once. Done here, so the first export doesn't wait
+if ((Test-Path (Join-Path $Plugins "vstrt.dll")) -and -not $NoPrepare) {
+    Step "Preparing the two everyday models for this graphics card (a few minutes, once)"
+    & (Join-Path $MpvDir "python.exe") (Join-Path $Runtime "enhance_build.py")
+    if ($LASTEXITCODE -ne 0) { Write-Warning "Not all models were prepared; the first export with them prepares them instead." }
+}
 
 Remove-Item $Cache -Recurse -Force -ErrorAction SilentlyContinue
 Write-Host ""

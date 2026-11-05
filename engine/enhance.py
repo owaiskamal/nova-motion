@@ -91,10 +91,20 @@ def backend(cfg, width, height):
     raise vs.Error("Enhance needs the AI models' runtime: run setup-enhance.cmd")
 
 
-def tiles_for(cfg, width, height):
-    """Graphics cards with little memory work on the picture in 2 x 2 tiles."""
-    small = (cfg.get("gpu_class") or "") in ("entry", "integrated")
-    return 2 if small and width * height > 1280 * 720 else None
+# Every model works on tiles of one fixed size, overlapping by 16 pixels, whatever the video's size.
+# TensorRT builds an engine per input size, and a 1080p frame took 17 minutes to build on a GTX 1650;
+# a fixed tile means one engine per model for every video, quick to build and made during setup.
+TILE = (640, 384)
+OVERLAP = 16
+
+
+def tiles(width, height, multiple=8):
+    """(tile size, overlap) for a picture: the fixed tile, or the whole picture when it's smaller."""
+    if width <= TILE[0] and height <= TILE[1]:
+        return (width, height), (0, 0)
+    tw = min(TILE[0], width - width % multiple)
+    th = min(TILE[1], height - height % multiple)
+    return (tw, th), (OVERLAP if tw < width else 0, OVERLAP if th < height else 0)
 
 
 def _rgb(clip, sample_bits, matrix):
@@ -111,8 +121,9 @@ def fix_compression(clip, cfg, matrix, strength=20.0):
     pad_w, pad_h = (-clip.width) % 8, (-clip.height) % 8          # DPIR works on multiples of 8
     if pad_w or pad_h:
         rgb = core.std.AddBorders(rgb, right=pad_w, bottom=pad_h)
+    size, overlap = tiles(rgb.width, rgb.height)
     out = vsmlrt.DPIR(rgb, strength=strength, model=vsmlrt.DPIRModel.drunet_deblocking_color,
-                      tiles=tiles_for(cfg, clip.width, clip.height), backend=be)
+                      tilesize=size, overlap=overlap, backend=be)
     if pad_w or pad_h:
         out = core.std.Crop(out, right=pad_w, bottom=pad_h)
     return core.resize.Bicubic(out, format=clip.format.id, matrix_s=matrix, dither_type="error_diffusion")
@@ -129,10 +140,8 @@ def upscale(clip, cfg, e, matrix):
     be = backend(cfg, clip.width, clip.height)
     bits = 16 if isinstance(be, vsmlrt.Backend.TRT) else 32
     rgb = _rgb(clip, bits, matrix)
-    # Whole frames, or 2 x 2 tiles overlapping by 16 pixels on cards with little memory
-    (tw, th), (ow, oh) = vsmlrt.calc_tilesize(tiles=tiles_for(cfg, clip.width, clip.height), tilesize=None,
-                                              width=clip.width, height=clip.height, multiple=2, overlap_w=16, overlap_h=16)
-    big = vsmlrt.inference(rgb, path, overlap=(ow, oh), tilesize=(tw, th), backend=be)
+    size, overlap = tiles(clip.width, clip.height)
+    big = vsmlrt.inference(rgb, path, overlap=overlap, tilesize=size, backend=be)
     if (big.width, big.height) != (out_w, out_h):
         # Downscaling the model's output: Spline36 keeps the detail it made without ringing
         big = core.resize.Spline36(big, out_w, out_h)

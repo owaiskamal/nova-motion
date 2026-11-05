@@ -32,6 +32,9 @@ internal static class EnhanceTests
         string Args(ExportOptions x) => string.Join(" ", ExportPlan.MpvArguments(rt, "in.mp4", "out.mp4", "pipe", "log", x));
         check(Args(new ExportOptions { Comparison = true }).Contains("min(720,ih)"), "before/after without enhance: 720p to share");
         check(!Args(new ExportOptions { Comparison = true, Enhance = film }).Contains("min(720,ih)"), "before/after with enhance: full-size crop, not shrunk");
+        check(ExportPlan.Waiting(0, TimeSpan.FromMinutes(2), o)?.Contains("Preparing the AI models") == true
+              && ExportPlan.Waiting(0, TimeSpan.FromSeconds(10), o) is null && ExportPlan.Waiting(0.2, TimeSpan.FromMinutes(5), o) is null,
+              "export: a long wait before the first frame says the models are being prepared");
         check(EnhanceCatalog.Describe(film) == "Film & live action · 4K · strong clean-up", $"enhance: described ({EnhanceCatalog.Describe(film)})");
 
         // ---- setup detection

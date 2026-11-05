@@ -189,7 +189,8 @@ public sealed partial class MainViewModel
                 {
                     if (item.Status != ExportStatus.Running) return;
                     item.Progress = p;
-                    if (item.StartedAt is { } s) item.Detail = ExportPlan.Remaining(p, _clock() - s);
+                    if (item.StartedAt is { } s)
+                        item.Detail = ExportPlan.Waiting(p, _clock() - s, item.Options) ?? ExportPlan.Remaining(p, _clock() - s);
                 }));
                 string? error;
                 try { error = await _exporter.RunAsync(item.Input, item.Output, engine, item.Options, progress, item.Cancel.Token); }

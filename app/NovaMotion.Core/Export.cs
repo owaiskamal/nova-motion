@@ -208,6 +208,13 @@ public static class ExportPlan
         return args;
     }
 
+    /// <summary>What an export that hasn't made a frame yet is waiting for, after a while: TensorRT
+    /// preparing a model for this graphics card (once per model; minutes on GTX-class cards).</summary>
+    public static string? Waiting(double fraction, TimeSpan elapsed, ExportOptions o) =>
+        fraction > 0.001 || elapsed < TimeSpan.FromSeconds(40) ? null
+        : o.Enhancing ? "Preparing the AI models for this graphics card. This happens once per model and can take several minutes."
+        : "Preparing the AI engine for this video size (once).";
+
     /// <summary>"12:04 left" style text from progress so far.</summary>
     public static string Remaining(double fraction, TimeSpan elapsed)
     {
@@ -277,6 +284,7 @@ public sealed class ExportRunner : IExportRunner
                     var span = options.LengthSeconds ?? (duration - from);
                     if (duration > 0 && span > 0 && await mpv.CommandAsync("get_property", "time-pos") is JsonValue t && t.TryGetValue(out double tv))
                         progress.Report(Math.Clamp((tv - from) / span, 0, 1));
+                    else progress.Report(0);     // still starting: the app can say what it's waiting for
                 }
                 catch (Exception ex) when (ex is MpvException or TimeoutException or InvalidOperationException or IOException) { }
                 await Task.WhenAny(exited.Task, Task.Delay(500, ct));
