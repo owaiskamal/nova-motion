@@ -19,6 +19,8 @@ $Root    = Split-Path -Parent $PSScriptRoot
 $Runtime = Join-Path $Root "runtime"
 $MpvDir  = Join-Path $Runtime "mpv"
 $VSPipe  = Join-Path $MpvDir "VSPipe.exe"
+# Setup builds TensorRT engines on purpose; playback never does (it builds them in the background)
+$env:NOVAMOTION_BUILD_ENGINES = "1"
 $Work    = Join-Path $Runtime ".cache\bench"
 $LogFile = Join-Path $Runtime "benchmark.log"
 New-Item -ItemType Directory -Force -Path $Work | Out-Null

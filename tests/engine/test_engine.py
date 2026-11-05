@@ -195,6 +195,8 @@ _sys.path.insert(0, eng_dir)
 import novamotion_trt
 novamotion_trt.available = lambda: True
 novamotion_trt.ENGINE_DIR = tempfile.mkdtemp()
+# These tests build engines as setup's prebuild does; playback never builds (tested further down)
+os.environ["NOVAMOTION_BUILD_ENGINES"] = "1"
 
 calls.clear()
 o = run({"engine": "rife_trt", "target": "display", "trt_model": "rife-v4.22_lite"}, frames=10)
@@ -231,6 +233,44 @@ t0 = _time.perf_counter()
 o = run({"engine": "rife_trt", "target": "display"}, fps=25.0, display=60, frames=500_000_000)
 dt = _time.perf_counter() - t0
 check(dt < 5 and o.fps.numerator == 60, f"trt: unbounded mpv-style clip (500M frames) sets up in {dt:.2f}s")
+
+# --- Playback never builds a TensorRT engine: a bigger built one with padding, else MVTools while
+# the engine is built in the background
+del os.environ["NOVAMOTION_BUILD_ENGINES"]
+saved_dir, saved_start = novamotion_trt.ENGINE_DIR, novamotion_trt.start_background_build
+novamotion_trt.ENGINE_DIR = tempfile.mkdtemp()
+builds = []
+novamotion_trt.start_background_build = lambda model, w, h, gpu=0, streams=None: builds.append((model, w, h)) or True
+state_path = os.path.join(tempfile.mkdtemp(), "engine-state.json")
+os.environ["NOVAMOTION_ENGINE_STATE"] = state_path
+calls.clear()
+o = run({"engine": "rife_trt", "target": "display", "trt_model": "rife-v4.6", "ai_scale": 0.5, "gpu_class": "entry"},
+        w=960, h=720, frames=10)
+st = json.load(open(state_path))
+check(not [c for c in calls if c[0] == "merge"] and o.fps.numerator == 60 and (o.width, o.height) == (960, 720),
+      f"playback: no engine built for this size -> MVTools at once, no build in the player ({o.fps})")
+check(builds == [("v4_6", 512, 384)] and st.get("model") == "mvtools" and st.get("preparing", {}).get("width") == 512,
+      f"playback: the engine is built in the background and the app is told ({builds}, {st})")
+novamotion_trt.record_engine(640, 384, "v4_6")            # a 16:9 half-size engine built earlier
+calls.clear()
+builds.clear()
+o = run({"engine": "rife_trt", "target": "display", "trt_model": "rife-v4.6", "ai_scale": 0.5, "gpu_class": "entry"},
+        w=960, h=720, frames=10)
+m = [c for c in calls if c[0] == "merge"]
+check(m and m[0][1:3] == (640, 384) and (o.width, o.height) == (960, 720),
+      f"playback: a 4:3 video uses the built 16:9 engine, padded to its size ({m[:1]})")
+check(builds == [("v4_6", 512, 384)], f"playback: its own engine is still built in the background for next time ({builds})")
+novamotion_trt.record_engine(512, 384, "v4_6")
+calls.clear()
+builds.clear()
+o = run({"engine": "rife_trt", "target": "display", "trt_model": "rife-v4.6", "ai_scale": 0.5, "gpu_class": "entry"},
+        w=960, h=720, frames=10)
+m = [c for c in calls if c[0] == "merge"]
+check(m and m[0][1:3] == (512, 384) and not builds, f"playback: its exact engine once built ({m[:1]}, {builds})")
+check(novamotion_trt.fitting_engine("v4_6", 1900, 1060) is None, "playback: an engine much bigger or smaller never stands in")
+os.environ["NOVAMOTION_BUILD_ENGINES"] = "1"
+novamotion_trt.ENGINE_DIR, novamotion_trt.start_background_build = saved_dir, saved_start
+del os.environ["NOVAMOTION_ENGINE_STATE"]
 
 # Phase maths: 25 -> 60 is 12 out per 5 in; frames 0, 12, 24 land exactly on source frames
 r = novamotion_trt.Fraction(60) / novamotion_trt.Fraction(25)

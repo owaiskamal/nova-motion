@@ -21,6 +21,8 @@ $Root    = Split-Path -Parent $PSScriptRoot
 $Runtime = Join-Path $Root "runtime"
 $MpvDir  = Join-Path $Runtime "mpv"
 $VSPipe  = Join-Path $MpvDir "VSPipe.exe"
+# Setup builds TensorRT engines on purpose; playback never does (it builds them in the background)
+$env:NOVAMOTION_BUILD_ENGINES = "1"
 $OnnxDir = Join-Path $MpvDir "vs-plugins\models\rife"
 $Work    = Join-Path $Runtime ".cache\engines"
 $Known   = @{ "720p" = @(1280, 720); "1080p" = @(1920, 1080); "1440p" = @(2560, 1440); "4K" = @(3840, 2160); "2160p" = @(3840, 2160) }
@@ -29,6 +31,7 @@ if (-not (Test-Path $VSPipe)) { throw "Run build.cmd first (VSPipe.exe not found
 if (-not (Test-Path (Join-Path $MpvDir "vs-plugins\vstrt.dll"))) { throw "TensorRT is not installed. Run setup-tensorrt.cmd first." }
 New-Item -ItemType Directory -Force -Path $Work | Out-Null
 Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\novamotion_build.py") $Runtime -Force
 
 $failed = 0
 foreach ($size in $Sizes) {

@@ -30,6 +30,7 @@ if (-not (Test-Path $VSPipe)) { throw "Run build.cmd first (VSPipe.exe not found
 New-Item -ItemType Directory -Force -Path $Work | Out-Null
 Copy-Item (Join-Path $Root "engine\novamotion.vpy") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\novamotion_build.py") $Runtime -Force
 Start-Transcript -Path $LogFile -Force | Out-Null
 
 $gpus = @((Get-CimInstance Win32_VideoController).Name)

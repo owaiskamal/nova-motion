@@ -272,6 +272,81 @@ def engine_ready(model, width, height):
     return model in (entry.get("models") or [entry.get("model")])
 
 
+class EngineNotBuilt(Exception):
+    """No TensorRT engine fits this video yet. One is being built in the background; meanwhile the
+    player smooths with MVTools instead of freezing for the minutes a build takes."""
+
+    def __init__(self, model, width, height):
+        super().__init__(f"no TensorRT engine for {model} at {width}x{height} yet; building it in the background")
+        self.model, self.width, self.height = model, width, height
+
+
+def built_engines():
+    """{(width, height): [models]} for every engine built on this PC (padded sizes)."""
+    path = os.path.join(ENGINE_DIR, "novamotion-engines.json")
+    try:
+        data = json.load(open(path, encoding="utf-8-sig")) if os.path.isfile(path) else {}
+    except (OSError, ValueError):
+        return {}
+    out = {}
+    for key, entry in data.items():
+        m = re.fullmatch(r"(\d+)x(\d+)", key)
+        if m and isinstance(entry, dict):
+            out[(int(m.group(1)), int(m.group(2)))] = list(entry.get("models") or [entry.get("model")])
+    return out
+
+
+# A built engine somewhat bigger than the picture works too: the picture is padded to its size.
+# Up to this much more area, it costs less than a frozen player or a lighter engine would.
+FIT_GROWTH = 1.6
+
+
+def fitting_engine(model, width, height, engines=None):
+    """(W, H) of a built engine for this model the AI copy fits in, the smallest; None if none.
+    The exact padded size first, then a bigger one within FIT_GROWTH of its area."""
+    engines = built_engines() if engines is None else engines
+    pw, ph = width + (-width) % PAD, height + (-height) % PAD
+    if model in engines.get((pw, ph), []):
+        return pw, ph
+    fits = [(w, h) for (w, h), models in engines.items()
+            if model in models and w >= width and h >= height and w * h <= FIT_GROWTH * pw * ph]
+    return min(fits, key=lambda s: s[0] * s[1]) if fits else None
+
+
+def start_background_build(model, width, height, gpu=0, streams=None):
+    """Builds the engine for this model and padded size in a separate, low-priority process, once.
+    The player is told through the state file; the app switches over when it's done."""
+    import subprocess
+    os.makedirs(ENGINE_DIR, exist_ok=True)
+    lock = os.path.join(ENGINE_DIR, f"building-{model}-{width}x{height}.lock")
+    try:
+        if os.path.exists(lock) and time.time() - os.path.getmtime(lock) < 30 * 60:
+            return False                      # already on its way
+        with open(lock, "w", encoding="utf-8") as f:
+            f.write(str(os.getpid()))
+    except OSError:
+        return False
+    mpv_dir = os.path.join(HERE, "mpv")
+    python = os.path.join(mpv_dir, "python.exe") if os.name == "nt" else sys.executable
+    script = os.path.join(HERE, "novamotion_build.py")
+    if not (os.path.isfile(python) and os.path.isfile(script)):
+        return False
+    args = [python, script, model, str(width), str(height), str(int(gpu)), str(int(streams or 0)), lock]
+    flags = 0
+    if os.name == "nt":       # no window, below normal priority, not tied to the player
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | 0x00004000 | getattr(subprocess, "DETACHED_PROCESS", 0)
+    try:
+        subprocess.Popen(args, cwd=mpv_dir, creationflags=flags, close_fds=True,
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except OSError:
+        try:
+            os.remove(lock)
+        except OSError:
+            pass
+        return False
+
+
 def ai_size(width, height, scale):
     """The AI's copy size for a video size and AI scale (even numbers), as interpolate makes it."""
     if scale >= 1:
@@ -389,22 +464,54 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
     ratio = Fraction(dst) / Fraction(src)
     p, q = ratio.numerator, ratio.denominator
     from vsmlrt import RIFEModel
-    ready = lambda m, sc: engine_ready(getattr(RIFEModel, m).name, *ai_size(w, h, sc))
+    ready = lambda m, sc: fitting_engine(getattr(RIFEModel, m).name, *ai_size(w, h, sc)) is not None
     chosen, scale, why = choose_plan(model_name, w, h, src, dst, step, gpu_class=gpu_class, ai_scale=ai_scale, ready=ready)
     model = getattr(RIFEModel, chosen)
 
-    # The AI's copy: smaller when the card needs it (even sizes), padded to what the model takes
+    # The AI's copy: smaller when the card needs it (even sizes), padded to an engine that's built
     sw, sh = ai_size(w, h, scale)
+    engines = built_engines()
+    fit = fitting_engine(model.name, sw, sh, engines)
+    if fit is None and not os.environ.get("NOVAMOTION_BUILD_ENGINES"):
+        # Never build during playback: a build freezes the player for minutes. Another installed
+        # model or a smaller AI size with a built engine plays now; otherwise MVTools does, while
+        # this engine is built in the background.
+        for alt, sc in [(chosen, s2) for s2 in AI_SCALES if s2 < scale] + [(m2, s2) for s2 in AI_SCALES if s2 <= scale
+                                                                         for m2 in installed_models() if m2 != chosen]:
+            aw, ah = ai_size(w, h, sc)
+            f2 = fitting_engine(getattr(RIFEModel, alt).name, aw, ah, engines)
+            if f2:
+                _log(f"no engine for {chosen} at {sw}x{sh} yet: {alt} at {aw}x{ah} meanwhile", t0)
+                chosen, scale, model, sw, sh, fit = alt, sc, getattr(RIFEModel, alt), aw, ah, f2
+                why = f"{why}; the best option's engine is being prepared"
+                break
+        pw0, ph0 = sw + (-sw) % PAD, sh + (-sh) % PAD
+        best = getattr(RIFEModel, choose_plan(model_name, w, h, src, dst, 0, gpu_class=gpu_class, ai_scale=ai_scale)[0]).name
+        bw, bh = ai_size(w, h, choose_plan(model_name, w, h, src, dst, 0, gpu_class=gpu_class, ai_scale=ai_scale)[1])
+        bw, bh = bw + (-bw) % PAD, bh + (-bh) % PAD
+        started = start_background_build(best, bw, bh, gpu, streams)
+        _log(f"engine for {best} at {bw}x{bh} {'building in the background' if started else 'already building'}", t0)
+        if fit is None:
+            write_state(engine="rife_trt", model="mvtools", preparing=dict(model=best, width=bw, height=bh),
+                        why="the AI engine for this video size is being prepared", width=w, height=h,
+                        src=float(src), dst=float(dst))
+            raise EngineNotBuilt(best, bw, bh)
+    exact = (sw + (-sw) % PAD, sh + (-sh) % PAD)
+    if fit is None:                      # building on purpose (setup's prebuild): the exact size
+        fit = exact
+    elif fit != exact and not os.environ.get("NOVAMOTION_BUILD_ENGINES"):
+        # A bigger engine stands in, padded: fine now, and the exact one is built for next time
+        start_background_build(model.name, *exact, gpu, streams)
     # Whether a step down has anywhere to go: the player lowers the frame rate instead when not
     lighter = choose_plan(model_name, w, h, src, dst, step + 1, gpu_class=gpu_class, ai_scale=ai_scale,
                           ready=ready)[:2] != (chosen, scale)
-    building = not ready(chosen, scale)
+    building = (model.name not in engines.get(fit, []))
     state = dict(engine="rife_trt", model=chosen, scale=scale, ai_width=sw, ai_height=sh, why=why,
                  width=w, height=h, src=float(src), dst=float(dst), lighter=lighter)
     # The app reads "building" to tell a TensorRT build (minutes, player frozen) from a stuck player
     write_state(**state, building=building)
     small = core.resize.Bilinear(rgbh, sw, sh) if (sw, sh) != (w, h) else rgbh
-    pw, ph = (-sw) % PAD, (-sh) % PAD
+    pw, ph = fit[0] - sw, fit[1] - sh
     clip = core.std.AddBorders(small, right=pw, bottom=ph) if (pw or ph) else small
 
     # Output frame n sits at source position n*q/p: between frames floor(n*q/p) and the next,

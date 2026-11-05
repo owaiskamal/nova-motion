@@ -111,6 +111,36 @@ internal static class EnhanceTests
         backend.Event("end-file", "{\"reason\":\"error\",\"file_error\":\"unrecognized file format\"}");
         check(vm.ToastText.Contains("This video is not available"), $"site error: shown to the user ({vm.ToastText})");
 
+        // ---- a video size with no TensorRT engine yet: MVTools, then a switch once it's built
+        var now = new DateTime(2026, 11, 5, 9, 0, 0, DateTimeKind.Utc);
+        var store2 = new SettingsStore(Path.Combine(dir, "s3"));
+        var fb = new FakeBackend();
+        var pvm = new MainViewModel(host, store2, rt, () => fb, () => now, exporter);
+        foreach (var pr in pvm.Settings.Profiles) pr.Engine.Engine = "rife_trt";
+        pvm.TargetText = video;
+        pvm.PlayCommand.Execute(null);
+        await Task.Delay(30);
+        fb.Prop("idle-active", false);
+        fb.Event("file-loaded");
+        fb.Prop("container-fps", 24);
+        fb.Prop("display-fps", 60);
+        fb.Prop("video-params/w", 960);
+        fb.Prop("video-params/h", 720);
+        fb.Prop("vf", System.Text.Json.Nodes.JsonNode.Parse("[{\"label\":\"novamotion\",\"enabled\":true}]"));
+        fb.Prop("estimated-vf-fps", 59.9);
+        File.WriteAllText(store2.EngineStatePath, "{\"engine\":\"rife_trt\",\"model\":\"mvtools\",\"preparing\":{\"model\":\"v4_6\",\"width\":512,\"height\":384}}");
+        now = now.AddSeconds(5); pvm.Tick();
+        check(pvm.ModelText.Contains("being prepared") && fb.Applied is null, $"preparing: says so, keeps playing ({pvm.ModelText})");
+        Directory.CreateDirectory(Path.Combine(rt.Root, "trt-engines"));
+        File.WriteAllText(Path.Combine(rt.Root, "trt-engines", "novamotion-engines.json"), "{\"512x384\":{\"model\":\"v4_6\",\"models\":[\"v4_6\"]}}");
+        now = now.AddSeconds(5); pvm.Tick();
+        await Task.Delay(30);
+        check(fb.Applied is not null && pvm.ToastText.Contains("ready"), $"preparing: switches to the AI once built ({pvm.ToastText})");
+        fb.Applied = null;
+        now = now.AddSeconds(5); pvm.Tick();
+        await Task.Delay(30);
+        check(fb.Applied is null, "preparing: switches only once");
+
         // ---- not set up: offers setup, exports go ahead without AI enhance
         var bare = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "s2")), RuntimeLayout.Find(Path.GetTempPath()) ?? null, () => backend, () => DateTime.UtcNow, exporter);
         bare.SelectEnhancePresetCommand.Execute(bare.EnhancePresets.Single(p => p.Value == "film"));

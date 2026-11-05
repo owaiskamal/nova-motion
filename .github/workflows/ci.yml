@@ -78,6 +78,7 @@ jobs:
         run: |
           copy /y engine\novamotion.vpy runtime\
           copy /y engine\novamotion_trt.py runtime\
+          copy /y engine\novamotion_build.py runtime\
           copy /y engine\parallax.py runtime\
           copy /y engine\enhance.py runtime\
           xcopy /e /y /i /q engine\mpv runtime\mpv\portable_config

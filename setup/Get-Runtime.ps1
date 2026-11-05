@@ -226,6 +226,7 @@ New-Item -ItemType Directory -Force -Path $portable | Out-Null
 Copy-Item (Join-Path $Root "engine\mpv\*") $portable -Recurse -Force
 Copy-Item (Join-Path $Root "engine\novamotion.vpy") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\novamotion_build.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
 
 Step "Self-test"

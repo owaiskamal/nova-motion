@@ -607,7 +607,10 @@ def smoothed(clip, cfg, src):
         return clip, src
 
     # Fallback chain: TensorRT -> Vulkan RIFE -> MVTools, so playback always works
-    chain = {"rife_trt": [interpolate_rife_trt, interpolate_rife],
+    # On GTX 16 and integrated graphics, Vulkan RIFE is slower than the TensorRT it would stand in
+    # for and stutters; MVTools keeps up everywhere, so it is the stand-in there.
+    light_gpu = (cfg.get("gpu_class") or "") in ("entry", "integrated")
+    chain = {"rife_trt": [interpolate_rife_trt] + ([] if light_gpu else [interpolate_rife]),
              "rife": [interpolate_rife]}.get(cfg["engine"], [])
     smooth = None
     for engine in chain:
@@ -622,6 +625,8 @@ def smoothed(clip, cfg, src):
             dbg(f"{engine.__name__} unavailable: {type(e).__name__}: {e}")
             if os.environ.get("NOVAMOTION_NO_FALLBACK"):   # the benchmark measures one engine, not its stand-in
                 raise
+            if type(e).__name__ == "EngineNotBuilt":       # being built in the background: MVTools meanwhile
+                break
     if smooth is None:
         smooth = interpolate_mvtools(clip, cfg, src, dst)
     return smooth, dst

@@ -24,6 +24,8 @@ $Root    = Split-Path -Parent $PSScriptRoot
 $Runtime = Join-Path $Root "runtime"
 $MpvDir  = Join-Path $Runtime "mpv"
 $VSPipe  = Join-Path $MpvDir "VSPipe.exe"
+# Setup builds TensorRT engines on purpose; playback never does (it builds them in the background)
+$env:NOVAMOTION_BUILD_ENGINES = "1"
 $OnnxDir = Join-Path $MpvDir "vs-plugins\models\rife"
 $Work    = Join-Path $Runtime ".cache\tune"
 $LogFile = Join-Path $Runtime "tune.log"
@@ -38,6 +40,7 @@ if (-not (Test-Path (Join-Path $MpvDir "vs-plugins\vstrt.dll"))) {
 New-Item -ItemType Directory -Force -Path $Work | Out-Null
 Copy-Item (Join-Path $Root "engine\novamotion.vpy") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\novamotion_build.py") $Runtime -Force
 Start-Transcript -Path $LogFile -Force | Out-Null
 
 $gpu = ((Get-CimInstance Win32_VideoController).Name | Where-Object { $_ -match "NVIDIA" } | Select-Object -First 1)

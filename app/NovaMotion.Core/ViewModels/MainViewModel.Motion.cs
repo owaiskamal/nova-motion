@@ -614,6 +614,14 @@ public sealed partial class MainViewModel
             var json = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(_store.EngineStatePath));
             var model = TrackInfo.Str(json?["model"]);
             if (model is null || TrackInfo.Str(json?["engine"]) != Eng.Engine) { ModelText = ""; return; }
+            if (model == "mvtools" && json?["preparing"] is System.Text.Json.Nodes.JsonObject prep)
+            {
+                // The TensorRT engine for this video size is being built in the background
+                ModelText = "MVTools for now: the AI engine for this video size is being prepared (once, a few minutes). It switches by itself.";
+                ModelWhy = ""; Raise(nameof(ModelWhy));
+                SwitchWhenBuilt(TrackInfo.Str(prep["model"]), TrackInfo.Int(prep["width"]), TrackInfo.Int(prep["height"]));
+                return;
+            }
             if (model == "mvtools")
             {
                 ModelText = "MVTools for now: the AI can't keep up on this PC" + (HasTuning ? "" : " until it's tuned");
@@ -632,6 +640,28 @@ public sealed partial class MainViewModel
             Raise(nameof(ModelWhy));
         }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { }
+    }
+
+    private string? _switchedTo;
+
+    /// <summary>When the background build of an engine this video waits for is done, switches to it:
+    /// the engine is reloaded once, and from then on this size plays with the AI straight away.</summary>
+    private void SwitchWhenBuilt(string? model, int? width, int? height)
+    {
+        if (Runtime is null || model is null || width is not > 0 || height is not > 0) return;
+        var key = $"{width}x{height}";
+        if (_switchedTo == $"{_current}|{model}|{key}") return;
+        try
+        {
+            var path = Path.Combine(Runtime.Root, "trt-engines", "novamotion-engines.json");
+            if (!File.Exists(path)) return;
+            var models = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))?[key]?["models"] as System.Text.Json.Nodes.JsonArray;
+            if (models is null || !models.Any(m => TrackInfo.Str(m) == model)) return;
+        }
+        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { return; }
+        _switchedTo = $"{_current}|{model}|{key}";
+        ShowToast("The AI engine for this video size is ready: switching from MVTools to RIFE.");
+        _ = SaveAndApplyAsync();
     }
 
     // ------------------------------------------------------------------ tuning
