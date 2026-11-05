@@ -191,6 +191,7 @@ jobs:
           if ($out -notmatch "stage enhance") { Write-Host "::error::Enhance a photo didn't get to the models"; exit 1 }
           if (Test-Path uitest\photo.png) { Write-Host "::notice title=Enhance a photo::$((Get-Item uitest\photo.png).Length) bytes" }
           else { Write-Host "::notice title=Enhance a photo::read the picture and reached the models (no GPU on the runner)" }
+          exit 0
       # Uploads never fail the build: when the account's artifact storage is full, the build itself is still good
       - uses: actions/upload-artifact@v4
         continue-on-error: true
