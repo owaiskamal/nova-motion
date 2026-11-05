@@ -68,12 +68,16 @@ jobs:
           import glob, numpy as np, onnxruntime as ort
           for f in sorted(glob.glob("out/*.onnx")):
               s = ort.InferenceSession(f, providers=["CPUExecutionProvider"])
-              ins = s.get_inputs()
-              feed = {i.name: np.random.rand(1, 3, 64, 64).astype(np.float32) for i in ins[:1]}
-              if len(ins) > 1:      # DPIR: a second input, the strength map
-                  feed[ins[1].name] = np.full((1, 1, 64, 64), 5 / 255, np.float32)
+              feed = {}
+              for i in s.get_inputs():
+                  # Fixed sizes where the model has them; DPIR takes the picture and its strength as 4 channels
+                  shape = [d if isinstance(d, int) else (1 if k == 0 else 3 if k == 1 else 64) for k, d in enumerate(i.shape)]
+                  x = np.random.rand(*shape).astype(np.float32)
+                  if shape[1] == 4:
+                      x[:, 3] = 5 / 255
+                  feed[i.name] = x
               y = s.run(None, feed)[0]
-              print(f, [i.name for i in ins], y.shape)
+              print(f, [(i.name, i.shape) for i in s.get_inputs()], y.shape)
           EOF
 
       - name: Publish
