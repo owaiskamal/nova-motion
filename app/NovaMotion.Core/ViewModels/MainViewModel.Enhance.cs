@@ -64,8 +64,9 @@ public sealed partial class MainViewModel
                 _previewVideo = f[0];
                 Raise(nameof(PreviewVideoName));
             }
-            QueueExports(new[] { _previewVideo }, preview: false, still: true);
+            // Said first: the frame can be ready before this returns
             FramePreviewStatus = "Making a before/after frame" + (ExportStartText.Length > 0 ? $" at {ExportStartText}" : "") + "…";
+            QueueExports(new[] { _previewVideo }, preview: false, still: true);
         });
         ChangePreviewVideoCommand = new Command(() =>
         {

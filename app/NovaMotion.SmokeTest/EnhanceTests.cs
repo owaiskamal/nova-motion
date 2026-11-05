@@ -122,6 +122,7 @@ internal static class EnhanceTests
         check(run.Options.Still && run.Out.EndsWith(".png") && run.Out.StartsWith(vm.PreviewFolder), $"frame preview: queued as a still ({run.Out})");
         check(vm.HasFramePreview && vm.FramePreview == run.Out && vm.FramePreviewStatus.Contains("original on the left"),
               $"frame preview: shown on the page ({vm.FramePreviewStatus})");
+        File.WriteAllText(run.Out, "png");      // the fake export makes no file
         host.Opened.Clear();
         vm.OpenFramePreviewCommand.Execute(null);
         check(host.Opened.LastOrDefault() == run.Out, "frame preview: opens larger on click");
