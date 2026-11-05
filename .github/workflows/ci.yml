@@ -79,6 +79,7 @@ jobs:
           copy /y engine\novamotion.vpy runtime\
           copy /y engine\novamotion_trt.py runtime\
           copy /y engine\parallax.py runtime\
+          copy /y engine\enhance.py runtime\
           xcopy /e /y /i /q engine\mpv runtime\mpv\portable_config
 
       - name: Setup check (the summary build.cmd ends with)
@@ -207,6 +208,7 @@ jobs:
           python-version: "3.12"
       - run: pip install vapoursynth vapoursynth-mvtools
       - run: python tests/engine/test_engine.py engine/novamotion.vpy
+      - run: python tests/engine/test_enhance.py engine/novamotion.vpy
       - run: pip install numpy pillow onnxruntime onnx
       - run: python tests/engine/test_parallax.py
 

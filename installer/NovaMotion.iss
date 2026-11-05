@@ -57,6 +57,7 @@ Source: "..\benchmark.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\tune.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\get-models.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\setup-studio.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\setup-enhance.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\collect-logs.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\extension\*"; DestDir: "{app}\extension"; Flags: ignoreversion recursesubdirs
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
@@ -65,6 +66,7 @@ Source: "..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 [Icons]
 Name: "{group}\NOVA Studio"; Filename: "{app}\NovaMotion.exe"
 Name: "{group}\Add NVIDIA TensorRT engine"; Filename: "{app}\setup-tensorrt.cmd"; WorkingDir: "{app}"
+Name: "{group}\Add AI enhance models"; Filename: "{app}\setup-enhance.cmd"; WorkingDir: "{app}"
 Name: "{group}\Add Animate a picture (Generate)"; Filename: "{app}\setup-studio.cmd"; WorkingDir: "{app}"
 Name: "{group}\Tune for this PC"; Filename: "{app}\tune.cmd"; WorkingDir: "{app}"
 Name: "{group}\Collect logs for a bug report"; Filename: "{app}\collect-logs.cmd"; WorkingDir: "{app}"

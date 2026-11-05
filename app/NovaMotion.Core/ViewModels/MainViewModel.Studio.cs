@@ -24,6 +24,7 @@ public sealed partial class MainViewModel
         _systemGb = SystemMemory.SystemGb();
         RebuildGenerate();
         InitAnimate();
+        InitEnhance();
     }
 
     public Command SelectModuleCommand { get; private set; } = null!;
@@ -49,6 +50,7 @@ public sealed partial class MainViewModel
         IsExportOpen = module == StudioModule.Enhance;
         IsGenerateOpen = module == StudioModule.Generate;
         if (module == StudioModule.Generate) RefreshAnimate();
+        if (module == StudioModule.Enhance) RefreshEnhance();
         RaiseModule();
     }
 

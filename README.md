@@ -18,7 +18,7 @@
 - **Fits your graphics card.** A one-time tuning run measures each model on your PC and the engine uses the best one that keeps up. On cards like a GTX 1650 the AI works on a half-size copy and only its frames are scaled up, and 4K video is smoothed at 1080p (online video is fetched at 1080p at most while smoothing), which looks the same on a 1080p laptop screen at a quarter of the work.
 - **YouTube and 1,000+ sites.** Paste a link, or send the video you're watching from Chrome or Edge with the browser extension. It picks up where you stopped.
 - **Steady, never stuck.** If frames start dropping it switches to a lighter setting on its own instead of stuttering; **Play without smoothing** is always one click away.
-- **Enhance.** Save a smooth copy of any video that plays anywhere, or a labelled before/after clip to share.
+- **Enhance.** Save a smooth, sharper copy of any video: AI cleans and enlarges every frame up to 4K (Real-ESRGAN for film and live action, Real-CUGAN for anime and art) and RIFE makes it 60 fps. Preview 4 seconds as a full-size before/after first, or export a labelled before/after clip to share.
 - **Animate a picture.** On the Generate page, a still picture becomes a short 3D camera move (push in, drift, sway, orbit…): AI works out what is near and far, and near things move more. Made for illustration, anime and art deco posters with gentle motion, and it runs on any graphics card, a GTX 1650 or Intel laptop graphics included.
 - **Free and open.** GPL-3.0. No account, no watermark, no upload: everything runs on your PC.
 
@@ -42,11 +42,11 @@ Windows 10 or 11. TensorRT needs a one-time download of about 3 GB, offered duri
 2. the player runtime: mpv, VapourSynth, RIFE on Vulkan with four models, MVTools, yt-dlp (about 150 MB),
 3. on NVIDIA RTX and GTX 16 cards, NVIDIA TensorRT through [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) with RIFE 4.6, 4.22 Lite, 4.25 Lite and 4.26 (asks first),
 4. the tests, then the app in `dist\`,
-5. Animate a picture for Generate: a depth model and three Python packages (about 150 MB, asks first),
+5. AI enhance for Enhance: the upscaling and clean-up models (about 150 MB, asks first), and Animate a picture for Generate: a depth model and three Python packages (about 150 MB, asks first),
 6. tuning for your PC, redone when it's outdated or the graphics changed,
 7. Start menu and desktop shortcuts, and a summary of what's ready.
 
-Options: `build.cmd -Yes` answers every question with yes; `-NoTensorRT`, `-NoStudio`, `-NoTune` and `-NoShortcuts` skip those steps; `-CheckOnly` only reports what's set up.
+Options: `build.cmd -Yes` answers every question with yes; `-NoTensorRT`, `-NoEnhance`, `-NoStudio`, `-NoTune` and `-NoShortcuts` skip those steps; `-CheckOnly` only reports what's set up.
 
 **Browser extension (optional):** load `extension\` in Chrome or Edge (`chrome://extensions`, Developer mode, Load unpacked). Alt+Shift+F on any video page sends it to NOVA Motion at the same moment.
 
@@ -56,7 +56,7 @@ Options: `build.cmd -Yes` answers every question with yes; `-NoTensorRT`, `-NoSt
 - **On the video:** controls that hide while you watch, a seek bar with buffered range, chapters and hover time, double-click for full screen, scroll for volume.
 - **Motion panel** (Tab): the frame rate on screen, dropped frames, the model in use and the size the AI runs at, the cadence strip (white bars are frames from the video, amber ones are generated), and every smoothing choice: engine, frame rate, AI model (Auto or a fixed one) and AI size (Auto, Full, 75 %, Half).
 - **Before/after** (Ctrl+D): side by side or a split screen, labelled, to see what the engine adds.
-- **Enhance:** a smooth copy of any file at 60 fps, 120 fps or 2× with the best model installed. Files queue up and show time left. Turn on **Before/after video** and give a start time and length to export a short labelled clip to share.
+- **Enhance:** a smooth copy of any file at 60 fps, 120 fps or 2× with the best model installed. **AI enhance** adds clean-up and upscaling: *Film & live action* or *Anime & art*, a size (Original, 1080p, 1440p, 4K, 8K), clean-up (keep grain, light, strong), detail and grain, and *Fix compression* for heavily compressed downloads. Upscaling comes after RIFE, so real and generated frames are equally sharp. **Preview 4 s** makes a full-size before/after crop from the time in *From* and plays it. The models are added once with `setup-enhance.cmd` (about 150 MB; build.cmd asks). Files queue up and show time left. Turn on **Before/after video** and give a start time and length to export a short labelled clip to share.
 - **Subtitles, audio, speed and online quality** in one panel; drop a subtitle file on the video to load it.
 
 ![Enhance: frame rate, quality, a before/after video switch with start time and length](docs/img/enhance.png)
@@ -119,7 +119,7 @@ The plan is in [docs/NOVA-STUDIO.md](docs/NOVA-STUDIO.md). The code, settings fo
 | M2 Own player window | ✅ mpv inside the app, on-video controls, subtitles, queue, resume |
 | M3 Engine manager | ✅ scene-cut and repeated-frame handling · ✅ per-size engine status and preparation · ✅ tuning, offered on first run · ✅ automatic model and AI-size choice with step-down · ✅ defaults for GTX and laptop graphics |
 | M4 Online and launch | ✅ quality picker · ✅ daily yt-dlp updates · ✅ project site · extension in the stores |
-| M5 Enhance & Export | ✅ offline smooth copies with the best model, queue, GPU encoding · heavier offline models (e.g. GIMM-VFI), upscaling |
+| M5 Enhance & Export | ✅ offline smooth copies with the best model, queue, GPU encoding · ✅ AI clean-up and upscaling to 4K/8K (Real-ESRGAN, Real-CUGAN, DPIR), preview · temporal consistency, generative detail (SeedVR2), a model distilled for speed |
 | M6 NOVA Studio shell | ✅ one app with Motion, Enhance and Generate tabs · ✅ Generate hardware check |
 | M7 Generate | managed ComfyUI engine, model manager, Flux.1 Schnell and SDXL images, Wan 2.2 video, one click to smooth and upscale |
 | Later | light timeline (trim, join, titles), smoothing over any window, faster AMD/Intel paths, cloud GPU tier, mobile |

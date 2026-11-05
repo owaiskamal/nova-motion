@@ -1,0 +1,100 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Novabit
+// Enhance's AI clean-up and upscaling: the export plan, setup detection, the page and the preview.
+using System.Text.Json;
+using NovaMotion.Core;
+using NovaMotion.Core.ViewModels;
+
+internal static class EnhanceTests
+{
+    public static async Task RunAsync(Action<bool, string> check)
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "nm-enhance-" + Guid.NewGuid().ToString("N")[..6]);
+        var rtDir = Path.Combine(dir, "runtime");
+        Directory.CreateDirectory(rtDir);
+        File.WriteAllText(Path.Combine(rtDir, "novamotion.vpy"), "");
+        var rt = RuntimeLayout.Find(dir)!;
+
+        // ---- export plan
+        var film = new EnhanceSettings { Preset = "film", Height = 2160, Clean = "strong", Detail = 0.3 };
+        var o = new ExportOptions { Target = "60", Enhance = film };
+        var e = ExportPlan.Engine(new EngineSettings(), o, new EngineAvailability(true, 1, true, true, Array.Empty<string>()), Array.Empty<string>());
+        var json = JsonSerializer.Serialize(e);
+        check(e.Enhance == film && !ReferenceEquals(e.Enhance, film), "enhance: the engine gets a copy of the choices");
+        check(json.Contains("\"enhance\"") && json.Contains("\"preset\":\"film\"") && json.Contains("\"height\":2160") && json.Contains("\"clean\":\"strong\""),
+              "enhance: written for the engine as it reads it");
+        var plain = ExportPlan.Engine(new EngineSettings(), new ExportOptions(), new EngineAvailability(true, 1, true, true, Array.Empty<string>()), Array.Empty<string>());
+        check(plain.Enhance is null && !JsonSerializer.Serialize(plain).Contains("\"enhance\""), "enhance: off leaves the engine config as before");
+        check(ExportPlan.Engine(new EngineSettings(), new ExportOptions { Enhance = new EnhanceSettings() }, new EngineAvailability(true, 1, true, true, Array.Empty<string>()), Array.Empty<string>()).Enhance is null,
+              "enhance: preset off counts as off");
+
+        check(ExportPlan.OutputPath(@"C:\v\Match.mkv", o, _ => false).EndsWith("Match (NOVA Enhance 4K 60 fps).mp4"), "enhance: file named for what it is");
+        string Args(ExportOptions x) => string.Join(" ", ExportPlan.MpvArguments(rt, "in.mp4", "out.mp4", "pipe", "log", x));
+        check(Args(new ExportOptions { Comparison = true }).Contains("min(720,ih)"), "before/after without enhance: 720p to share");
+        check(!Args(new ExportOptions { Comparison = true, Enhance = film }).Contains("min(720,ih)"), "before/after with enhance: full-size crop, not shrunk");
+        check(EnhanceCatalog.Describe(film) == "Film & live action · 4K · strong clean-up", $"enhance: described ({EnhanceCatalog.Describe(film)})");
+
+        // ---- setup detection
+        check(!EnhanceCatalog.IsReady(rt), "enhance: not ready before setup-enhance.cmd");
+        var plugins = Path.Combine(rt.MpvDir, "vs-plugins");
+        foreach (var m in EnhanceCatalog.RequiredModels)
+        {
+            var p = Path.Combine(plugins, "models", m.Replace('\\', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(Path.GetDirectoryName(p)!);
+            File.WriteAllText(p, "");
+        }
+        File.WriteAllText(Path.Combine(rt.MpvDir, "vsmlrt.py"), "");
+        File.WriteAllText(Path.Combine(rt.Root, "enhance.py"), "");
+        check(!EnhanceCatalog.IsReady(rt), "enhance: models alone aren't enough without a way to run them");
+        File.WriteAllText(Path.Combine(plugins, "vsncnn.dll"), "");
+        check(EnhanceCatalog.IsReady(rt), "enhance: ready with the models, vsmlrt.py and Vulkan (vsncnn)");
+
+        // ---- the page
+        var host = new FakeHost();
+        var exporter = new FakeExporter();
+        var backend = new FakeBackend();
+        var vm = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "settings")), rt, () => backend, () => DateTime.UtcNow, exporter);
+        check(!vm.EnhanceOn && !vm.ShowEnhanceOptions && vm.EnhancePresets.Single(p => p.IsSelected).Value == "off", "enhance: starts as smooth only");
+        vm.SelectEnhancePresetCommand.Execute(vm.EnhancePresets.Single(p => p.Value == "anime"));
+        check(vm.EnhanceOn && vm.ShowEnhanceOptions && !vm.EnhanceNeedsSetup && vm.EnhancePresetNote.Contains("Real-CUGAN"), "enhance: anime chosen, options shown");
+        check(vm.EnhanceSizes.Single(p => p.IsSelected).Label == "4K", "enhance: 4K by default");
+        vm.SelectEnhanceSizeCommand.Execute(vm.EnhanceSizes.Single(p => p.Label == "1440p"));
+        vm.SelectEnhanceCleanupCommand.Execute(vm.EnhanceCleanups.Single(p => p.Value == "off"));
+        vm.SelectEnhanceGrainCommand.Execute(vm.EnhanceGrains.Single(p => p.Label == "Film"));
+        vm.EnhanceFixCompression = true;
+        check(vm.Settings.Enhance == new EnhanceSettings { Preset = "anime", Height = 1440, Clean = "off", Detail = 0.3, Grain = 0.7, FixCompression = true },
+              $"enhance: choices kept in settings ({vm.Settings.Enhance})");
+        var again = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "settings")), rt, () => backend, () => DateTime.UtcNow, exporter);
+        check(again.EnhancePresets.Single(p => p.IsSelected).Value == "anime" && again.EnhanceSizes.Single(p => p.IsSelected).Label == "1440p",
+              "enhance: the page opens as it was left");
+
+        var video = Path.Combine(dir, "Episode 01.mkv");
+        File.WriteAllText(video, "");
+        vm.QueueExports(new[] { video });
+        await Task.Delay(50);
+        var run = exporter.Runs.Last();
+        check(run.Options.Enhance is { Preset: "anime", Height: 1440 } && run.Engine.Enhance is { Preset: "anime" }, "enhance: exports use the choices");
+        check(vm.Exports.Last().Summary.StartsWith("Anime & art · 1440p · grain kept · compression fixed"), $"enhance: shown in the list ({vm.Exports.Last().Summary})");
+
+        // ---- preview: 4 s before/after, in a temporary folder, played when ready
+        vm.PreviewFolder = Path.Combine(dir, "previews");
+        host.Files = new[] { video };
+        vm.ExportStartText = "1:30";
+        vm.PreviewEnhanceCommand.Execute(null);
+        await Task.Delay(80);
+        run = exporter.Runs.Last();
+        check(run.Options.Preview && run.Options.Comparison && run.Options.LengthSeconds == 4 && run.Options.StartSeconds == 90,
+              "preview: a 4-second before/after from the chosen time");
+        check(run.Out.StartsWith(vm.PreviewFolder), $"preview: made in a temporary folder ({run.Out})");
+        check(backend.Last("loadfile")?[1] as string == run.Out && vm.IsMotionModule, "preview: plays in Motion when ready");
+
+        // ---- not set up: offers setup, exports go ahead without AI enhance
+        var bare = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "s2")), RuntimeLayout.Find(Path.GetTempPath()) ?? null, () => backend, () => DateTime.UtcNow, exporter);
+        bare.SelectEnhancePresetCommand.Execute(bare.EnhancePresets.Single(p => p.Value == "film"));
+        check(bare.EnhanceNeedsSetup && !bare.ShowEnhanceOptions, "enhance: without the models it offers to add them");
+        bare.SetupEnhanceCommand.Execute(null);
+        check(bare.Runtime is null || host.Ran.LastOrDefault()?.StartsWith("setup-enhance.cmd") == true, "enhance: setup runs setup-enhance.cmd");
+        vm.SetupEnhanceCommand.Execute(null);
+        check(host.Ran.LastOrDefault()?.StartsWith("setup-enhance.cmd") == true, "enhance: setup-enhance.cmd from the app");
+    }
+}

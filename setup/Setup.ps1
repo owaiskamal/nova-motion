@@ -21,6 +21,7 @@ param(
     [switch]$Yes,           # answer every question with the default (yes)
     [switch]$NoTensorRT,    # never install TensorRT
     [switch]$NoStudio,      # don't add Generate's Animate a picture (setup-studio.cmd later)
+    [switch]$NoEnhance,     # don't add Enhance's AI models (setup-enhance.cmd later)
     [switch]$NoTune,        # don't tune now (tune.cmd later)
     [switch]$NoShortcuts,
     [switch]$CheckOnly      # change nothing: only report what is and isn't set up
@@ -75,6 +76,10 @@ function Get-State {
         TrtModels    = @($TrtModels | Where-Object { Test-Path (Join-Path $onnxDir $_) })
         Studio       = (Test-Path (Join-Path $Runtime "studio\depth-anything-v2-small.onnx")) -and
                        [bool](Get-ChildItem (Join-Path $Runtime "studio\packages") -Filter "onnxruntime-directml-*.installed" -ErrorAction SilentlyContinue)
+        Enhance      = (Test-Path (Join-Path $Plugins "models\enhance\realesr-general-mid-x4v3.onnx")) -and
+                       (Test-Path (Join-Path $Plugins "models\cugan\up2x-latest-conservative.onnx")) -and
+                       (Test-Path (Join-Path $MpvDir "vsmlrt.py")) -and
+                       ((Test-Path (Join-Path $Plugins "vstrt.dll")) -or [bool](Get-ChildItem $Plugins -Filter "vsncnn*.dll" -ErrorAction SilentlyContinue))
         App          = Test-Path (Join-Path $Dist "NovaMotion.exe")
         Tuning       = $tuning
     }
@@ -110,6 +115,7 @@ function Show-Summary($s) {
     } else {
         Note "    [  ] RIFE on TensorRT       not for this graphics card (needs NVIDIA RTX or GTX 16)"
     }
+    & $line $s.Enhance "AI enhance" $(if ($s.Enhance) { "film and anime upscaling (Enhance)" } else { "not added: setup-enhance.cmd (about 150 MB)" })
     & $line $s.Studio "Animate a picture" $(if ($s.Studio) { "depth model ready (Generate)" } else { "not added: setup-studio.cmd (about 150 MB)" })
     $tp = Tuning-Problem $s
     & $line (-not $tp) "Tuning" $(if ($tp) { "${tp}: run tune.cmd" } else { "tuned $($s.Tuning.measured -replace 'T', ' ')" })
@@ -164,6 +170,7 @@ if ($missing) {
 # Keep the runtime's engine files in step with the repo (edit engine\, rebuild, play)
 Copy-Item (Join-Path $Root "engine\novamotion.vpy") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\parallax.py") $Runtime -Force
 $portable = Join-Path $MpvDir "portable_config"
 New-Item -ItemType Directory -Force $portable | Out-Null
@@ -189,7 +196,16 @@ if (-not $state.TrtCapable) {
     $state = Get-State
 } else { Ok "installed, $($state.TrtModels.Count) models" }
 
-# ---------------------------------------------------------------- 3b. Generate: Animate a picture
+# ---------------------------------------------------------------- 3b. Enhance: AI clean-up and upscaling
+Step "AI enhance (Enhance)"
+if ($state.Enhance) { Ok "models there" }
+elseif ($NoEnhance) { Note "Skipped (-NoEnhance). Run setup-enhance.cmd any time." }
+elseif (Ask "Add AI enhance, which cleans and upscales videos to 4K in Enhance (about 150 MB)?") {
+    if ((Run-Script "Get-EnhanceModels.ps1") -ne 0) { Warn "It didn't finish; see runtime\setup-enhance.log. Run setup-enhance.cmd to retry." }
+    $state = Get-State
+} else { Note "Skipped. Run setup-enhance.cmd any time." }
+
+# ---------------------------------------------------------------- 3c. Generate: Animate a picture
 Step "Animate a picture (Generate)"
 if ($state.Studio) { Ok "depth model and packages there" }
 elseif ($NoStudio) { Note "Skipped (-NoStudio). Run setup-studio.cmd any time." }

@@ -60,6 +60,7 @@ DEFAULTS = {
     "demo": False,               # before/after: original on the left, smoothed on the right
     "demo_mode": "side",         # side: the same middle part of the picture twice | split: left and right halves
     "demo_labels": False,        # exports: write "Original" / "NOVA Motion" into the picture (the player draws its own)
+    "enhance": None,             # exports: AI clean-up and upscaling, see enhance.py
 }
 
 
@@ -555,8 +556,38 @@ def build_engine(clip):
         clip = clip[:frames]
         dbg(f"export: source is {frames} frames")
 
+    # Enhance (exports only): AI clean-up and upscaling around the interpolation
+    boost = None
+    if cfg.get("enhance") and not globals().get("display_fps"):
+        import enhance
+        boost = enhance.settings(cfg)
+    original = clip
+    if boost and boost["fix_compression"]:
+        dbg("enhance: fixing compression (DPIR)")
+        clip = enhance.fix_compression(clip, cfg, matrix_for(clip))
+
+    smooth, dst = smoothed(clip, cfg, src)
+    if boost:
+        dbg(f"enhance: {boost}")
+        smooth = enhance.finish(enhance.upscale(smooth, cfg, boost, matrix_for(original)), boost)
+        if cfg.get("demo"):
+            words = (f"Original  {fps_words(src)} fps",
+                     f"{enhance.label_text(boost, smooth.height)}  {fps_words(dst)} fps")
+            smooth = enhance.demo(repeat_to_fps(original, src, dst) if dst != src else original, smooth,
+                                  labeller=label if cfg.get("demo_labels") else None, words=words,
+                                  bar=lambda like: divider(like, 4))
+    elif cfg.get("demo") and dst != src:
+        smooth = demo_split(original, smooth, src, dst, cfg.get("demo_mode", "side"), bool(cfg.get("demo_labels")))
+    # Every output frame must say it lasts 1/dst s. Frames copied straight from the source
+    # still carry the source's duration (e.g. 1/25 s), and mpv times frames by that property:
+    # mixed durations made it drop and mistime frames on 25 fps video.
+    return core.std.SetFrameProps(smooth, _DurationNum=dst.denominator, _DurationDen=dst.numerator)
+
+
+def smoothed(clip, cfg, src):
+    """The interpolated clip and its rate; the clip itself at src when there is nothing to add."""
     if not cfg.get("enabled", True) or float(src) > float(cfg["max_source_fps"]):
-        return clip
+        return clip, src
 
     dst = target_fps(cfg, src)
     if globals().get("display_fps"):    # live playback: never ask for more than tuning says this PC makes
@@ -573,7 +604,7 @@ def build_engine(clip):
             dbg(f"frames were dropping at {dst}; playing {lower}")
             dst = lower
     if float(dst) < float(src) * 1.1:   # nothing meaningful to add
-        return clip
+        return clip, src
 
     # Fallback chain: TensorRT -> Vulkan RIFE -> MVTools, so playback always works
     chain = {"rife_trt": [interpolate_rife_trt, interpolate_rife],
@@ -593,13 +624,7 @@ def build_engine(clip):
                 raise
     if smooth is None:
         smooth = interpolate_mvtools(clip, cfg, src, dst)
-
-    if cfg.get("demo"):
-        smooth = demo_split(clip, smooth, src, dst, cfg.get("demo_mode", "side"), bool(cfg.get("demo_labels")))
-    # Every output frame must say it lasts 1/dst s. Frames copied straight from the source
-    # still carry the source's duration (e.g. 1/25 s), and mpv times frames by that property:
-    # mixed durations made it drop and mistime frames on 25 fps video.
-    return core.std.SetFrameProps(smooth, _DurationNum=dst.denominator, _DurationDen=dst.numerator)
+    return smooth, dst
 
 
 if _debug:

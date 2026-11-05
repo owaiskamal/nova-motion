@@ -29,6 +29,12 @@ public sealed record ExportOptions
     public double? StartSeconds { get; init; }
     /// <summary>…for this many seconds (null: to the end).</summary>
     public double? LengthSeconds { get; init; }
+    /// <summary>AI clean-up and upscaling; null or "off": smoothing only.</summary>
+    public EnhanceSettings? Enhance { get; init; }
+    /// <summary>A short before/after made to look at in the app, not to keep.</summary>
+    public bool Preview { get; init; }
+
+    public bool Enhancing => Enhance is { IsOn: true };
 
     /// <summary>"3:15" or "195" (seconds) to seconds; null when empty or unreadable.</summary>
     public static double? ParseTime(string? text)
@@ -102,9 +108,11 @@ public static class ExportPlan
         exists ??= File.Exists;
         var dir = o.OutputFolder ?? Path.GetDirectoryName(input) ?? ".";
         var name = Path.GetFileNameWithoutExtension(input);
-        var label = (o.Comparison ? "before-after " : "") + (o.Target.StartsWith('x') ? $"{o.Target}" : $"{o.Target} fps");
-        var path = Path.Combine(dir, $"{name} (NOVA Motion {label}).mp4");
-        for (var i = 2; exists(path); i++) path = Path.Combine(dir, $"{name} (NOVA Motion {label}) ({i}).mp4");
+        var label = (o.Comparison ? "before-after " : "") + (o.Enhancing ? EnhanceCatalog.SizeName(o.Enhance!.Height) + " " : "")
+                  + (o.Target.StartsWith('x') ? $"{o.Target}" : $"{o.Target} fps");
+        var product = o.Enhancing ? "NOVA Enhance" : "NOVA Motion";
+        var path = Path.Combine(dir, $"{name} ({product} {label}).mp4");
+        for (var i = 2; exists(path); i++) path = Path.Combine(dir, $"{name} ({product} {label}) ({i}).mp4");
         return path;
     }
 
@@ -121,6 +129,7 @@ public static class ExportPlan
         e.SceneDetect = true;
         e.Dedup = true;
         e.TargetText = o.Target;
+        e.Enhance = o.Enhancing ? o.Enhance! with { } : null;
         e.MvQuality = "quality";
         e.Engine = a.TensorRt ? "rife_trt" : vulkanModels.Count > 0 ? "rife" : "mvtools";
         if (o.Quality == ExportQuality.Best)
@@ -149,8 +158,9 @@ public static class ExportPlan
         // mpv times the last few engine frames by the input frames they came after; numbering every
         // frame at the engine's output rate gives the file exact, even timestamps to the end
         var stamp = rate is { } r ? $",lavfi=[setpts=N*{r.Den}/({r.Num}*TB)]" : "";
-        // Before/after videos are for sharing: 720p, so a short clip stays small enough to upload
-        if (o.Comparison) stamp += ",lavfi=[scale=-2:'min(720,ih)']";
+        // Before/after videos are for sharing: 720p, so a short clip stays small enough to upload.
+        // Enhance's before/after is already a full-size crop: shrinking it would hide the detail it shows.
+        if (o.Comparison && !o.Enhancing) stamp += ",lavfi=[scale=-2:'min(720,ih)']";
         var args = new List<string>
         {
             "--no-config",                     // no player scripts or settings: the export is set up here
@@ -230,6 +240,7 @@ public sealed class ExportRunner : IExportRunner
     {
         var dir = Path.Combine(_store.Directory, "exports");
         Directory.CreateDirectory(dir);
+        if (Path.GetDirectoryName(output) is { Length: > 0 } outDir) Directory.CreateDirectory(outDir);
         var id = Guid.NewGuid().ToString("N")[..8];
         var cfg = Path.Combine(dir, $"engine-{id}.json");
         var log = Path.Combine(dir, $"export-{id}.log");

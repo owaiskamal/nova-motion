@@ -7,11 +7,143 @@
             <StackPanel>
                 <TextBlock Style="{StaticResource Text.Display}" FontSize="28" LineHeight="36" Text="Enhance"/>
                 <TextBlock Style="{StaticResource Text.Muted}" FontSize="15" LineHeight="23" MaxWidth="640" HorizontalAlignment="Left" Margin="0,12,0,28"
-                           Text="Makes a smooth copy of a video file with the best settings this PC has. It takes longer than watching, but every frame gets full quality, and the copy plays smoothly anywhere: on a phone, a TV, or as an upload."/>
+                           Text="Makes a smooth, sharper copy of a video file with the best settings this PC has: AI cleans and enlarges every frame up to 4K, and RIFE makes it 60 fps. It takes longer than watching, and the copy plays anywhere: on a phone, a TV, or as an upload."/>
 
                 <!-- Options -->
                 <Border Style="{StaticResource Panel}">
                     <StackPanel>
+                        <!-- AI clean-up and upscaling -->
+                        <TextBlock Style="{StaticResource Text.Strong}" Text="AI enhance" Margin="0,0,0,10"/>
+                        <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+                                    <ItemsControl ItemsSource="{Binding EnhancePresets}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-preset" Content="{Binding Label}"
+                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
+                                                             Command="{Binding DataContext.SelectEnhancePresetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                             CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                        <TextBlock Style="{StaticResource Text.Small}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding EnhancePresetNote}"/>
+
+                        <DockPanel Margin="0,14,0,0" Visibility="{Binding EnhanceNeedsSetup, Converter={StaticResource BoolToVis}}">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Height="38" Padding="18,0" Content="Add the models (about 150 MB)"
+                                    Command="{Binding SetupEnhanceCommand}"/>
+                            <TextBlock Style="{StaticResource Text.Body}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"
+                                       Text="AI enhance needs its models, downloaded once. Smoothing works without them."/>
+                        </DockPanel>
+
+                        <StackPanel Visibility="{Binding ShowEnhanceOptions, Converter={StaticResource BoolToVis}}">
+                            <Grid Margin="0,16,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="3*"/>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="2*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Text.Strong}" Text="Size" Margin="0,0,0,10"/>
+                                    <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+                                    <ItemsControl ItemsSource="{Binding EnhanceSizes}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-size" Content="{Binding Label}"
+                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
+                                                             Command="{Binding DataContext.SelectEnhanceSizeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                             CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource Text.Strong}" Text="Clean-up" Margin="0,0,0,10"/>
+                                    <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+                                    <ItemsControl ItemsSource="{Binding EnhanceCleanups}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-clean" Content="{Binding Label}"
+                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
+                                                             Command="{Binding DataContext.SelectEnhanceCleanupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                             CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,16,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Text.Strong}" Text="Detail" Margin="0,0,0,10"/>
+                                    <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+                                    <ItemsControl ItemsSource="{Binding EnhanceDetails}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-detail" Content="{Binding Label}"
+                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
+                                                             Command="{Binding DataContext.SelectEnhanceDetailCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                             CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource Text.Strong}" Text="Grain" Margin="0,0,0,10"/>
+                                    <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+                                    <ItemsControl ItemsSource="{Binding EnhanceGrains}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-grain" Content="{Binding Label}"
+                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
+                                                             Command="{Binding DataContext.SelectEnhanceGrainCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                             CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                                </StackPanel>
+                            </Grid>
+                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding EnhanceFixCompression}" Margin="0,16,0,0">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Text.Body}" Text="Fix compression"/>
+                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Takes out the blocks and smearing of heavily compressed downloads before anything else. Slower; leave off for good sources."/>
+                                </StackPanel>
+                            </CheckBox>
+                        </StackPanel>
+                        <Border Style="{StaticResource Divider}"/>
+
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -82,6 +214,9 @@
                                     <TextBlock Text="Choose videos" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Height="42" Padding="18,0" Margin="0,0,10,0" Content="Preview 4 s"
+                                    Command="{Binding PreviewEnhanceCommand}" IsEnabled="{Binding CanExport}"
+                                    ToolTip="A short before/after of one video with these settings, from the time in From. It plays when it's ready."/>
                             <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"
                                        Text="{Binding ExportEngineText}"/>
                         </DockPanel>

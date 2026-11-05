@@ -13,6 +13,9 @@ NOVA Motion's own code is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE
 | RIFE (Practical-RIFE) | Interpolation model | MIT | https://github.com/hzwer/Practical-RIFE |
 | MVTools for VapourSynth | Motion-vector interpolation | GPL-2.0 | https://github.com/dubhater/vapoursynth-mvtools |
 | akarin plugin | Fractional frame-rate steps for vs-mlrt | See project | https://github.com/AkarinVS/vapoursynth-plugin |
+| Real-ESRGAN general and AnimeVideo v3 models | Enhance: upscaling (converted to ONNX by `tools/realesrgan_to_onnx.py`) | BSD-3-Clause | https://github.com/xinntao/Real-ESRGAN |
+| Real-CUGAN models | Enhance: anime and art upscaling | MIT | https://github.com/bilibili/ailab |
+| DPIR deblocking model | Enhance: fixing compression | MIT | https://github.com/cszn/DPIR |
 | Depth Anything V2 Small (ONNX, onnx-community) | Depth for Animate a picture (optional download) | Apache-2.0 | https://huggingface.co/depth-anything/Depth-Anything-V2-Small · https://huggingface.co/onnx-community/depth-anything-v2-small |
 | ONNX Runtime with DirectML | Runs the depth model on the graphics card | MIT | https://github.com/microsoft/onnxruntime |
 | NumPy | Draws the camera move | BSD-3-Clause | https://numpy.org |

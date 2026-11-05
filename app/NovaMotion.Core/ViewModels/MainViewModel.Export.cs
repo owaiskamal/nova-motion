@@ -22,8 +22,10 @@ public sealed class ExportItem : Observable
     {
         Input = input; Output = output; Options = options;
         Title = MediaSource.GuessTitle(input);
-        Summary = $"{EngineCatalog.TargetName(options.Target)} · {(options.Quality == ExportQuality.Best ? "Best quality" : "Faster")}"
-                + (options.Comparison ? " · before/after" : "")
+        Summary = (options.Preview ? "Preview · " : "")
+                + (options.Enhancing ? EnhanceCatalog.Describe(options.Enhance!) + " · " : "")
+                + $"{EngineCatalog.TargetName(options.Target)} · {(options.Quality == ExportQuality.Best ? "Best quality" : "Faster")}"
+                + (options.Comparison && !options.Preview ? " · before/after" : "")
                 + (options.StartSeconds is > 0 || options.LengthSeconds is > 0
                     ? $" · from {TimeFormat.Format(options.StartSeconds ?? 0)}" + (options.LengthSeconds is { } l ? $" for {l:0.#} s" : "")
                     : "");
@@ -138,17 +140,24 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>Adds files to the export list with the current options and starts working through it.</summary>
-    public void QueueExports(IEnumerable<string> files)
+    public void QueueExports(IEnumerable<string> files) => QueueExports(files, preview: false);
+
+    private void QueueExports(IEnumerable<string> files, bool preview)
     {
         if (_exporter is null) { ShowToast("The player files are missing. Run build.cmd once."); return; }
+        var enhance = EnhanceOn && EnhanceReady ? _settings.Enhance with { } : null;
         var options = new ExportOptions
         {
+            Enhance = enhance,
+            Preview = preview,
+            // Previews are to look at, not to keep: they go to a temporary folder, not next to the video
+            OutputFolder = preview ? PreviewFolder : null,
             Target = ExportTargets.FirstOrDefault(t => t.IsSelected)?.Value ?? "60",
             Quality = _exportQuality,
             HardwareEncoder = _exportGpuEncoder && _gpu?.IsNvidia != false,
-            Comparison = _exportComparison,
+            Comparison = _exportComparison || preview,
             StartSeconds = ExportOptions.ParseTime(ExportStartText),
-            LengthSeconds = ExportOptions.ParseTime(ExportLengthText),
+            LengthSeconds = preview ? PreviewSeconds : ExportOptions.ParseTime(ExportLengthText),
         };
         var taken = Exports.Select(e => e.Output).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var f in files.Where(f => !MediaSource.IsOnline(f)))
@@ -195,6 +204,7 @@ public sealed partial class MainViewModel
                         item.Status = ExportStatus.Done;
                         item.Progress = 1;
                         item.Detail = "Saved as " + item.OutputName;
+                        if (item.Options.Preview) { PlayPreview(item.Output); return; }
                         if (!IsExportOpen) ShowToast("Export finished: " + item.OutputName, "Show", () => _host.OpenExternal(Path.GetDirectoryName(item.Output)!));
                     }
                     else

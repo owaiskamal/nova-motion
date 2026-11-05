@@ -1,0 +1,206 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Novabit
+"""Tests for Enhance (engine/enhance.py through engine/novamotion.vpy), no GPU needed.
+
+vs-mlrt is replaced by a stand-in whose models enlarge by their own factor (x4 or x2) with a plain
+resize, so the whole export chain runs on real VapourSynth + MVTools: sizes, formats, frame counts,
+model choice, the before/after crop, detail and grain.
+
+    pip install vapoursynth vapoursynth-mvtools
+    python tests/engine/test_enhance.py engine/novamotion.vpy
+"""
+import enum
+import json
+import os
+import sys
+import tempfile
+import types
+from dataclasses import dataclass
+
+import vapoursynth as vs
+
+core = vs.core
+SCRIPT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..", "..", "engine", "novamotion.vpy"))
+sys.path.insert(0, os.path.dirname(SCRIPT))
+import enhance  # noqa: E402
+
+fails = 0
+
+
+def check(ok, what):
+    global fails
+    print(("PASS " if ok else "FAIL ") + what)
+    if not ok:
+        fails += 1
+
+
+# ---------------------------------------------------------------- vs-mlrt stand-in
+MODELS = tempfile.mkdtemp(prefix="nm-models-")
+calls = []
+
+
+def fake_vsmlrt(with_pro=True):
+    m = types.ModuleType("vsmlrt")
+    m.models_path = MODELS
+
+    class Backend:
+        @dataclass
+        class TRT:
+            fp16: bool = False
+            device_id: int = 0
+            num_streams: int = 1
+            output_format: int = 0
+
+        @dataclass
+        class NCNN_VK:
+            fp16: bool = False
+            device_id: int = 0
+            num_streams: int = 1
+
+        @dataclass
+        class OV_GPU:
+            fp16: bool = False
+            device_id: int = 0
+
+    m.Backend = Backend
+
+    class DPIRModel(enum.IntEnum):
+        drunet_deblocking_color = 3
+
+    m.DPIRModel = DPIRModel
+
+    def calc_tilesize(tiles, tilesize, width, height, multiple, overlap_w, overlap_h):
+        if tiles is None:
+            return (width, height), (0, 0)
+        return (-(-width // tiles) + overlap_w, -(-height // tiles) + overlap_h), (overlap_w, overlap_h)
+
+    def inference(clip, path, overlap=(0, 0), tilesize=None, backend=None):
+        name = os.path.basename(path)
+        scale = 4 if ("x4" in name or "animevideov3" in name) else 2
+        calls.append(("inference", name, clip.format.name, tilesize, type(backend).__name__))
+        assert clip.format.color_family == vs.RGB and clip.format.sample_type == vs.FLOAT
+        return core.resize.Point(clip, clip.width * scale, clip.height * scale)
+
+    def DPIR(clip, strength, model, tiles=None, backend=None):
+        calls.append(("dpir", clip.width, clip.height))
+        assert clip.width % 8 == 0 and clip.height % 8 == 0, "DPIR needs multiples of 8"
+        return clip
+
+    m.calc_tilesize, m.inference, m.DPIR = calc_tilesize, inference, DPIR
+    sys.modules["vsmlrt"] = m
+    for sub, files in {"enhance": ["realesr-general-x4v3", "realesr-general-mid-x4v3", "realesr-general-wdn-x4v3"],
+                       "cugan": ["up2x-latest-no-denoise", "up2x-latest-conservative", "up2x-latest-denoise3x"]
+                       + (["pro-conservative-up2x", "pro-denoise3x-up2x", "pro-no-denoise3x-up2x"] if with_pro else []),
+                       "RealESRGANv2": ["realesr-animevideov3"], "dpir": ["drunet_deblocking_color"]}.items():
+        os.makedirs(os.path.join(MODELS, sub), exist_ok=True)
+        for f in files:
+            open(os.path.join(MODELS, sub, f + ".onnx"), "w").close()
+    return m
+
+
+fake_vsmlrt()
+# A "TensorRT" core: the backend choice looks for core.trt; the stand-in only needs to exist
+has_trt = hasattr(core, "trt")
+
+
+def backend_override(kind):
+    m = sys.modules["vsmlrt"]
+    enhance.backend = (lambda cfg, w, h: m.Backend.TRT(fp16=True)) if kind == "trt" else (lambda cfg, w, h: m.Backend.NCNN_VK(fp16=True))
+
+
+backend_override("trt")
+
+# ---------------------------------------------------------------- the rules
+check(enhance.settings({}) is None and enhance.settings({"enhance": {"preset": "off"}}) is None, "off unless a preset is chosen")
+s = enhance.settings({"enhance": {"preset": "film", "height": 2160, "clean": "nonsense", "detail": 5}})
+check(s["clean"] == "light" and s["detail"] == 1.0 and s["grain"] == 0, f"settings cleaned up: {s}")
+check(enhance.output_size(1920, 1080, 2160) == (3840, 2160), "1080p to 4K")
+check(enhance.output_size(1440, 1080, 2160) == (2880, 2160), "4:3 keeps its shape")
+check(enhance.output_size(1920, 800, 2160) == (5184, 2160), "a wide film is sized by height")
+check(enhance.output_size(3840, 2160, 1080) == (3840, 2160), "never smaller than the video")
+check(enhance.output_size(1280, 720, 0) == (1280, 720), "0: the video's own size")
+
+
+def plan(preset, clean, w, h, height):
+    p, k = enhance.model_plan({"preset": preset, "clean": clean, "height": height}, w, h, MODELS)
+    return os.path.basename(p), k
+
+
+check(plan("film", "off", 1920, 1080, 2160) == ("realesr-general-wdn-x4v3.onnx", 4), "film, no clean-up: keeps grain (wdn)")
+check(plan("film", "strong", 1920, 1080, 2160) == ("realesr-general-x4v3.onnx", 4), "film, strong clean-up: x4v3")
+check(plan("anime", "light", 1920, 1080, 2160) == ("pro-conservative-up2x.onnx", 2), "anime 2x: Real-CUGAN Pro")
+check(plan("anime", "light", 640, 360, 2160) == ("realesr-animevideov3.onnx", 4), "anime 6x: AnimeVideo v3 at 4x")
+os.remove(os.path.join(MODELS, "cugan", "pro-conservative-up2x.onnx"))
+check(plan("anime", "light", 1920, 1080, 2160) == ("up2x-latest-conservative.onnx", 2), "anime without Pro: Real-CUGAN 1")
+
+
+# ---------------------------------------------------------------- the whole export chain
+def run(cfg, fps=24.0, w=640, h=360, frames=24, fmt=vs.YUV420P8):
+    d = tempfile.mkdtemp()
+    p = os.path.join(d, "engine.json")
+    json.dump(cfg, open(p, "w"))
+    os.environ["NOVAMOTION_ENGINE_CONFIG"] = p
+    base = core.std.BlankClip(width=w, height=h, format=fmt, length=frames, fpsnum=int(fps), fpsden=1)
+    clip = core.std.FrameEval(base, lambda n: core.std.BlankClip(base, color=[(n * 7) % 200 + 20, 128, 128], length=frames))
+    g = {"video_in": clip, "container_fps": fps, "display_fps": 0, "__file__": SCRIPT}
+    vs.clear_outputs()
+    exec(compile(open(SCRIPT).read(), SCRIPT, "exec"), g)
+    out = vs.get_output(0)
+    out = out.clip if hasattr(out, "clip") else out
+    for i in (0, 1, out.num_frames // 2):
+        out.get_frame(i)
+    return out
+
+
+calls.clear()
+o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 1080, "clean": "light"}})
+check((o.width, o.height) == (1920, 1080) and o.format.id == vs.YUV420P8, f"export: 360p film to 1080p, same format ({o.width}x{o.height} {o.format.name})")
+check(o.fps.numerator == 60, f"export: still smoothed to 60 ({o.fps})")
+check(any(c[0] == "inference" and c[1] == "realesr-general-mid-x4v3.onnx" and c[2] == "RGBH" for c in calls),
+      f"export: the light model on half floats for TensorRT ({calls[:1]})")
+
+o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 0, "clean": "strong"}})
+check((o.width, o.height) == (640, 360), f"export: at the video's own size the model's result is scaled back ({o.width}x{o.height})")
+
+calls.clear()
+o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "anime", "height": 1440, "fix_compression": True}},
+        w=1000, h=562)
+check(("dpir", 1000, 568) in calls, f"export: compression fixed at the video's size, padded to 8 ({[c for c in calls if c[0] == 'dpir']})")
+check((o.width, o.height) == (2562, 1440), f"export: anime 562p to 1440p ({o.width}x{o.height})")
+
+o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enabled": False, "enhance": {"preset": "film", "height": 720}})
+check((o.width, o.height) == (1280, 720) and o.fps.numerator == 24, f"export: upscale only, no smoothing ({o.fps})")
+
+o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "demo": True, "demo_labels": True,
+         "enhance": {"preset": "film", "height": 2160}}, w=1920, h=1080)
+check((o.width, o.height) == (1920 + 4, 1080), f"before/after: full-size crops of the middle, side by side ({o.width}x{o.height})")
+check(o.fps.numerator == 60, "before/after: at the smoothed rate")
+
+o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 720, "detail": 1, "grain": 0.5}})
+check((o.width, o.height) == (1280, 720), "detail and grain keep the size")
+
+backend_override("ncnn")
+calls.clear()
+o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 720}})
+check(any(c[0] == "inference" and c[2] == "RGBS" for c in calls), "Vulkan (ncnn): full floats")
+
+calls.clear()
+o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "gpu_class": "entry", "enhance": {"preset": "film", "height": 2160}},
+        w=1920, h=1080)
+tiled = [c for c in calls if c[0] == "inference"]
+check(tiled and tiled[0][3] == (976, 556), f"GTX 16 cards: 2 x 2 tiles with overlap ({tiled[:1]})")
+
+# Live playback never runs Enhance
+os.environ["NOVAMOTION_ENGINE_CONFIG"] = os.path.join(tempfile.mkdtemp(), "e.json")
+json.dump({"engine": "mvtools", "target": 60, "enhance": {"preset": "film", "height": 2160}}, open(os.environ["NOVAMOTION_ENGINE_CONFIG"], "w"))
+base = core.std.BlankClip(width=640, height=360, format=vs.YUV420P8, length=24, fpsnum=24)
+g = {"video_in": base, "container_fps": 24.0, "display_fps": 60.0, "__file__": SCRIPT}
+vs.clear_outputs()
+exec(compile(open(SCRIPT).read(), SCRIPT, "exec"), g)
+live = vs.get_output(0)
+live = live.clip if hasattr(live, "clip") else live
+check((live.width, live.height) == (640, 360), "live playback: no Enhance")
+
+print()
+print("ALL PASSED" if not fails else f"{fails} FAILED")
+sys.exit(1 if fails else 0)

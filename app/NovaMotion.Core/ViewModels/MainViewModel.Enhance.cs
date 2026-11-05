@@ -1,0 +1,97 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Novabit
+using System.Collections.ObjectModel;
+
+namespace NovaMotion.Core.ViewModels;
+
+/// <summary>Enhance's AI clean-up and upscaling choices, the preview, and its setup.</summary>
+public sealed partial class MainViewModel
+{
+    /// <summary>A preview is a few seconds: long enough to see motion and detail, quick to make.</summary>
+    public const double PreviewSeconds = 4;
+    public string PreviewFolder { get; set; } = Path.Combine(Path.GetTempPath(), "NOVA Studio previews");
+
+    public ObservableCollection<OptionItem> EnhancePresets { get; } = new(EnhanceCatalog.Presets.Select(c => new OptionItem(c)));
+    public ObservableCollection<OptionItem> EnhanceSizes { get; } = new(EnhanceCatalog.Sizes.Select(c => new OptionItem(c)));
+    public ObservableCollection<OptionItem> EnhanceCleanups { get; } = new(EnhanceCatalog.Cleanups.Select(c => new OptionItem(c)));
+    public ObservableCollection<OptionItem> EnhanceDetails { get; } = new(EnhanceCatalog.Details.Select(c => new OptionItem(c)));
+    public ObservableCollection<OptionItem> EnhanceGrains { get; } = new(EnhanceCatalog.Grains.Select(c => new OptionItem(c)));
+
+    public Command SelectEnhancePresetCommand { get; private set; } = null!;
+    public Command SelectEnhanceSizeCommand { get; private set; } = null!;
+    public Command SelectEnhanceCleanupCommand { get; private set; } = null!;
+    public Command SelectEnhanceDetailCommand { get; private set; } = null!;
+    public Command SelectEnhanceGrainCommand { get; private set; } = null!;
+    public Command PreviewEnhanceCommand { get; private set; } = null!;
+    public Command SetupEnhanceCommand { get; private set; } = null!;
+
+    private EnhanceSettings Boost => _settings.Enhance ??= new EnhanceSettings();
+
+    private void InitEnhance()
+    {
+        SelectEnhancePresetCommand = new Command(p => ChangeEnhance(p, (e, v) => e.Preset = v));
+        SelectEnhanceSizeCommand = new Command(p => ChangeEnhance(p, (e, v) => e.Height = (int)EnhanceCatalog.Number(v)));
+        SelectEnhanceCleanupCommand = new Command(p => ChangeEnhance(p, (e, v) => e.Clean = v));
+        SelectEnhanceDetailCommand = new Command(p => ChangeEnhance(p, (e, v) => e.Detail = EnhanceCatalog.Number(v)));
+        SelectEnhanceGrainCommand = new Command(p => ChangeEnhance(p, (e, v) => e.Grain = EnhanceCatalog.Number(v)));
+        PreviewEnhanceCommand = new Command(() =>
+        {
+            if (_host.PickVideoFiles() is not { Count: > 0 } f) return;
+            QueueExports(f.Take(1), preview: true);
+            ShowToast($"Making a {PreviewSeconds:0}-second before/after" + (ExportStartText.Length > 0 ? $" from {ExportStartText}" : "")
+                      + ". It plays when it's ready.");
+        });
+        SetupEnhanceCommand = new Command(() =>
+        {
+            if (Runtime is null) return;
+            _host.RunInConsole(Path.Combine(Path.GetDirectoryName(Runtime.Root) ?? Runtime.Root, "setup-enhance.cmd"), "");
+            ShowToast("Adding the Enhance models in a separate window. Come back here when it says it's ready.");
+        });
+        SyncEnhance();
+    }
+
+    private void ChangeEnhance(object? p, Action<EnhanceSettings, string> apply)
+    {
+        if (p is not OptionItem o) return;
+        apply(Boost, o.Value);
+        _store.Save(_settings);
+        SyncEnhance();
+    }
+
+    private void SyncEnhance()
+    {
+        var e = Boost;
+        static bool Same(string v, double x) => Math.Abs(EnhanceCatalog.Number(v) - x) < 0.01;
+        foreach (var o in EnhancePresets) o.IsSelected = o.Value == e.Preset;
+        foreach (var o in EnhanceSizes) o.IsSelected = Same(o.Value, e.Height);
+        foreach (var o in EnhanceCleanups) o.IsSelected = o.Value == e.Clean;
+        foreach (var o in EnhanceDetails) o.IsSelected = Same(o.Value, e.Detail);
+        foreach (var o in EnhanceGrains) o.IsSelected = Same(o.Value, e.Grain);
+        Raise(nameof(EnhanceOn), nameof(EnhanceReady), nameof(EnhanceNeedsSetup), nameof(ShowEnhanceOptions),
+              nameof(EnhancePresetNote), nameof(EnhanceFixCompression), nameof(EnhanceSummary));
+    }
+
+    /// <summary>A preset other than "Smooth only" is chosen.</summary>
+    public bool EnhanceOn => Boost.IsOn;
+    /// <summary>The models and vs-mlrt are installed (setup-enhance.cmd).</summary>
+    public bool EnhanceReady => EnhanceCatalog.IsReady(Runtime);
+    public bool EnhanceNeedsSetup => EnhanceOn && !EnhanceReady;
+    public bool ShowEnhanceOptions => EnhanceOn && EnhanceReady;
+    public string EnhancePresetNote => EnhanceCatalog.Presets.FirstOrDefault(c => c.Value == Boost.Preset)?.Description ?? "";
+    public string EnhanceSummary => EnhanceOn ? EnhanceCatalog.Describe(Boost) : "";
+
+    public bool EnhanceFixCompression
+    {
+        get => Boost.FixCompression;
+        set { if (Boost.FixCompression == value) return; Boost.FixCompression = value; _store.Save(_settings); Raise(); Raise(nameof(EnhanceSummary)); }
+    }
+
+    /// <summary>Checks again whether setup-enhance.cmd has run: when the Enhance page opens.</summary>
+    public void RefreshEnhance() => SyncEnhance();
+
+    private void PlayPreview(string file)
+    {
+        SelectModule(StudioModule.Motion);
+        _ = OpenAsync(new[] { file });
+    }
+}

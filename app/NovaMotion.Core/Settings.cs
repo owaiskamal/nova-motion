@@ -37,6 +37,9 @@ public sealed class EngineSettings
     [JsonPropertyName("demo_mode")]      public string DemoMode { get; set; } = "side";
     [JsonPropertyName("demo_labels")]    public bool DemoLabels { get; set; }
     [JsonPropertyName("rtx_vsr")]        public bool RtxVsr { get; set; }
+    /// <summary>Exports only: AI clean-up and upscaling (engine/enhance.py). Null: off.</summary>
+    [JsonPropertyName("enhance"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public EnhanceSettings? Enhance { get; set; }
 
     /// <summary>"display", "x2", "x3" or a number such as "60" / "120".</summary>
     [JsonIgnore]
@@ -56,6 +59,25 @@ public sealed class Profile
 {
     public string Name { get; set; } = "Default";
     public EngineSettings Engine { get; set; } = new();
+}
+
+/// <summary>Enhance's AI clean-up and upscaling for exports; the engine reads it as "enhance".</summary>
+public sealed record EnhanceSettings
+{
+    /// <summary>"off", "film" (live action: Real-ESRGAN general) or "anime" (anime and art: Real-CUGAN).</summary>
+    [JsonPropertyName("preset")] public string Preset { get; set; } = "off";
+    /// <summary>Output height: 0 keeps the video's own size, 1080, 1440, 2160 (4K), 4320 (8K).</summary>
+    [JsonPropertyName("height")] public int Height { get; set; } = 2160;
+    /// <summary>"off" (keep grain and texture), "light", "strong".</summary>
+    [JsonPropertyName("clean")] public string Clean { get; set; } = "light";
+    /// <summary>Take out compression blocks first (DPIR): for heavily compressed downloads. Slow.</summary>
+    [JsonPropertyName("fix_compression")] public bool FixCompression { get; set; }
+    /// <summary>Sharpening after the upscale, 0..1.</summary>
+    [JsonPropertyName("detail")] public double Detail { get; set; } = 0.3;
+    /// <summary>Fine film grain, 0..1.</summary>
+    [JsonPropertyName("grain")] public double Grain { get; set; }
+
+    [JsonIgnore] public bool IsOn => Preset is "film" or "anime";
 }
 
 public sealed class AppSettings
@@ -84,6 +106,8 @@ public sealed class AppSettings
     public string VideoSync { get; set; } = "";
     /// <summary>The "tune for this PC" card on Home was closed.</summary>
     public bool TunePromptDismissed { get; set; }
+    /// <summary>The Enhance choices last used, so the page opens as it was left.</summary>
+    public EnhanceSettings Enhance { get; set; } = new();
 
     public Profile Active =>
         Profiles.FirstOrDefault(p => p.Name == ActiveProfile) ?? Profiles.FirstOrDefault() ?? new Profile();
