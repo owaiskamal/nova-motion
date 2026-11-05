@@ -98,11 +98,15 @@ Check(!mpvArgs.Any(a => a.StartsWith("--glsl-shaders")), "live enhance off: no s
 s.LiveEnhance = "anime";
 var animeArgs = player.BuildArguments(null, s).Where(a => a.StartsWith("--glsl-shaders-append=")).ToList();
 Check(animeArgs.Count == 6 && animeArgs[1] == "--glsl-shaders-append=~~/shaders/Anime4K_Restore_CNN_M.glsl", "live enhance anime: Anime4K Mode A (Fast), in order");
+foreach (var pr in s.Profiles) pr.Engine.GpuClass = "entry";
+var lightArgs = player.BuildArguments(null, s).Where(a => a.StartsWith("--glsl-shaders-append=")).ToList();
+Check(lightArgs.Count == 3 && lightArgs[1].EndsWith("Anime4K_Restore_CNN_S.glsl"), "live enhance anime on a GTX 16 card: the light Anime4K chain");
+foreach (var pr in s.Profiles) pr.Engine.GpuClass = "";
 s.LiveEnhance = "crisp";
 Check(player.BuildArguments(null, s).Contains("--glsl-shaders-append=~~/shaders/nova-crisp.glsl"), "live enhance crisp: the sharpening shader");
 var shaderDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "engine", "mpv", "shaders");
 if (Directory.Exists(shaderDir))
-    Check(new[] { "off", "crisp", "crisp-strong", "anime" }.SelectMany(LiveEnhance.Shaders).All(p => File.Exists(Path.Combine(shaderDir, p[11..]))),
+    Check(new[] { "off", "crisp", "crisp-strong", "anime" }.SelectMany(m => LiveEnhance.Shaders(m).Concat(LiveEnhance.Shaders(m, "entry"))).All(p => File.Exists(Path.Combine(shaderDir, p[11..]))),
           "live enhance: every shader file is in engine/mpv/shaders");
 s.LiveEnhance = "off";
 

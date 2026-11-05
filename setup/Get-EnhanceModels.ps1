@@ -63,9 +63,14 @@ catch { throw "The Enhance models ($Tag) aren't published yet. Smoothing works m
 $sumsAsset = $rel.assets | Where-Object { $_.name -eq "SHA256SUMS" } | Select-Object -First 1
 if (-not $sumsAsset) { throw "$Tag has no SHA256SUMS" }
 $sums = @{}
-foreach ($line in ((Invoke-WebRequest -Uri $sumsAsset.browser_download_url -UseBasicParsing -Headers $Headers).Content -split "`n")) {
-    if ($line -match '^([0-9a-f]{64})\s+\*?(\S+)$') { $sums[$Matches[2]] = $Matches[1].ToUpper() }
+# Saved to a file and read as text: Windows PowerShell hands a download without a text type back as
+# raw bytes, which split into numbers instead of lines
+$sumsFile = Join-Path $Cache "SHA256SUMS"
+Invoke-WebRequest -Uri $sumsAsset.browser_download_url -OutFile $sumsFile -UseBasicParsing -Headers $Headers
+foreach ($line in (Get-Content $sumsFile)) {
+    if ($line.Trim() -match '^([0-9a-fA-F]{64})\s+\*?(\S+)$') { $sums[$Matches[2]] = $Matches[1].ToUpper() }
 }
+if ($sums.Count -eq 0) { throw "SHA256SUMS of $Tag couldn't be read" }
 foreach ($a in $rel.assets | Where-Object { $_.name -like "*.onnx" }) {
     $folder = Folder-For $a.name
     if (-not $folder) { Info "skip    $($a.name)"; continue }

@@ -184,7 +184,7 @@ public sealed partial class MainViewModel
         {
             _ = Task.Run(async () =>
             {
-                try { await b.CommandAsync("change-list", "glsl-shaders", "set", LiveEnhance.Joined(mode)); }
+                try { await b.CommandAsync("change-list", "glsl-shaders", "set", LiveEnhance.Joined(mode, Eng.GpuClass)); }
                 catch (Exception ex) when (ex is MpvException or TimeoutException or InvalidOperationException or IOException) { }
             });
             if (HasMedia) ShowToast("Live enhance: " + LiveEnhance.Name(mode));

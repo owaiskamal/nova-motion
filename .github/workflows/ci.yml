@@ -152,6 +152,16 @@ jobs:
             if ($f.Length -lt 20KB) { Write-Host "::error::animate-$move.mp4 is only $($f.Length) bytes"; exit 1 }
             Write-Host "::notice title=Animate a picture::$move -> $($f.Length) bytes"
           }
+      # The Enhance models' setup exactly as users run it: download, checksums, the Vulkan runtime
+      - name: Enhance models setup
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File setup\Get-EnhanceModels.ps1
+          if ($LASTEXITCODE -ne 0) { Get-Content runtime\setup-enhance.log -Tail 30; exit 1 }
+          $models = Get-ChildItem runtime\mpv\vs-plugins\models -Recurse -Filter *.onnx | Where-Object { $_.FullName -notmatch '\\rife\\' }
+          Write-Host "::notice title=Enhance models::$($models.Count) models, $([math]::Round(($models | Measure-Object Length -Sum).Sum / 1MB)) MB"
+          if ($models.Count -lt 8) { Write-Host "::error::only $($models.Count) Enhance models installed"; exit 1 }
+          if (-not (Test-Path runtime\mpv\vsmlrt.py)) { Write-Host "::error::vsmlrt.py missing"; exit 1 }
       # Uploads never fail the build: when the account's artifact storage is full, the build itself is still good
       - uses: actions/upload-artifact@v4
         continue-on-error: true
