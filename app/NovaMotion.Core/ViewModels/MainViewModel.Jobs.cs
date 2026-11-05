@@ -34,6 +34,7 @@ public sealed partial class MainViewModel
     private void PollJobs()
     {
         var now = _clock();
+        RaiseActivity();
         if ((now - _jobsReadAt).TotalSeconds < 1) return;
         _jobsReadAt = now;
         var jobs = (ReadJobs ?? (() => Jobs.Read(Runtime)))();

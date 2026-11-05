@@ -48,6 +48,8 @@ public sealed class ExportItem : Observable
     public double Progress { get => _progress; set { if (Set(ref _progress, value)) Raise(nameof(PercentText)); } }
     public string PercentText => $"{Progress:P0}";
     public string Detail { get => _detail; set => Set(ref _detail, value); }
+    /// <summary>The estimate when it was started from the page, by model family: the finished export corrects it.</summary>
+    public Dictionary<string, double>? EstimatedWork { get; set; }
     public bool IsRunning => Status == ExportStatus.Running;
     public bool IsDone => Status == ExportStatus.Done;
     public bool IsFailed => Status is ExportStatus.Failed or ExportStatus.Cancelled;
@@ -70,21 +72,21 @@ public sealed partial class MainViewModel
     public bool IsExportOpen { get => _isExportOpen; set { if (Set(ref _isExportOpen, value)) RaiseModule(); } }
 
     private ExportQuality _exportQuality = ExportQuality.Best;
-    public bool ExportBest { get => _exportQuality == ExportQuality.Best; set { _exportQuality = value ? ExportQuality.Best : ExportQuality.Faster; Raise(); Raise(nameof(ExportFaster)); } }
+    public bool ExportBest { get => _exportQuality == ExportQuality.Best; set { _exportQuality = value ? ExportQuality.Best : ExportQuality.Faster; Raise(); Raise(nameof(ExportFaster)); SyncPresets(); } }
     public bool ExportFaster { get => !ExportBest; set => ExportBest = !value; }
 
     private bool _exportGpuEncoder = true;
-    public bool ExportGpuEncoder { get => _exportGpuEncoder; set => Set(ref _exportGpuEncoder, value); }
+    public bool ExportGpuEncoder { get => _exportGpuEncoder; set { if (Set(ref _exportGpuEncoder, value)) SyncPresets(); } }
 
     private bool _exportComparison;
     /// <summary>Export a before/after video: the original and NOVA Motion side by side, labelled.</summary>
     public bool ExportComparison { get => _exportComparison; set => Set(ref _exportComparison, value); }
     private string _exportStartText = "";
     /// <summary>Only part of each video, from this time ("3:15"); empty = from the start.</summary>
-    public string ExportStartText { get => _exportStartText; set { if (Set(ref _exportStartText, value)) Raise(nameof(ExportRangeProblem)); } }
+    public string ExportStartText { get => _exportStartText; set { if (Set(ref _exportStartText, value)) { Raise(nameof(ExportRangeProblem)); UpdateEstimates(); } } }
     private string _exportLengthText = "";
     /// <summary>…for this many seconds ("20"); empty = to the end.</summary>
-    public string ExportLengthText { get => _exportLengthText; set { if (Set(ref _exportLengthText, value)) Raise(nameof(ExportRangeProblem)); } }
+    public string ExportLengthText { get => _exportLengthText; set { if (Set(ref _exportLengthText, value)) { Raise(nameof(ExportRangeProblem)); UpdateEstimates(); } } }
     public string ExportRangeProblem =>
         (ExportStartText.Length > 0 && ExportOptions.ParseTime(ExportStartText) is null) || (ExportLengthText.Length > 0 && ExportOptions.ParseTime(ExportLengthText) is not > 0)
             ? "Write times as 3:15 or 195, and the length in seconds." : "";
@@ -123,6 +125,7 @@ public sealed partial class MainViewModel
         {
             if (p is not OptionItem o) return;
             foreach (var t in ExportTargets) t.IsSelected = t == o;
+            SyncPresets();
         });
         CancelExportCommand = new Command(p =>
         {
@@ -165,7 +168,7 @@ public sealed partial class MainViewModel
         {
             var output = ExportPlan.OutputPath(f, options, p => File.Exists(p) || taken.Contains(p));
             taken.Add(output);
-            Exports.Add(new ExportItem(f, output, options));
+            Exports.Add(new ExportItem(f, output, options) { EstimatedWork = _queuedWork?.GetValueOrDefault(f) });
         }
         Raise(nameof(HasExports));
         _ = RunExportsAsync();
@@ -206,6 +209,7 @@ public sealed partial class MainViewModel
                         item.Status = ExportStatus.Done;
                         item.Progress = 1;
                         item.Detail = "Saved as " + item.OutputName;
+                        LearnFromExport(item);
                         if (item.Options.Still) { ShowFramePreview(item.Output); return; }
                         if (item.Options.Preview) { PlayPreview(item.Output); return; }
                         if (!IsExportOpen) ShowToast("Export finished: " + item.OutputName, "Show", () => _host.OpenExternal(Path.GetDirectoryName(item.Output)!));

@@ -69,14 +69,14 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Border Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,84,0,0"
-                    Background="#CC0F1424" CornerRadius="16" Padding="14,7">
+                    Background="#CC0B0B0F" CornerRadius="16" Padding="14,7">
                 <StackPanel Orientation="Horizontal">
                     <Ellipse Width="7" Height="7" Fill="{StaticResource OnVideoMuted}" VerticalAlignment="Center" Margin="0,0,9,0"/>
                     <TextBlock Text="{Binding DemoLeftLabel}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource OnVideo}"/>
                 </StackPanel>
             </Border>
             <Border Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,84,0,0"
-                    Background="#CC0F1424" CornerRadius="16" Padding="14,7" BorderBrush="{StaticResource Nova}" BorderThickness="1">
+                    Background="#CC0B0B0F" CornerRadius="16" Padding="14,7" BorderBrush="{StaticResource Nova}" BorderThickness="1">
                 <StackPanel Orientation="Horizontal">
                     <c:CadenceStrip Ticks="{Binding CadenceTicks}" BarWidth="3" Gap="2" Height="12" VerticalAlignment="Center" Margin="0,0,9,0"
                                     RealBrush="{StaticResource OnVideo}" GeneratedBrush="{StaticResource Nova}"/>
@@ -86,47 +86,87 @@
         </Grid>
 
         <!-- ==================================================== top bar -->
-        <Border x:Name="TopBar" VerticalAlignment="Top" Background="{StaticResource ScrimTop}" Padding="14,12,22,52">
+        <Border x:Name="TopBar" VerticalAlignment="Top" Background="{StaticResource ScrimTop}" Padding="18,14,18,56">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE72B;" FontSize="15" Command="{Binding StopCommand}"
-                        ToolTip="Back to home" VerticalAlignment="Top"/>
-                <StackPanel Grid.Column="1" Margin="10,2,24,0" VerticalAlignment="Top">
-                    <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock Text="{Binding Origin}" FontSize="12.5" Foreground="{StaticResource OnVideoMuted}" Margin="0,2,0,0"
-                               TextTrimming="CharacterEllipsis"/>
+                <Button Style="{StaticResource Btn.Round}" Content="&#xE72B;" Command="{Binding StopCommand}" ToolTip="Back to home" VerticalAlignment="Top"/>
+                <StackPanel Grid.Column="1" Margin="14,1,24,0" VerticalAlignment="Top">
+                    <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock FontSize="13" Foreground="{StaticResource OnVideoMuted}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis">
+                        <Run Text="{Binding Origin, Mode=OneWay}"/>
+                        <Run Text="{Binding CurrentChapter, Mode=OneWay}" Foreground="{StaticResource OnVideo}"/>
+                    </TextBlock>
                 </StackPanel>
-                <StackPanel Grid.Column="2" VerticalAlignment="Top" Margin="0,4,0,0" HorizontalAlignment="Right"
-                            Visibility="{Binding HasNext, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="Up next" FontSize="12" Foreground="{StaticResource OnVideoMuted}" HorizontalAlignment="Right"/>
-                    <TextBlock Text="{Binding NextTitle}" FontSize="13" FontWeight="Medium" MaxWidth="280" TextTrimming="CharacterEllipsis"
-                               HorizontalAlignment="Right" Margin="0,2,0,0"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
+                    <!-- What smoothing is doing; opens the Motion panel -->
+                    <Button Style="{StaticResource Btn.Pill}" Command="{Binding ToggleDrawerCommand}" CommandParameter="motion" ToolTip="Motion panel (Tab)" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <c:CadenceStrip Ticks="{Binding CadenceTicks}" BarWidth="3" Gap="2" Height="12" Margin="0,0,9,0"
+                                            RealBrush="{StaticResource OnVideo}" GeneratedBrush="{StaticResource Nova}" VerticalAlignment="Center"
+                                            Visibility="{Binding EngineActive, Converter={StaticResource BoolToVis}}"/>
+                            <ContentControl Style="{StaticResource Spinner}" Margin="0,0,9,0" VerticalAlignment="Center"
+                                            Visibility="{Binding EngineWorking, Converter={StaticResource BoolToVis}}">
+                                <ContentControl.LayoutTransform>
+                                    <ScaleTransform ScaleX="0.36" ScaleY="0.36"/>
+                                </ContentControl.LayoutTransform>
+                            </ContentControl>
+                            <TextBlock Style="{StaticResource GoldWhenActive}" Text="{Binding BadgeText}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Btn.Round}" Content="&#xE8A7;" Command="{Binding TogglePipCommand}" ToolTip="Picture in picture (I)" Margin="0,0,8,0"/>
+                    <Button Style="{StaticResource Btn.Round}" Content="&#xE897;" Command="{Binding ToggleShortcutsCommand}" ToolTip="Keyboard shortcuts (?)"/>
                 </StackPanel>
             </Grid>
         </Border>
 
+        <!-- ==================================================== Skip intro, from the file's chapters -->
+        <Button HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,28,138" Style="{StaticResource Btn.Pill}" Height="46" Padding="22,0"
+                FontSize="15" Content="{Binding SkipIntroText}" Command="{Binding SkipIntroCommand}"
+                Visibility="{Binding ShowSkipIntro, Converter={StaticResource BoolToVis}}"/>
+
+        <!-- ==================================================== Up next: the last seconds, with another after -->
+        <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,28,138" Width="340" CornerRadius="16" Padding="18,14"
+                Background="{StaticResource Glass}" BorderBrush="{StaticResource Separator}" BorderThickness="1"
+                Visibility="{Binding ShowUpNext, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <TextBlock Text="Up next" FontSize="12.5" Foreground="{StaticResource Muted}"/>
+                <TextBlock Text="{Binding NextTitle}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource Text}" TextTrimming="CharacterEllipsis" Margin="0,3,0,2"/>
+                <TextBlock Text="{Binding UpNextText}" FontSize="12.5" Foreground="{StaticResource Nova}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                    <Button Style="{StaticResource Btn.Primary}" Height="36" Padding="16,0" Content="Play now" Command="{Binding UpNextNowCommand}"/>
+                    <Button Style="{StaticResource Btn.Ghost}" Height="36" Margin="8,0,0,0" Foreground="{StaticResource Text}" Content="Cancel" Command="{Binding UpNextCancelCommand}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
         <!-- ==================================================== bottom controls -->
-        <Border x:Name="BottomBar" VerticalAlignment="Bottom" Background="{StaticResource ScrimBottom}" Padding="20,64,20,12">
+        <Border x:Name="BottomBar" VerticalAlignment="Bottom" Background="{StaticResource ScrimBottom}" Padding="24,72,24,14">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Margin="2,0,2,4">
+                <Grid Grid.Row="0" Margin="2,0,2,8">
                     <c:SeekBar x:Name="Seek" ProgressBrush="{StaticResource Nova}"
                                Value="{Binding SeekValue}" IsScrubbing="{Binding IsScrubbing}"
                                Maximum="{Binding Duration, Mode=OneWay}" CacheFraction="{Binding CachedFraction, Mode=OneWay}"
                                Chapters="{Binding ChapterFractions, Mode=OneWay}"/>
+                    <!-- Hover: a picture of that moment (local files), its time and chapter -->
                     <Canvas IsHitTestVisible="False">
-                        <Border x:Name="HoverBubble" Canvas.Top="-34" Background="{StaticResource Raised}" CornerRadius="6"
-                                Padding="8,4" Visibility="Collapsed">
-                            <TextBlock x:Name="HoverText" FontSize="12.5" FontWeight="Medium" Foreground="{StaticResource Text}"/>
-                        </Border>
+                        <StackPanel x:Name="HoverBubble" Canvas.Bottom="16" Visibility="Collapsed">
+                            <Border x:Name="HoverPicture" CornerRadius="10" BorderBrush="#E6FFFFFF" BorderThickness="2" ClipToBounds="True"
+                                    Background="#FF101014" Width="196" Height="112" Margin="0,0,0,6" Visibility="Collapsed">
+                                <Image x:Name="HoverImage" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            </Border>
+                            <Border HorizontalAlignment="Center" Background="#E60B0B0F" CornerRadius="7" Padding="9,4">
+                                <TextBlock x:Name="HoverText" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                            </Border>
+                        </StackPanel>
                     </Canvas>
                 </Grid>
 
@@ -138,16 +178,26 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Orientation="Horizontal">
-                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE892;" Command="{Binding PreviousCommand}" ToolTip="Previous (P)"/>
-                        <Button Style="{StaticResource Btn.VideoIcon}" Content="{Binding PlayPauseGlyph}" FontSize="22" Width="46" Height="46"
-                                Command="{Binding TogglePauseCommand}" ToolTip="{Binding PlayPauseTip}"/>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Command="{Binding Back10Command}" ToolTip="Back 10 s (double-click the left side)">
+                            <Grid>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE7A7;" FontSize="24"/>
+                                <TextBlock Text="10" FontFamily="{StaticResource UiFont}" FontSize="8.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,3,0,0"/>
+                            </Grid>
+                        </Button>
+                        <Button Style="{StaticResource Btn.PlayRound}" Content="{Binding PlayPauseGlyph}" Margin="4,0" Command="{Binding TogglePauseCommand}" ToolTip="{Binding PlayPauseTip}"/>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Command="{Binding Forward10Command}" ToolTip="Forward 10 s (double-click the right side)">
+                            <Grid>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE7A6;" FontSize="24"/>
+                                <TextBlock Text="10" FontFamily="{StaticResource UiFont}" FontSize="8.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,3,0,0"/>
+                            </Grid>
+                        </Button>
                         <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE893;" Command="{Binding NextCommand}" ToolTip="Next (N)"
                                 Visibility="{Binding HasNext, Converter={StaticResource BoolToVis}}"/>
-                        <Button x:Name="VolumeButton" Style="{StaticResource Btn.VideoIcon}" Content="{Binding VolumeGlyph}" Margin="6,0,0,0"
+                        <Button x:Name="VolumeButton" Style="{StaticResource Btn.VideoIcon}" Content="{Binding VolumeGlyph}" Margin="8,0,0,0"
                                 Command="{Binding ToggleMuteCommand}" ToolTip="Mute (M)"/>
-                        <Slider Style="{StaticResource VolumeSlider}" Maximum="130" Value="{Binding Volume}" Margin="2,0,14,0"
+                        <Slider Style="{StaticResource VolumeSlider}" Maximum="{Binding MaxVolume, Mode=OneWay}" Value="{Binding Volume}" Margin="2,0,16,0"
                                 ToolTip="{Binding VolumeText}"/>
-                        <TextBlock VerticalAlignment="Center" FontSize="13.5" FontWeight="Medium">
+                        <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold">
                             <Run Text="{Binding PositionText, Mode=OneWay}"/>
                             <Run Text=" / " Foreground="{StaticResource OnVideoMuted}"/>
                             <Run Text="{Binding DurationText, Mode=OneWay}" Foreground="{StaticResource OnVideoMuted}"/>
@@ -155,26 +205,14 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
-                        <!-- Engine badge: the cadence strip and what it's doing; opens the Motion panel -->
-                        <Button Style="{StaticResource Btn.VideoText}" Command="{Binding ToggleDrawerCommand}" CommandParameter="motion"
-                                ToolTip="Motion panel (Tab)" Margin="0,0,6,0">
-                            <StackPanel Orientation="Horizontal">
-                                <c:CadenceStrip Ticks="{Binding CadenceTicks}" BarWidth="3" Gap="2" Height="13" Margin="0,0,9,0"
-                                                RealBrush="{StaticResource OnVideo}" GeneratedBrush="{StaticResource Nova}" VerticalAlignment="Center"
-                                                Visibility="{Binding EngineActive, Converter={StaticResource BoolToVis}}"/>
-                                <ContentControl Style="{StaticResource Spinner}" Margin="0,0,9,0" VerticalAlignment="Center"
-                                                Visibility="{Binding EngineWorking, Converter={StaticResource BoolToVis}}">
-                                    <ContentControl.LayoutTransform>
-                                        <ScaleTransform ScaleX="0.36" ScaleY="0.36"/>
-                                    </ContentControl.LayoutTransform>
-                                </ContentControl>
-                                <TextBlock Style="{StaticResource GoldWhenActive}" Text="{Binding BadgeText}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE74E;" Command="{Binding ExportCurrentCommand}"
-                                ToolTip="Export a smooth copy of this video"/>
+                        <Button Style="{StaticResource Btn.VideoText}" Command="{Binding ToggleDrawerCommand}" CommandParameter="tracks" ToolTip="Speed, subtitles and audio"
+                                Content="{Binding SpeedText}" FontWeight="Bold"/>
                         <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE7F0;" Command="{Binding ToggleDrawerCommand}" CommandParameter="tracks"
-                                ToolTip="Subtitles, audio and speed"/>
+                                ToolTip="Subtitles and audio"/>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE790;" Command="{Binding ToggleDrawerCommand}" CommandParameter="picture"
+                                ToolTip="Picture: brightness, aspect, zoom, rotate, loop, sleep timer"/>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE89F;" Command="{Binding ToggleDemoCommand}" ToolTip="Before / after (Ctrl+D)"/>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE74E;" Command="{Binding ExportCurrentCommand}" ToolTip="Enhance a copy of this video"/>
                         <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE8FD;" Command="{Binding ToggleDrawerCommand}" CommandParameter="queue"
                                 ToolTip="Queue" Visibility="{Binding HasQueue, Converter={StaticResource BoolToVis}}"/>
                         <Button Style="{StaticResource Btn.VideoIcon}" Content="{Binding FullscreenGlyph}" Command="{Binding ToggleFullscreenCommand}"
@@ -185,8 +223,8 @@
         </Border>
 
         <!-- ==================================================== drawer -->
-        <Border x:Name="DrawerPanel" HorizontalAlignment="Right" Width="376" Margin="0,14,14,104" Background="{StaticResource Surface}"
-                CornerRadius="14" BorderBrush="{StaticResource Line}" BorderThickness="1"
+        <Border x:Name="DrawerPanel" HorizontalAlignment="Right" Width="390" Margin="0,16,16,112" Background="{StaticResource Glass}"
+                CornerRadius="20" BorderBrush="{StaticResource Separator}" BorderThickness="1"
                 Visibility="{Binding IsDrawerOpen, Converter={StaticResource BoolToVis}}">
             <Border.RenderTransform>
                 <TranslateTransform x:Name="DrawerShift" X="0"/>
@@ -205,10 +243,13 @@
                                 <Setter Property="Text" Value="Motion"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsTracksOpen}" Value="True">
-                                        <Setter Property="Text" Value="Subtitles and audio"/>
+                                        <Setter Property="Text" Value="Speed, subtitles and audio"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding IsQueueOpen}" Value="True">
                                         <Setter Property="Text" Value="Queue"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsPictureOpen}" Value="True">
+                                        <Setter Property="Text" Value="Picture"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -333,6 +374,45 @@
                                 </ItemsControl>
                             </StackPanel>
 
+                            <TextBlock Style="{StaticResource DrawerTitle}" Text="Timing and size"/>
+                            <Border Style="{StaticResource Group}" Margin="12,0,0,0">
+                                <StackPanel>
+                                    <DockPanel Margin="14,8">
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                            <Button Style="{StaticResource Btn.Secondary}" Width="34" Height="30" Padding="0" Content="−" Command="{Binding SubEarlierCommand}" ToolTip="Earlier (Z)"/>
+                                            <TextBlock Text="{Binding SubDelayText}" Width="64" TextAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource Muted}"/>
+                                            <Button Style="{StaticResource Btn.Secondary}" Width="34" Height="30" Padding="0" Content="+" Command="{Binding SubLaterCommand}" ToolTip="Later (X)"/>
+                                        </StackPanel>
+                                        <TextBlock Text="Subtitles" VerticalAlignment="Center" Foreground="{StaticResource Text}"/>
+                                    </DockPanel>
+                                    <Border Style="{StaticResource GroupCell}" Padding="14,8" MinHeight="0">
+                                        <DockPanel>
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                                <Button Style="{StaticResource Btn.Secondary}" Width="34" Height="30" Padding="0" Content="−" Command="{Binding AudioEarlierCommand}"/>
+                                                <TextBlock Text="{Binding AudioDelayText}" Width="64" TextAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource Muted}"/>
+                                                <Button Style="{StaticResource Btn.Secondary}" Width="34" Height="30" Padding="0" Content="+" Command="{Binding AudioLaterCommand}"/>
+                                            </StackPanel>
+                                            <TextBlock Text="Audio" VerticalAlignment="Center" Foreground="{StaticResource Text}"/>
+                                        </DockPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource GroupCell}" Padding="14,8" MinHeight="0">
+                                        <DockPanel>
+                                            <TextBlock Text="Subtitle size" VerticalAlignment="Center" Foreground="{StaticResource Text}" Margin="0,0,14,0"/>
+                                            <Slider Style="{StaticResource VolumeSlider}" Width="Auto" Minimum="0.5" Maximum="2" Value="{Binding SubScale}"/>
+                                        </DockPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource GroupCell}" Padding="14,6" MinHeight="0">
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding NightMode}">
+                                            <StackPanel>
+                                                <TextBlock Text="Night mode" Foreground="{StaticResource Text}"/>
+                                                <TextBlock Style="{StaticResource Text.Small}" Text="Quieter explosions, clearer voices (Shift+D)"/>
+                                            </StackPanel>
+                                        </CheckBox>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Style="{StaticResource Text.Small}" Margin="12,6,0,0" TextWrapping="Wrap" Text="Volume goes up to 150% for quiet files."/>
+
                             <StackPanel Visibility="{Binding IsOnline, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Style="{StaticResource DrawerTitle}" Text="Quality"/>
                                 <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2" Margin="12,0,0,0">
@@ -377,6 +457,60 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </Border>
+                        </StackPanel>
+
+                        <!-- ============================================ Picture -->
+                        <StackPanel Visibility="{Binding IsPictureOpen, Converter={StaticResource BoolToVis}}" Margin="-12,0,0,0">
+                            <TextBlock Style="{StaticResource DrawerTitle}" Text="Adjust" Margin="12,6,0,6"/>
+                            <Border Style="{StaticResource Group}" Margin="12,0,0,0" Padding="14,6">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="92"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="36"/>
+                                        <RowDefinition Height="36"/>
+                                        <RowDefinition Height="36"/>
+                                        <RowDefinition Height="36"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="Brightness" VerticalAlignment="Center" Foreground="{StaticResource Text}"/>
+                                    <Slider Grid.Column="1" Style="{StaticResource VolumeSlider}" Width="Auto" Minimum="-50" Maximum="50" Value="{Binding Brightness}"/>
+                                    <TextBlock Grid.Row="1" Text="Contrast" VerticalAlignment="Center" Foreground="{StaticResource Text}"/>
+                                    <Slider Grid.Row="1" Grid.Column="1" Style="{StaticResource VolumeSlider}" Width="Auto" Minimum="-50" Maximum="50" Value="{Binding Contrast}"/>
+                                    <TextBlock Grid.Row="2" Text="Saturation" VerticalAlignment="Center" Foreground="{StaticResource Text}"/>
+                                    <Slider Grid.Row="2" Grid.Column="1" Style="{StaticResource VolumeSlider}" Width="Auto" Minimum="-100" Maximum="100" Value="{Binding Saturation}"/>
+                                    <TextBlock Grid.Row="3" Text="Gamma" VerticalAlignment="Center" Foreground="{StaticResource Text}"/>
+                                    <Slider Grid.Row="3" Grid.Column="1" Style="{StaticResource VolumeSlider}" Width="Auto" Minimum="-50" Maximum="50" Value="{Binding Gamma}"/>
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Style="{StaticResource DrawerTitle}" Text="Shape"/>
+                            <Border Style="{StaticResource SegmentGroup}" Margin="12,0,0,8" HorizontalAlignment="Stretch">
+                                <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding AspectOptions}" Tag="{Binding SelectAspectCommand}"/>
+                            </Border>
+                            <Border Style="{StaticResource SegmentGroup}" Margin="12,0,0,8" HorizontalAlignment="Stretch">
+                                <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding ZoomOptions}" Tag="{Binding SelectZoomCommand}"/>
+                            </Border>
+                            <StackPanel Orientation="Horizontal" Margin="12,4,0,0">
+                                <Button Style="{StaticResource Btn.Secondary}" Height="36" Padding="14,0" Command="{Binding RotateCommand}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE7AD;" FontSize="13" Margin="0,0,8,0"/>
+                                        <TextBlock Text="Rotate" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource Btn.Link}" Margin="12,0,0,0" Content="Reset picture" Command="{Binding ResetPictureCommand}"
+                                        Visibility="{Binding PictureChanged, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+
+                            <TextBlock Style="{StaticResource DrawerTitle}" Text="Watching"/>
+                            <Button Style="{StaticResource Btn.Secondary}" Height="36" Padding="14,0" Margin="12,0,0,10" HorizontalAlignment="Left"
+                                    Content="{Binding ABLoopText}" Command="{Binding ABLoopCommand}" ToolTip="Shift+L"/>
+                            <TextBlock Text="Sleep timer" Margin="12,4,0,6" FontSize="13" Foreground="{StaticResource Muted}"/>
+                            <Border Style="{StaticResource SegmentGroup}" Margin="12,0,0,0" HorizontalAlignment="Stretch">
+                                <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding SleepOptions}" Tag="{Binding SelectSleepCommand}"/>
+                            </Border>
+                            <TextBlock Style="{StaticResource Text.Small}" Margin="12,6,0,0" Text="{Binding SleepText}"/>
                         </StackPanel>
 
                         <!-- ============================================ Queue -->
@@ -435,9 +569,43 @@
             </Grid>
         </Border>
 
+        <!-- ==================================================== keyboard shortcuts -->
+        <Grid Visibility="{Binding ShowShortcuts, Converter={StaticResource BoolToVis}}">
+            <Border Background="{StaticResource Scrim}">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding ToggleShortcutsCommand}"/>
+                </Border.InputBindings>
+            </Border>
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center" Width="560" MaxHeight="620" CornerRadius="20" Padding="22,16"
+                    Background="{StaticResource Glass}" BorderBrush="{StaticResource Separator}" BorderThickness="1">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Link}" Content="Done" FontWeight="Bold" Command="{Binding ToggleShortcutsCommand}"/>
+                        <TextBlock Text="Keyboard shortcuts" FontSize="19" FontWeight="Bold" Foreground="{StaticResource Text}" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding ShortcutList}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,5">
+                                        <Border DockPanel.Dock="Left" Width="210" Margin="0,0,14,0">
+                                            <Border HorizontalAlignment="Left" Background="{StaticResource Hover}" CornerRadius="6" Padding="8,3">
+                                                <TextBlock Text="{Binding Keys}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                            </Border>
+                                        </Border>
+                                        <TextBlock Text="{Binding Description}" FontSize="13.5" Foreground="{StaticResource Muted}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
+
         <!-- ==================================================== toast -->
         <Border x:Name="Toast" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,120"
-                Background="{StaticResource Raised}" CornerRadius="10" Padding="16,10" MaxWidth="560"
+                Background="{StaticResource Raised}" CornerRadius="14" Padding="18,12" MaxWidth="560"
                 Visibility="{Binding ToastVisible, Converter={StaticResource BoolToVis}}">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding ToastText}" Foreground="{StaticResource Text}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420"/>

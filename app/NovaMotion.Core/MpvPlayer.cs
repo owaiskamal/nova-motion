@@ -94,7 +94,7 @@ public sealed class MpvPlayer : IPlayerBackend
                 "--osc=no", "--osd-bar=no", "--osd-level=0",   // the app draws controls and messages
                 "--input-cursor=no", "--input-vo-keyboard=no", // mouse and keys go to the app
                 "--cursor-autohide=no",
-                $"--volume={Math.Clamp(settings.Volume, 0, 130)}",
+                $"--volume={Math.Clamp(settings.Volume, 0, NovaMotion.Core.ViewModels.MainViewModelLimits.MaxVolume)}", $"--volume-max={NovaMotion.Core.ViewModels.MainViewModelLimits.MaxVolume}",
             });
         }
         else

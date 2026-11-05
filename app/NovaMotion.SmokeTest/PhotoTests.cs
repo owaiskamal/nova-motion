@@ -81,7 +81,7 @@ internal static class PhotoTests
             PhotoEnhancer = runner,
             PhotoFolder = Path.Combine(dir, "out"),
         };
-        check(vm.PhotoReady && !vm.CanEnhancePhoto && vm.PhotoScales.Single(s => s.IsSelected).Value == "2", "photo: 2x by default; needs a picture");
+        check(vm.PhotoReady && !vm.CanEnhancePhoto && vm.PhotoScales.Single(s => s.IsSelected).Value == "1" && vm.PhotoPresetItems.Single(i => i.IsSelected).Name == "Phone photo", "photo: starts as the Phone photo preset; needs a picture");
         vm.SetPhoto(Path.Combine(dir, "notes.txt"));
         check(!vm.HasPhoto, "photo: a non-picture is refused");
         var picture = Path.Combine(dir, "Portrait.jpg");

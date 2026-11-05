@@ -106,6 +106,7 @@ public sealed partial class MainViewModel
         foreach (var o in EnhanceGrains) o.IsSelected = Same(o.Value, e.Grain);
         Raise(nameof(EnhanceOn), nameof(EnhanceReady), nameof(EnhanceNeedsSetup), nameof(ShowEnhanceOptions),
               nameof(EnhancePresetNote), nameof(EnhanceFixCompression), nameof(EnhanceSummary));
+        SyncPresets();
     }
 
     /// <summary>A preset other than "Smooth only" is chosen.</summary>
@@ -120,7 +121,7 @@ public sealed partial class MainViewModel
     public bool EnhanceFixCompression
     {
         get => Boost.FixCompression;
-        set { if (Boost.FixCompression == value) return; Boost.FixCompression = value; _store.Save(_settings); Raise(); Raise(nameof(EnhanceSummary)); }
+        set { if (Boost.FixCompression == value) return; Boost.FixCompression = value; _store.Save(_settings); Raise(); Raise(nameof(EnhanceSummary)); SyncPresets(); }
     }
 
     /// <summary>Checks again whether setup-enhance.cmd has run: when the Enhance page opens.</summary>

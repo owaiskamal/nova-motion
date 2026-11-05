@@ -57,12 +57,15 @@ internal static class EnhanceTests
         var exporter = new FakeExporter();
         var backend = new FakeBackend();
         var vm = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "settings")), rt, () => backend, () => DateTime.UtcNow, exporter);
-        check(!vm.EnhanceOn && !vm.ShowEnhanceOptions && vm.EnhancePresets.Single(p => p.IsSelected).Value == "off", "enhance: starts as smooth only");
+        check(vm.EnhanceOn && vm.EnhancePresets.Single(p => p.IsSelected).Value == "anime" && vm.Settings.VideoPreset == "anime",
+              "enhance: starts on the first preset, Anime episode");
+        vm.ApplyVideoPreset("smooth");
+        check(!vm.EnhanceOn && !vm.ShowEnhanceOptions && vm.EnhancePresets.Single(p => p.IsSelected).Value == "off", "enhance: Just smooth is smoothing only");
         check(vm.EnhanceStrengths.Single(p => p.IsSelected).Value == "balanced" && vm.EnhanceDetails.Single(p => p.IsSelected).Label == "Off",
               "enhance: balanced AI strength and no extra sharpening by default");
         vm.SelectEnhancePresetCommand.Execute(vm.EnhancePresets.Single(p => p.Value == "anime"));
         check(vm.EnhanceOn && vm.ShowEnhanceOptions && !vm.EnhanceNeedsSetup && vm.EnhancePresetNote.Contains("Real-CUGAN"), "enhance: anime chosen, options shown");
-        check(vm.EnhanceSizes.Single(p => p.IsSelected).Label == "4K", "enhance: 4K by default");
+        check(vm.EnhanceSizes.Single(p => p.IsSelected).Label == "Original", "enhance: the video's own size unless a preset or choice enlarges it");
         vm.SelectEnhanceSizeCommand.Execute(vm.EnhanceSizes.Single(p => p.Label == "1440p"));
         vm.SelectEnhanceCleanupCommand.Execute(vm.EnhanceCleanups.Single(p => p.Value == "off"));
         vm.SelectEnhanceGrainCommand.Execute(vm.EnhanceGrains.Single(p => p.Label == "Film"));

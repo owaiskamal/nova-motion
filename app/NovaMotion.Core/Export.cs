@@ -52,7 +52,7 @@ public sealed record ExportOptions
     }
 }
 
-public sealed record SourceInfo(int? Frames, double? Fps);
+public sealed record SourceInfo(int? Frames, double? Fps, int? Width = null, int? Height = null, double? Seconds = null);
 
 /// <summary>A frame rate as a fraction, with the engine's rules for which rate a video gets.</summary>
 public sealed record FrameRate(long Num, long Den)
@@ -373,7 +373,7 @@ public sealed class ExportRunner : IExportRunner
                 RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
             };
             foreach (var a in new[] { "--no-config", "--player-operation-mode=cplayer", "--idle=no", "--vo=null", "--ao=null",
-                                      "--frames=1", "--term-playing-msg=NMPROBE ${=estimated-frame-count} ${=container-fps}", "--", input })
+                                      "--frames=1", "--term-playing-msg=NMPROBE ${=estimated-frame-count} ${=container-fps} ${=width} ${=height} ${=duration}", "--", input })
                 psi.ArgumentList.Add(a);
             using var p = System.Diagnostics.Process.Start(psi)!;
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -392,11 +392,16 @@ public sealed class ExportRunner : IExportRunner
 
     public static SourceInfo ParseProbe(string output)
     {
-        var m = System.Text.RegularExpressions.Regex.Match(output, @"NMPROBE (\S*) (\S*)");
+        var m = System.Text.RegularExpressions.Regex.Match(output, @"NMPROBE (\S*) (\S*)(?: (\S*) (\S*) (\S*))?");
         if (!m.Success) return new SourceInfo(null, null);
         int? frames = int.TryParse(m.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) && n > 0 ? n : null;
         double? fps = double.TryParse(m.Groups[2].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) && f > 0 ? f : null;
-        return new SourceInfo(frames, fps);
+        int? w = int.TryParse(m.Groups[3].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var ww) && ww > 0 ? ww : null;
+        int? h = int.TryParse(m.Groups[4].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var hh) && hh > 0 ? hh : null;
+        double? d = double.TryParse(m.Groups[5].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var dd) && dd > 0 ? dd : null;
+        // Containers without a frame count: the length and rate give it
+        frames ??= d is { } len && fps is { } r ? (int)Math.Round(len * r) : null;
+        return new SourceInfo(frames, fps, w, h, d);
     }
 
     /// <summary>The most useful line of mpv's log for a failed export.</summary>

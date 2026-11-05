@@ -57,6 +57,7 @@ public partial class MainWindow : Window, IUiHost
         StateChanged += (_, _) => OnStateChanged();
         Video.SizeChanged += (_, _) => PlaceOverlay();
         PreviewKeyDown += (_, e) => OnKey(e);
+        PreviewKeyUp += (_, e) => OnKeyUp(e);
         DragEnter += OnDragEnter;
         DragOver += (_, e) => { e.Effects = DragDropEffects.Copy; e.Handled = true; };
         DragLeave += (_, _) => DropHint.Visibility = Visibility.Collapsed;
@@ -155,6 +156,10 @@ public partial class MainWindow : Window, IUiHost
                 break;
             case nameof(MainViewModel.IsFullscreen):
                 SetFullscreen(_vm.IsFullscreen);
+                UpdatePlayerSurface();
+                break;
+            case nameof(MainViewModel.IsPip):
+                SetPip(_vm.IsPip);
                 break;
             case nameof(MainViewModel.EngineState):
                 EngineDot.Fill = (Brush)FindResource(_vm.EngineState switch
@@ -176,6 +181,8 @@ public partial class MainWindow : Window, IUiHost
     {
         var show = _vm.HasMedia && !_vm.IsSettingsOpen && !_vm.IsExportOpen && !_vm.IsGenerateOpen;
         Video.Visibility = show ? Visibility.Visible : Visibility.Hidden;
+        // The player has the whole window; the sidebar is for the pages
+        Sidebar.Visibility = show || _vm.IsFullscreen ? Visibility.Collapsed : Visibility.Visible;
         if (_overlay is null) return;
         if (show && IsVisible && WindowState != WindowState.Minimized)
         {
@@ -205,6 +212,37 @@ public partial class MainWindow : Window, IUiHost
         // A maximised custom-chrome window overhangs the screen by its resize border
         Frame.Padding = WindowState == WindowState.Maximized && !_vm.IsFullscreen ? new Thickness(7) : new Thickness(0);
         UpdatePlayerSurface();
+    }
+
+    private Rect _pipRestore;
+    private WindowState _pipRestoreState;
+
+    /// <summary>Picture in picture: the video alone in a small always-on-top window in the screen's
+    /// bottom-right corner; the controls still show on hover. Off: back where it was.</summary>
+    private void SetPip(bool on)
+    {
+        var work = SystemParameters.WorkArea;
+        if (on)
+        {
+            _pipRestoreState = WindowState;
+            _pipRestore = WindowState == WindowState.Normal ? new Rect(Left, Top, Width, Height) : RestoreBounds;
+            WindowState = WindowState.Normal;
+            TitleRow.Height = new GridLength(0);
+            MinWidth = 320; MinHeight = 180;
+            Width = 480; Height = 270;
+            Left = work.Right - Width - 24; Top = work.Bottom - Height - 24;
+            Topmost = true;
+        }
+        else
+        {
+            Topmost = false;
+            MinWidth = 900; MinHeight = 580;
+            TitleRow.Height = new GridLength(44);
+            if (!_pipRestore.IsEmpty) { Left = _pipRestore.Left; Top = _pipRestore.Top; Width = _pipRestore.Width; Height = _pipRestore.Height; }
+            WindowState = _pipRestoreState;
+        }
+        UpdatePlayerSurface();
+        Dispatcher.BeginInvoke(PlaceOverlay, DispatcherPriority.Background);
     }
 
     private void SetFullscreen(bool on)
@@ -253,12 +291,29 @@ public partial class MainWindow : Window, IUiHost
 
     // ------------------------------------------------------------------ input
 
+    private bool _fastHeld;
+
+    private void OnKeyUp(KeyEventArgs e)
+    {
+        if (e.Key != Key.Right || !_fastHeld) return;
+        _fastHeld = false;
+        _vm.SetSpeedCommand.Execute(1.0);
+        e.Handled = true;
+    }
+
     private void OnKey(KeyEventArgs e)
     {
         if (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsExportOpen || _vm.IsGenerateOpen) return;
         if (Keyboard.FocusedElement is TextBox) return;
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         var mods = Keyboard.Modifiers;
+        // Holding → plays at 2× until it's let go; a tap still jumps 5 s
+        if (key == Key.Right && e.IsRepeat && mods == ModifierKeys.None)
+        {
+            if (!_fastHeld) { _fastHeld = true; _vm.SetSpeedCommand.Execute(2.0); _vm.ShowToast("2× while held"); }
+            e.Handled = true;
+            return;
+        }
         var (action, arg) = KeyMap.Resolve(key.ToString(), mods.HasFlag(ModifierKeys.Control), mods.HasFlag(ModifierKeys.Shift), mods.HasFlag(ModifierKeys.Alt));
         if (action == PlayerAction.None) return;
         e.Handled = true;
@@ -285,11 +340,24 @@ public partial class MainWindow : Window, IUiHost
                 _vm.SetAnimateImage(picture);
             return;
         }
-        // A picture dropped on the Enhance page: Enhance a photo
-        if (_vm.IsEnhanceModule && e.Data.GetData(DataFormats.FileDrop) is string[] pics && pics.Length > 0 && pics.All(Animate.IsImage))
+        // Dropped on the Enhance page: pictures are enhanced as photos, videos wait there for Enhance
+        if (_vm.IsExportOpen && e.Data.GetData(DataFormats.FileDrop) is string[] onEnhance && onEnhance.Length > 0)
         {
-            _vm.SetPhoto(pics[0]);
-            return;
+            if (onEnhance.All(Animate.IsImage))
+            {
+                _vm.PhotoMode = true;
+                _vm.SetPhoto(onEnhance[0]);
+                return;
+            }
+            var videos = onEnhance.SelectMany<string, string>(f => Directory.Exists(f)
+                    ? Directory.GetFiles(f).Where(MediaSource.IsVideoFile).OrderBy(x => x, NaturalComparer.Instance)
+                    : MediaSource.IsVideoFile(f) ? new[] { f } : Array.Empty<string>()).ToList();
+            if (videos.Count > 0)
+            {
+                _vm.PhotoMode = false;
+                _vm.StageVideos(videos);
+                return;
+            }
         }
         if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
         {

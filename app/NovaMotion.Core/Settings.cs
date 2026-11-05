@@ -120,7 +120,7 @@ public sealed class AppSettings
     public List<VideoPreset> MyVideoPresets { get; set; } = new();
     public List<PhotoPreset> MyPhotoPresets { get; set; } = new();
     /// <summary>The preset chosen last, which new videos and photos start with.</summary>
-    public string VideoPreset { get; set; } = "anime";
+    public string VideoPreset { get; set; } = "";
     public string PhotoPreset { get; set; } = "phone";
     /// <summary>How long exports really took against their estimate, by model family: estimates learn this PC.</summary>
     public Dictionary<string, double> EstimateCalibration { get; set; } = new();
