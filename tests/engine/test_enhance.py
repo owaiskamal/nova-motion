@@ -24,6 +24,30 @@ SCRIPT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.p
 sys.path.insert(0, os.path.dirname(SCRIPT))
 import enhance  # noqa: E402
 
+# The shipped VapourSynth's std.Merge refuses half floats (RGBH); newer ones accept them, so the
+# tests make Merge as strict as the shipped one
+_merge = core.std.Merge
+
+
+def strict_merge(a, b, weight=0.5, **kw):
+    for c in (a, b):
+        if c.format.sample_type == vs.FLOAT and c.format.bits_per_sample == 16:
+            raise vs.Error("Merge: Input clip must be constant format 8..16 bit integer or 32 bit float, passed RGBH.")
+    return _merge(a, b, weight=weight, **kw)
+
+
+class _Std:
+    def __getattr__(self, name):
+        return strict_merge if name == "Merge" else getattr(core.std, name)
+
+
+class _Core:
+    def __getattr__(self, name):
+        return _Std() if name == "std" else getattr(core, name)
+
+
+enhance.core = _Core()
+
 fails = 0
 
 

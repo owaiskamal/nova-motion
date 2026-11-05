@@ -177,8 +177,9 @@ def upscale(clip, cfg, e, matrix):
         big = core.resize.Spline36(big, out_w, out_h)
     mix = MIX[e["preset"]][e["strength"]]
     if mix < 1.0:
-        plain = core.resize.Spline36(rgb, out_w, out_h)
-        big = core.std.Merge(plain, big, weight=mix)
+        # In 32-bit float: older VapourSynth (the one shipped) can't Merge the half floats TensorRT gives
+        plain = core.resize.Spline36(rgb, out_w, out_h, format=vs.RGBS)
+        big = core.std.Merge(plain, core.resize.Point(big, format=vs.RGBS) if big.format.id != vs.RGBS else big, weight=mix)
     out_matrix = "709" if out_h >= 600 else matrix
     return core.resize.Bicubic(big, format=clip.format.id, matrix_s=out_matrix, dither_type="error_diffusion")
 
