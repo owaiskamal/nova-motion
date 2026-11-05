@@ -39,7 +39,56 @@ def parse_args(argv=None):
     p.add_argument("--packages", default="", help="folder holding numpy and Pillow")
     p.add_argument("--gpu", type=int, default=0)
     p.add_argument("--gpu-class", default="")
+    p.add_argument("--compare", default="", help="also write a before/after at 100%% here")
+    p.add_argument("--spot", default="0.5,0.5", help="centre of the before/after, as fractions of width,height")
+    p.add_argument("--compare-only", action="store_true", help="--out is an existing result: only (re)make --compare")
     return p.parse_args(argv)
+
+
+# Each side of the before/after: a part of the result at 100%, so its pixels are seen as they are
+COMPARE_SIDE = (880, 880)
+
+
+def make_compare(original, result, spot, path):
+    """Before | after, side by side: the same part of the picture, the result at 100% and the original
+    enlarged plainly (what a picture viewer shows) to the same size, with an amber line between and
+    labels. A whole picture shrunk to fit the screen hides exactly what enhancing changes."""
+    from PIL import Image, ImageDraw, ImageFont
+    rw, rh = result.size
+    cw, ch = min(rw, COMPARE_SIDE[0]), min(rh, COMPARE_SIDE[1])
+    fx, fy = spot
+    x = int(min(max(fx * rw - cw / 2, 0), rw - cw))
+    y = int(min(max(fy * rh - ch / 2, 0), rh - ch))
+    after = result.convert("RGB").crop((x, y, x + cw, y + ch))
+    kx, ky = original.width / rw, original.height / rh
+    before = original.convert("RGB").resize((cw, ch), Image.BICUBIC,
+                                             box=(x * kx, y * ky, (x + cw) * kx, (y + ch) * ky))
+    bar = max(6, cw // 110)
+    out = Image.new("RGB", (cw * 2 + bar, ch), (255, 176, 32))
+    out.paste(before, (0, 0))
+    out.paste(after, (cw + bar, 0))
+    draw = ImageDraw.Draw(out)
+    try:
+        font = ImageFont.load_default(size=max(14, cw // 40))
+    except TypeError:          # Pillow before 10.1
+        font = ImageFont.load_default()
+    zoom = rw / original.width
+    for left, words in ((0, f"BEFORE: original, enlarged {zoom:.1f}x" if zoom > 1.01 else "BEFORE: original"),
+                        (cw + bar, "AFTER: NOVA Enhance, at 100%")):
+        tw, th = draw.textbbox((0, 0), words, font=font)[2:]
+        draw.rectangle((left + 10, 10, left + 26 + tw, 20 + th + 6), fill=(15, 20, 36))
+        draw.text((left + 18, 14), words, font=font, fill=(230, 233, 242))
+    tmp = path + ".part"
+    out.save(tmp, "PNG")
+    os.replace(tmp, path)
+
+
+def parse_spot(text):
+    try:
+        fx, fy = (float(v) for v in text.split(","))
+        return min(max(fx, 0.0), 1.0), min(max(fy, 0.0), 1.0)
+    except ValueError:
+        return 0.5, 0.5
 
 
 def target(width, height, scale):
@@ -112,6 +161,10 @@ def main(argv=None):
     import numpy as np
     img = ImageOps.exif_transpose(Image.open(a.image))
     img.load()
+    if a.compare_only:
+        make_compare(img, Image.open(a.out), parse_spot(a.spot), a.compare)
+        say(f"compare {a.compare}")
+        return 0
     alpha = None
     if img.mode in ("RGBA", "LA", "PA") or (img.mode == "P" and "transparency" in img.info):
         alpha = img.convert("RGBA").getchannel("A")
@@ -121,6 +174,8 @@ def main(argv=None):
     import enhance
     if e.get("model") == "max" and not enhance.has_max_model(e):
         say("note The Max detail models aren't installed (run setup-enhance.cmd); using the standard ones")
+    path, _ = enhance.model_plan(e, img.width, img.height)
+    say(f"model {os.path.basename(path)}")
 
     result = Image.fromarray(enhance_picture(rgb, e, a.gpu, a.gpu_class), "RGB")
     say("stage save")
@@ -134,6 +189,9 @@ def main(argv=None):
     else:
         result.save(tmp, "PNG")
     os.replace(tmp, a.out)
+    if a.compare:
+        make_compare(img, result, parse_spot(a.spot), a.compare)
+        say(f"compare {a.compare}")
     say(f"took {time.time() - started:.1f} s, {img.width}x{img.height} to {result.width}x{result.height}")
     say(f"done {a.out}")
     return 0

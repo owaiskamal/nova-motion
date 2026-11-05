@@ -148,6 +148,26 @@ code, text = run(src, os.path.join(d, "same.png"), '{"preset": "anime", "scale":
 res = Image.open(os.path.join(d, "same.png"))
 check(code == 0 and res.size == (300, 200), "1x: the same size, enhanced")
 
+# ---------------------------------------------------------------- before/after at 100%
+cmp_path = os.path.join(d, "cmp.png")
+code, text = run(src, os.path.join(d, "c.png"), '{"preset": "film", "scale": 2}')
+lines = io.StringIO()
+with contextlib.redirect_stdout(lines):
+    code = photo.main(["--image", src, "--out", os.path.join(d, "c.png"), "--compare", cmp_path, "--spot", "0.9,0.1", "--compare-only"])
+c = Image.open(cmp_path) if os.path.exists(cmp_path) else None
+check(code == 0 and c is not None and c.size[1] == 400 and c.size[0] > 1200 and "compare " + cmp_path in lines.getvalue(),
+      f"before | after side by side at 100% ({c and c.size})")
+check("model realesr-general-mid-x4v3.onnx" in text, "says which model it used")
+
+# ---------------------------------------------------------------- a 12 MP phone photo reaches the model whole
+calls.clear()
+e = photo.photo_settings({"preset": "film", "scale": 1, "model": "max"})
+e["height"] = 4000
+enhance.upscale(core.std.BlankClip(width=3000, height=4000, format=vs.YUV444P16), {}, e, "709")
+fed = [c for c in calls if c[0] == "inference"]
+check(fed and fed[0][1] == "RealESRGAN_x4plus.onnx" and fed[0][2:] == (3000, 4000),
+      f"3000 x 4000 at the same size: the model sees all of it, not a halved copy ({fed[:1]})")
+
 print()
 print("ALL PASSED" if not fails else f"{fails} FAILED")
 sys.exit(1 if fails else 0)

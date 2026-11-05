@@ -64,12 +64,29 @@ public static class Photo
         ["detail"] = o.Detail, ["grain"] = 0,
     });
 
-    public static IReadOnlyList<string> Arguments(RuntimeLayout rt, string image, string output, PhotoOptions o, int gpu = 0, string? gpuClass = null) =>
-        new[]
+    public static IReadOnlyList<string> Arguments(RuntimeLayout rt, string image, string output, PhotoOptions o, int gpu = 0, string? gpuClass = null,
+                                                  string? compare = null, (double X, double Y)? spot = null)
+    {
+        var args = new List<string>
         {
             "-I", rt.PhotoScript, "--image", image, "--out", output, "--settings", SettingsJson(o),
             "--packages", rt.StudioPackages, "--gpu", gpu.ToString(CultureInfo.InvariantCulture), "--gpu-class", gpuClass ?? "",
         };
+        if (compare is not null) args.AddRange(new[] { "--compare", compare, "--spot", Spot(spot) });
+        return args;
+    }
+
+    /// <summary>Only the before/after for a result already made, centred elsewhere: under a second.</summary>
+    public static IReadOnlyList<string> CompareArguments(RuntimeLayout rt, string image, string result, string compare, (double X, double Y) spot) =>
+        new[] { "-I", rt.PhotoScript, "--image", image, "--out", result, "--compare", compare, "--spot", Spot(spot), "--compare-only",
+                "--packages", rt.StudioPackages };
+
+    public static string Spot((double X, double Y)? spot) =>
+        string.Create(CultureInfo.InvariantCulture, $"{Math.Clamp(spot?.X ?? 0.5, 0, 1):0.###},{Math.Clamp(spot?.Y ?? 0.5, 0, 1):0.###}");
+
+    /// <summary>A new file for each before/after: the picture on screen is cached by its path.</summary>
+    public static string ComparePath(RuntimeLayout rt) =>
+        Path.Combine(rt.Root, "previews", $"photo-compare-{DateTime.Now:HHmmss}-{Guid.NewGuid().ToString("N")[..6]}.png");
 
     /// <summary>What the page says during each stage.</summary>
     public static string StageText(string stage) => stage switch
@@ -84,23 +101,41 @@ public static class Photo
 
 public interface IPhotoRunner
 {
-    /// <summary>Makes the picture; reports stage text. Throws with a readable message on failure.</summary>
-    Task RunAsync(string image, string output, PhotoOptions options, IProgress<string> stage, CancellationToken ct);
+    /// <summary>Makes the picture and, with compare, its before/after at 100% around spot; reports stage
+    /// text. Throws with a readable message on failure.</summary>
+    Task RunAsync(string image, string output, PhotoOptions options, IProgress<string> stage, CancellationToken ct,
+                  string? compare = null, (double X, double Y)? spot = null);
+
+    /// <summary>Only the before/after of a result, around another spot.</summary>
+    Task CompareAsync(string image, string result, string compare, (double X, double Y) spot, CancellationToken ct);
 }
 
 /// <summary>Runs engine/photo.py on the runtime's Python and follows its output.</summary>
 public sealed class PhotoRunner(RuntimeLayout runtime, Func<(int Gpu, string? GpuClass)>? gpu = null) : IPhotoRunner
 {
-    public async Task RunAsync(string image, string output, PhotoOptions options, IProgress<string> stage, CancellationToken ct)
+    public Task RunAsync(string image, string output, PhotoOptions options, IProgress<string> stage, CancellationToken ct,
+                         string? compare = null, (double X, double Y)? spot = null)
     {
         var (index, gpuClass) = gpu?.Invoke() ?? (0, null);
+        if (compare is not null) Directory.CreateDirectory(Path.GetDirectoryName(compare)!);
+        return RunScriptAsync(Photo.Arguments(runtime, image, output, options, index, gpuClass, compare, spot), output, "photo.log", stage, ct);
+    }
+
+    public Task CompareAsync(string image, string result, string compare, (double X, double Y) spot, CancellationToken ct)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(compare)!);
+        return RunScriptAsync(Photo.CompareArguments(runtime, image, result, compare, spot), compare, "photo-compare.log", new Progress<string>(), ct);
+    }
+
+    private async Task RunScriptAsync(IReadOnlyList<string> args, string output, string logName, IProgress<string> stage, CancellationToken ct)
+    {
         var psi = new ProcessStartInfo(runtime.PythonExe)
         {
             RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
             WorkingDirectory = runtime.MpvDir,
         };
-        foreach (var a in Photo.Arguments(runtime, image, output, options, index, gpuClass)) psi.ArgumentList.Add(a);
-        var log = Path.Combine(runtime.Root, "photo.log");
+        foreach (var a in args) psi.ArgumentList.Add(a);
+        var log = Path.Combine(runtime.Root, logName);
         using var p = Process.Start(psi) ?? throw new InvalidOperationException("Python didn't start");
         var stderr = p.StandardError.ReadToEndAsync(ct);
         string? error = null;

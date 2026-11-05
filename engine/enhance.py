@@ -267,8 +267,10 @@ def demo_view(w, h):
     return ((w - cw) // 2) & ~1, ((h - ch) // 2) & ~1, cw, ch
 
 
-# Longest side of a model's output for a photo seen whole: 12288 px is about 0.9 GB in half floats
-PHOTO_MODEL_OUTPUT_MAX = 12288
+# Longest side of a model's output for a photo seen whole: 16384 px (a 12 MP phone photo at 4x) is
+# about 1.5 GB in half floats, only for the moment it's scaled to the finished size. Larger photos are
+# halved first: the model never has to see more than 4096 px to make an 8K picture.
+PHOTO_MODEL_OUTPUT_MAX = 16384
 
 
 # Pixels of picture kept around a preview's part, at the video's size: the AI model and the resizers

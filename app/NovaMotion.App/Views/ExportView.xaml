@@ -406,25 +406,47 @@
                         </DockPanel>
                         <ProgressBar Style="{StaticResource ThinProgress}" Height="4" Margin="0,12,0,0" IsIndeterminate="True"
                                      Visibility="{Binding IsEnhancingPhoto, Converter={StaticResource BoolToVis}}"/>
-                        <!-- The picture: the result, with Original to flick back and compare in place -->
-                        <Grid Margin="0,14,0,0" Visibility="{Binding HasPhoto, Converter={StaticResource BoolToVis}}">
-                            <Border CornerRadius="8" ClipToBounds="True" HorizontalAlignment="Left">
+                        <!-- Before | after of one part at 100% (the whole picture shrunk to fit hides what changed),
+                             then the whole picture: click it to compare another part -->
+                        <Border Margin="0,14,0,0" CornerRadius="8" ClipToBounds="True" HorizontalAlignment="Left"
+                                Visibility="{Binding HasPhotoCompare, Converter={StaticResource BoolToVis}}">
+                            <Image Source="{Binding PhotoCompare}" MaxHeight="880" Stretch="Uniform" StretchDirection="DownOnly"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                        </Border>
+                        <DockPanel Margin="0,14,0,0" Visibility="{Binding HasPhoto, Converter={StaticResource BoolToVis}}">
+                            <Border CornerRadius="8" ClipToBounds="True" HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="Cross"
+                                    ToolTip="Click where you'd like to compare at 100%">
                                 <Grid>
-                                    <Image Source="{Binding PhotoShown}" MaxHeight="720" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
-                                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="12" CornerRadius="8" Padding="12,5" Background="#E60F1424">
-                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#E6E9F2" Text="{Binding PhotoShownLabel}"/>
+                                    <Image x:Name="PhotoOverview" Source="{Binding PhotoShown}" Stretch="Uniform"
+                                           RenderOptions.BitmapScalingMode="HighQuality" MouseLeftButtonUp="PhotoOverview_Click">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="MaxHeight" Value="720"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasPhotoCompare}" Value="True">
+                                                        <Setter Property="MaxHeight" Value="240"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8" CornerRadius="6" Padding="9,3" Background="#E60F1424"
+                                            IsHitTestVisible="False">
+                                        <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#E6E9F2" Text="{Binding PhotoShownLabel}"/>
                                     </Border>
                                 </Grid>
                             </Border>
-                        </Grid>
-                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0" Visibility="{Binding HasPhotoResult, Converter={StaticResource BoolToVis}}">
-                            <ToggleButton Style="{StaticResource Segment}" Height="34" Padding="16,0" Content="Show the original"
-                                          IsChecked="{Binding PhotoShowBefore}" ToolTip="Flick between the original and the enhanced picture, at the same place"/>
-                            <Button Style="{StaticResource Btn.Ghost}" Height="34" Padding="14,0" Margin="10,0,0,0" Content="Open full size"
-                                    Command="{Binding OpenPhotoResultCommand}"/>
-                            <Button Style="{StaticResource Btn.Ghost}" Height="34" Padding="14,0" Margin="10,0,0,0" Foreground="{StaticResource Nova}" Content="Show in folder"
-                                    Command="{Binding ShowPhotoResultCommand}"/>
-                        </StackPanel>
+                            <StackPanel Margin="18,0,0,0" VerticalAlignment="Top" Visibility="{Binding HasPhotoResult, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" MaxWidth="320"
+                                           Text="Above: the same part before and after, at 100%. Click the picture to compare another part."/>
+                                <ToggleButton Style="{StaticResource Segment}" Height="34" Padding="16,0" Margin="0,12,0,0" HorizontalAlignment="Left"
+                                              Content="Whole original" IsChecked="{Binding PhotoShowBefore}"/>
+                                <Button Style="{StaticResource Btn.Ghost}" Height="34" Padding="14,0" Margin="0,10,0,0" HorizontalAlignment="Left" Content="Open full size"
+                                        Command="{Binding OpenPhotoResultCommand}"/>
+                                <Button Style="{StaticResource Btn.Ghost}" Height="34" Padding="14,0" Margin="0,10,0,0" HorizontalAlignment="Left"
+                                        Foreground="{StaticResource Nova}" Content="Show in folder" Command="{Binding ShowPhotoResultCommand}"/>
+                            </StackPanel>
+                        </DockPanel>
                     </StackPanel>
                 </Border>
 

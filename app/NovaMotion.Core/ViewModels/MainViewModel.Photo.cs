@@ -30,7 +30,8 @@ public sealed partial class MainViewModel
     public Command SelectPhotoCleanupCommand { get; private set; } = null!;
 
     private PhotoOptions _photoOptions = new();
-    private string? _photo, _photoResult;
+    private string? _photo, _photoResult, _photoCompare;
+    private (double X, double Y) _photoSpot = (0.5, 0.5);
     private bool _isEnhancingPhoto, _photoShowBefore;
     private string _photoStatus = "";
     private CancellationTokenSource? _photoCancel;
@@ -88,6 +89,8 @@ public sealed partial class MainViewModel
         if (!Animate.IsImage(path) || !File.Exists(path)) { ShowToast("Choose a picture: PNG, JPEG, WebP, BMP or TIFF."); return; }
         _photo = path;
         _photoResult = null;
+        _photoCompare = null;
+        _photoSpot = (0.5, 0.5);
         _photoShowBefore = false;
         PhotoStatus = "";
         RaisePhoto();
@@ -99,19 +102,46 @@ public sealed partial class MainViewModel
     public string PhotoResultName => _photoResult is { } r ? Path.GetFileName(r) : "";
     public bool CanEnhancePhoto => PhotoReady && HasPhoto && !IsEnhancingPhoto && PhotoEnhancer is not null;
 
-    /// <summary>The picture on the card: the result, or the original while "Original" is held or before there's a result.</summary>
+    /// <summary>The whole picture: the result once there is one (click it to choose where to compare), else the original.</summary>
     public string? PhotoShown => _photoResult is { } r && !_photoShowBefore ? r : _photo;
     public bool PhotoShowBefore
     {
         get => _photoShowBefore;
         set { if (_photoShowBefore != value) { _photoShowBefore = value; Raise(nameof(PhotoShowBefore), nameof(PhotoShown), nameof(PhotoShownLabel)); } }
     }
-    public string PhotoShownLabel => _photoResult is null ? "Original" : _photoShowBefore ? "Before · original" : "After · AI enhanced";
+    public string PhotoShownLabel => _photoResult is null ? "Original" : _photoShowBefore ? "Whole picture · original" : "Whole picture · enhanced";
+
+    /// <summary>Before | after of one part at 100%: shrunk to fit, a whole picture hides what enhancing changed.</summary>
+    public string? PhotoCompare => _photoCompare;
+    public bool HasPhotoCompare => _photoCompare is not null && !IsEnhancingPhoto;
+    public (double X, double Y) PhotoSpot => _photoSpot;
+
+    /// <summary>Compare another part: x and y are fractions of the picture's width and height.</summary>
+    public async Task SetPhotoSpotAsync(double x, double y)
+    {
+        if (_photoResult is not { } result || _photo is not { } image || PhotoEnhancer is not { } runner || IsEnhancingPhoto) return;
+        _photoSpot = (Math.Clamp(x, 0, 1), Math.Clamp(y, 0, 1));
+        if (Runtime is null) return;
+        var compare = Photo.ComparePath(Runtime);
+        try
+        {
+            await runner.CompareAsync(image, result, compare, _photoSpot, CancellationToken.None);
+            var old = _photoCompare;
+            _photoCompare = compare;
+            Raise(nameof(PhotoCompare), nameof(HasPhotoCompare));
+            try { if (old is not null && File.Exists(old)) File.Delete(old); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or System.ComponentModel.Win32Exception)
+        {
+            PhotoStatus = ex.Message;
+        }
+    }
 
     private void RaisePhoto()
     {
         Raise(nameof(PhotoPath), nameof(PhotoName), nameof(HasPhoto), nameof(HasPhotoResult), nameof(PhotoResultName), nameof(CanEnhancePhoto),
-              nameof(PhotoReady), nameof(PhotoNeedsSetup), nameof(PhotoShown), nameof(PhotoShowBefore), nameof(PhotoShownLabel), nameof(PhotoModelNote));
+              nameof(PhotoReady), nameof(PhotoNeedsSetup), nameof(PhotoShown), nameof(PhotoShowBefore), nameof(PhotoShownLabel), nameof(PhotoModelNote),
+              nameof(PhotoCompare), nameof(HasPhotoCompare));
         EnhancePhotoCommand?.Refresh(); CancelPhotoCommand?.Refresh(); ChoosePhotoCommand?.Refresh();
         OpenPhotoResultCommand?.Refresh(); ShowPhotoResultCommand?.Refresh();
     }
@@ -136,6 +166,8 @@ public sealed partial class MainViewModel
         }
         _photoCancel = new CancellationTokenSource();
         _photoResult = null;
+        _photoCompare = null;
+        var compare = Runtime is not null ? Photo.ComparePath(Runtime) : null;
         _photoShowBefore = false;
         PhotoStatus = "Starting…";
         IsEnhancingPhoto = true;
@@ -143,8 +175,9 @@ public sealed partial class MainViewModel
         var stage = new Progress<string>(s => _host.Post(() => PhotoStatus = s));
         try
         {
-            await runner.RunAsync(image, output, options, stage, _photoCancel.Token);
+            await runner.RunAsync(image, output, options, stage, _photoCancel.Token, compare, _photoSpot);
             _photoResult = output;
+            _photoCompare = compare is not null && File.Exists(compare) ? compare : null;
             PhotoStatus = $"Saved in {PhotoFolder} ({(DateTime.UtcNow - started).TotalSeconds:0} s)";
         }
         catch (OperationCanceledException)

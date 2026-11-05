@@ -11,12 +11,23 @@ internal sealed class FakePhotoEnhancer : IPhotoRunner
     public string? Output;
     public TaskCompletionSource Gate = new();
 
-    public async Task RunAsync(string image, string output, PhotoOptions options, IProgress<string> stage, CancellationToken ct)
+    public (double X, double Y)? Spot;
+
+    public async Task RunAsync(string image, string output, PhotoOptions options, IProgress<string> stage, CancellationToken ct,
+                               string? compare = null, (double X, double Y)? spot = null)
     {
-        Options = options; Output = output;
+        Options = options; Output = output; Spot = spot;
         stage.Report(Photo.StageText("enhance"));
         await Gate.Task.WaitAsync(ct);
         await File.WriteAllTextAsync(output, "png", ct);
+        if (compare is not null) { Directory.CreateDirectory(Path.GetDirectoryName(compare)!); await File.WriteAllTextAsync(compare, "cmp", ct); }
+    }
+
+    public async Task CompareAsync(string image, string result, string compare, (double X, double Y) spot, CancellationToken ct)
+    {
+        Spot = spot;
+        Directory.CreateDirectory(Path.GetDirectoryName(compare)!);
+        await File.WriteAllTextAsync(compare, "cmp", ct);
     }
 }
 
@@ -92,10 +103,18 @@ internal static class PhotoTests
         runner.Gate.SetResult();
         await Task.Delay(50);
         var result = Path.Combine(dir, "out", "Portrait (NOVA Enhance 4x max).jpg");
-        check(!vm.IsEnhancingPhoto && vm.HasPhotoResult && vm.PhotoShown == result && vm.PhotoShownLabel.StartsWith("After"),
+        check(!vm.IsEnhancingPhoto && vm.HasPhotoResult && vm.PhotoShown == result,
               $"photo: finished, the result shown ({vm.PhotoShown})");
+        check(vm.HasPhotoCompare && File.Exists(vm.PhotoCompare) && runner.Spot == (0.5, 0.5),
+              "photo: a before/after at 100% of the middle comes with the result");
+        var first = vm.PhotoCompare;
+        await vm.SetPhotoSpotAsync(0.2, 1.4);
+        check(vm.PhotoCompare != first && File.Exists(vm.PhotoCompare) && !File.Exists(first) && runner.Spot == (0.2, 1.0),
+              "photo: clicking elsewhere on the picture compares there (a new file, the old one removed)");
         vm.PhotoShowBefore = true;
-        check(vm.PhotoShown == picture && vm.PhotoShownLabel.StartsWith("Before"), "photo: Show the original flicks back in place");
+        check(vm.PhotoShown == picture, "photo: the whole original can still be shown");
+        var cargs = Photo.CompareArguments(rt, "a.png", "b.png", "c.png", (0.25, 0.75)).ToList();
+        check(cargs.Contains("--compare-only") && cargs[cargs.IndexOf("--spot") + 1] == "0.25,0.75", "photo: compare-only arguments");
         vm.ShowPhotoResultCommand.Execute(null);
         check(host.Opened.LastOrDefault() == Path.Combine(dir, "out"), "photo: Show in folder opens Pictures\\NOVA Studio");
     }
