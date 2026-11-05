@@ -108,6 +108,13 @@ public partial class MainWindow : Window, IUiHost
         return dlg.ShowDialog(this) == true ? dlg.FileName : null;
     }
 
+    public string? PickImageFile()
+    {
+        var exts = string.Join(";", Animate.ImageExtensions.Select(e => "*" + e));
+        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = $"Pictures|{exts}|All files|*.*", Title = "Choose a picture to animate" };
+        return dlg.ShowDialog(this) == true ? dlg.FileName : null;
+    }
+
     public string? ClipboardText()
     {
         try { return Clipboard.ContainsText() ? Clipboard.GetText() : null; }
@@ -262,6 +269,7 @@ public partial class MainWindow : Window, IUiHost
     private void OnDragEnter(object sender, DragEventArgs e)
     {
         if (_vm.HasMedia) return;     // over the video, the overlay window takes drops
+        if (_vm.IsGenerateModule) return;   // Generate takes pictures for Animate a picture
         DropHint.Visibility = Visibility.Visible;
         e.Handled = true;
     }
@@ -271,6 +279,12 @@ public partial class MainWindow : Window, IUiHost
         DropHint.Visibility = Visibility.Collapsed;
         var enqueue = e.KeyStates.HasFlag(DragDropKeyStates.ShiftKey);
         List<string> targets = new();
+        if (_vm.IsGenerateModule && !_vm.HasMedia)
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] dropped && dropped.FirstOrDefault(Animate.IsImage) is { } picture)
+                _vm.SetAnimateImage(picture);
+            return;
+        }
         if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
         {
             foreach (var f in files)

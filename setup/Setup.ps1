@@ -8,7 +8,8 @@
   Every step checks first and skips what is already done, so running it again is quick:
     1. .NET 8 SDK (offers to install it with winget)
     2. Player runtime: mpv, VapourSynth, RIFE (Vulkan) with its models, MVTools, yt-dlp
-    3. NVIDIA TensorRT on cards that support it (RTX, GTX 16), and its RIFE models
+    3. NVIDIA TensorRT on cards that support it (RTX, GTX 16), and its RIFE models; then
+       Animate a picture for Generate (a depth model and three Python packages, asks first)
     4. Tests, then the app build into dist\
     5. Tuning for this PC (TensorRT, or Vulkan RIFE and MVTools), redone when outdated or the
        graphics changed
@@ -19,6 +20,7 @@
 param(
     [switch]$Yes,           # answer every question with the default (yes)
     [switch]$NoTensorRT,    # never install TensorRT
+    [switch]$NoStudio,      # don't add Generate's Animate a picture (setup-studio.cmd later)
     [switch]$NoTune,        # don't tune now (tune.cmd later)
     [switch]$NoShortcuts,
     [switch]$CheckOnly      # change nothing: only report what is and isn't set up
@@ -71,6 +73,8 @@ function Get-State {
         YtDlp        = Test-Path (Join-Path $MpvDir "yt-dlp.exe")
         TensorRt     = $trtInstalled
         TrtModels    = @($TrtModels | Where-Object { Test-Path (Join-Path $onnxDir $_) })
+        Studio       = (Test-Path (Join-Path $Runtime "studio\depth-anything-v2-small.onnx")) -and
+                       [bool](Get-ChildItem (Join-Path $Runtime "studio\packages") -Filter "onnxruntime-directml-*.installed" -ErrorAction SilentlyContinue)
         App          = Test-Path (Join-Path $Dist "NovaMotion.exe")
         Tuning       = $tuning
     }
@@ -106,6 +110,7 @@ function Show-Summary($s) {
     } else {
         Note "    [  ] RIFE on TensorRT       not for this graphics card (needs NVIDIA RTX or GTX 16)"
     }
+    & $line $s.Studio "Animate a picture" $(if ($s.Studio) { "depth model ready (Generate)" } else { "not added: setup-studio.cmd (about 150 MB)" })
     $tp = Tuning-Problem $s
     & $line (-not $tp) "Tuning" $(if ($tp) { "${tp}: run tune.cmd" } else { "tuned $($s.Tuning.measured -replace 'T', ' ')" })
     & $line $s.App "App" $(if ($s.App) { "dist\NovaMotion.exe" } else { "not built yet" })
@@ -159,6 +164,7 @@ if ($missing) {
 # Keep the runtime's engine files in step with the repo (edit engine\, rebuild, play)
 Copy-Item (Join-Path $Root "engine\novamotion.vpy") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\parallax.py") $Runtime -Force
 $portable = Join-Path $MpvDir "portable_config"
 New-Item -ItemType Directory -Force $portable | Out-Null
 Copy-Item (Join-Path $Root "engine\mpv\*") $portable -Recurse -Force
@@ -182,6 +188,15 @@ if (-not $state.TrtCapable) {
     if ((Run-Script "Get-TensorRT.ps1" @("-ModelsOnly", "-NoTune")) -ne 0) { Warn "Some models couldn't be added; see runtime\setup-tensorrt.log." }
     $state = Get-State
 } else { Ok "installed, $($state.TrtModels.Count) models" }
+
+# ---------------------------------------------------------------- 3b. Generate: Animate a picture
+Step "Animate a picture (Generate)"
+if ($state.Studio) { Ok "depth model and packages there" }
+elseif ($NoStudio) { Note "Skipped (-NoStudio). Run setup-studio.cmd any time." }
+elseif (Ask "Add Animate a picture, which turns a still picture into a short 3D camera move on any graphics card (about 150 MB)?") {
+    if ((Run-Script "Get-StudioParts.ps1") -ne 0) { Warn "It didn't finish; see runtime\setup-studio.log. Run setup-studio.cmd to retry." }
+    $state = Get-State
+} else { Note "Skipped. Run setup-studio.cmd any time." }
 
 # ---------------------------------------------------------------- 4. tests and build
 Step "Tests"

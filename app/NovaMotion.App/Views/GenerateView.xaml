@@ -14,6 +14,131 @@
                 <TextBlock Style="{StaticResource Text.Muted}" FontSize="15" LineHeight="23" MaxWidth="640" HorizontalAlignment="Left" Margin="0,12,0,28" TextWrapping="Wrap"
                            Text="Make images and short videos from a prompt or a picture with open AI models, on this PC: no account, no fee per video, nothing uploaded. Clips go straight to Enhance to be smoothed to 60 fps."/>
 
+                <!-- Animate a picture: works now, on any graphics card -->
+                <Border Style="{StaticResource Panel}" Margin="0,0,0,24">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Text.Section}" Text="Animate a picture" Margin="0"/>
+                            <Border Background="{StaticResource NovaSoft}" CornerRadius="8" Padding="10,3" Margin="12,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Works on this PC" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Nova}"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="0,8,0,16" MaxWidth="680" HorizontalAlignment="Left"
+                                   Text="A still picture becomes a short 3D camera move: AI works out what is near and far, and near things move more. Made for illustration, anime and art deco posters with gentle motion. Runs on any graphics card, a GTX 1650 or Intel laptop graphics included."/>
+
+                        <!-- Not set up yet -->
+                        <DockPanel Visibility="{Binding AnimateNeedsSetup, Converter={StaticResource BoolToVis}}">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Height="40" Padding="20,0" Content="Add it (about 150 MB)"
+                                    Command="{Binding SetupAnimateCommand}"/>
+                            <TextBlock Style="{StaticResource Text.Body}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"
+                                       Text="It needs a depth model and three small parts, downloaded once from their publishers."/>
+                        </DockPanel>
+
+                        <StackPanel Visibility="{Binding AnimateReady, Converter={StaticResource BoolToVis}}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Height="36" Padding="16,0" Content="Choose picture"
+                                        Command="{Binding ChooseAnimateImageCommand}"/>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource Text.Strong}" TextTrimming="CharacterEllipsis" Text="{Binding AnimateImageName}"/>
+                                    <TextBlock Style="{StaticResource Text.Small}" Margin="0,2,0,0" Text="Or drop a picture here"/>
+                                </StackPanel>
+                            </DockPanel>
+
+                            <TextBlock Style="{StaticResource Text.Strong}" Text="Camera move" Margin="0,18,0,10"/>
+                            <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+                                    <ItemsControl ItemsSource="{Binding AnimateMoves}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <RadioButton Style="{StaticResource Segment}" GroupName="animate-move" Content="{Binding Label}"
+                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
+                                                             Command="{Binding DataContext.SelectAnimateMoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                             CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                            <TextBlock Style="{StaticResource Text.Small}" Margin="0,6,0,0" Text="{Binding AnimateMoveNote}"/>
+
+                            <Grid Margin="0,18,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Text.Strong}" Text="Length" Margin="0,0,0,10"/>
+                                    <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+                                    <ItemsControl ItemsSource="{Binding AnimateLengths}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <RadioButton Style="{StaticResource Segment}" GroupName="animate-length" Content="{Binding Label}"
+                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
+                                                             Command="{Binding DataContext.SelectAnimateLengthCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                             CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Style="{StaticResource Text.Strong}" Text="Movement" Margin="0,0,0,10"/>
+                                    <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+                                    <ItemsControl ItemsSource="{Binding AnimateStrengths}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <RadioButton Style="{StaticResource Segment}" GroupName="animate-strength" Content="{Binding Label}"
+                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
+                                                             Command="{Binding DataContext.SelectAnimateStrengthCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                             CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                                </StackPanel>
+                            </Grid>
+                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Animate60}" Margin="0,18,0,0">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Text.Body}" Text="60 fps"/>
+                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Smoother, takes twice as long. Off: 30 fps, which Motion can smooth while it plays."/>
+                                </StackPanel>
+                            </CheckBox>
+
+                            <Border Style="{StaticResource Divider}"/>
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Style="{StaticResource Btn.Ghost}" Height="40" Padding="16,0" Margin="0,0,10,0" Content="Cancel"
+                                            Command="{Binding CancelAnimateCommand}" Visibility="{Binding IsAnimating, Converter={StaticResource BoolToVis}}"/>
+                                    <Button Style="{StaticResource Btn.Ghost}" Height="40" Padding="16,0" Margin="0,0,10,0" Content="Show in folder"
+                                            Command="{Binding ShowAnimateResultCommand}" Visibility="{Binding HasAnimateResult, Converter={StaticResource BoolToVis}}"/>
+                                    <Button Style="{StaticResource Btn.Ghost}" Height="40" Padding="16,0" Margin="0,0,10,0" Foreground="{StaticResource Nova}" Content="Play"
+                                            Command="{Binding PlayAnimateResultCommand}" Visibility="{Binding HasAnimateResult, Converter={StaticResource BoolToVis}}"/>
+                                    <Button Style="{StaticResource Btn.Primary}" Height="42" Padding="22,0" Content="Animate" Command="{Binding StartAnimateCommand}"/>
+                                </StackPanel>
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,20,0">
+                                    <ProgressBar Style="{StaticResource ThinProgress}" Height="5" Maximum="1" Value="{Binding AnimateProgress, Mode=OneWay}"
+                                                 Visibility="{Binding IsAnimating, Converter={StaticResource BoolToVis}}" Margin="0,0,0,6"/>
+                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding AnimateStatus}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
                 <!-- This PC -->
                 <Border Style="{StaticResource Panel}">
                     <StackPanel>

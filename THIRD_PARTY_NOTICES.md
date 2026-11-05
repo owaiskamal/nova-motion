@@ -13,6 +13,10 @@ NOVA Motion's own code is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE
 | RIFE (Practical-RIFE) | Interpolation model | MIT | https://github.com/hzwer/Practical-RIFE |
 | MVTools for VapourSynth | Motion-vector interpolation | GPL-2.0 | https://github.com/dubhater/vapoursynth-mvtools |
 | akarin plugin | Fractional frame-rate steps for vs-mlrt | See project | https://github.com/AkarinVS/vapoursynth-plugin |
+| Depth Anything V2 Small (ONNX, onnx-community) | Depth for Animate a picture (optional download) | Apache-2.0 | https://huggingface.co/depth-anything/Depth-Anything-V2-Small · https://huggingface.co/onnx-community/depth-anything-v2-small |
+| ONNX Runtime with DirectML | Runs the depth model on the graphics card | MIT | https://github.com/microsoft/onnxruntime |
+| NumPy | Draws the camera move | BSD-3-Clause | https://numpy.org |
+| Pillow | Reads pictures | MIT-CMU | https://python-pillow.org |
 | yt-dlp | Online video | Unlicense | https://github.com/yt-dlp/yt-dlp |
 | 7-Zip (7zr.exe) | Unpacking downloads during setup | LGPL-2.1 | https://www.7-zip.org |
 | Onest and Unbounded fonts (bundled in the app, `app/NovaMotion.App/Fonts`) | Interface type | SIL Open Font License 1.1 | https://github.com/google/fonts |

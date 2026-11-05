@@ -100,6 +100,7 @@ await ViewModelTests.RunAsync(Check);
 await ExportTests.RunAsync(Check);
 await GpuTests.RunAsync(Check);
 await StuckTests.RunAsync(Check);
+await AnimateTests.RunAsync(Check);
 await StudioTests.RunAsync(Check);
 Console.WriteLine(failures == 0 ? "\nALL PASSED" : $"\n{failures} FAILED");
 return failures == 0 ? 0 : 1;

@@ -14,6 +14,12 @@ public sealed class RuntimeLayout
     public string EngineScript => Path.Combine(Root, "novamotion.vpy");
     public string ModelsDir => Path.Combine(Root, "models");
     public string TrtEngineDir => Path.Combine(Root, "trt-engines");
+    /// <summary>Generate's Animate a picture: its script, depth model and Python packages.</summary>
+    public string ParallaxScript => Path.Combine(Root, "parallax.py");
+    public string StudioDir => Path.Combine(Root, "studio");
+    public string DepthModel => Path.Combine(StudioDir, "depth-anything-v2-small.onnx");
+    public string StudioPackages => Path.Combine(StudioDir, "packages");
+    public string PythonExe => OperatingSystem.IsWindows() ? Path.Combine(MpvDir, "python.exe") : "python3";
 
     private RuntimeLayout(string root) => Root = root;
 

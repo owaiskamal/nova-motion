@@ -19,6 +19,7 @@
 - **YouTube and 1,000+ sites.** Paste a link, or send the video you're watching from Chrome or Edge with the browser extension. It picks up where you stopped.
 - **Steady, never stuck.** If frames start dropping it switches to a lighter setting on its own instead of stuttering; **Play without smoothing** is always one click away.
 - **Enhance.** Save a smooth copy of any video that plays anywhere, or a labelled before/after clip to share.
+- **Animate a picture.** On the Generate page, a still picture becomes a short 3D camera move (push in, drift, sway, orbit…): AI works out what is near and far, and near things move more. Made for illustration, anime and art deco posters with gentle motion, and it runs on any graphics card, a GTX 1650 or Intel laptop graphics included.
 - **Free and open.** GPL-3.0. No account, no watermark, no upload: everything runs on your PC.
 
 ## What runs on your PC
@@ -41,10 +42,11 @@ Windows 10 or 11. TensorRT needs a one-time download of about 3 GB, offered duri
 2. the player runtime: mpv, VapourSynth, RIFE on Vulkan with four models, MVTools, yt-dlp (about 150 MB),
 3. on NVIDIA RTX and GTX 16 cards, NVIDIA TensorRT through [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) with RIFE 4.6, 4.22 Lite, 4.25 Lite and 4.26 (asks first),
 4. the tests, then the app in `dist\`,
-5. tuning for your PC, redone when it's outdated or the graphics changed,
-6. Start menu and desktop shortcuts, and a summary of what's ready.
+5. Animate a picture for Generate: a depth model and three Python packages (about 150 MB, asks first),
+6. tuning for your PC, redone when it's outdated or the graphics changed,
+7. Start menu and desktop shortcuts, and a summary of what's ready.
 
-Options: `build.cmd -Yes` answers every question with yes; `-NoTensorRT`, `-NoTune` and `-NoShortcuts` skip those steps; `-CheckOnly` only reports what's set up.
+Options: `build.cmd -Yes` answers every question with yes; `-NoTensorRT`, `-NoStudio`, `-NoTune` and `-NoShortcuts` skip those steps; `-CheckOnly` only reports what's set up.
 
 **Browser extension (optional):** load `extension\` in Chrome or Edge (`chrome://extensions`, Developer mode, Load unpacked). Alt+Shift+F on any video page sends it to NOVA Motion at the same moment.
 
@@ -105,7 +107,7 @@ NOVA Motion is the first module of **NOVA Studio**, a set of AI video tools that
 
 - **Motion:** real-time smoothing for files and online video. Available.
 - **Enhance:** smooth copies of files; AI upscaling next. Available.
-- **Generate:** images and short clips from open models (Flux, SDXL, Wan 2.2), handed straight to Enhance. In development; the page already checks what your PC can run.
+- **Generate:** **Animate a picture** works now on every PC: choose or drop a picture, pick a camera move, length and amount of movement, and get an MP4 in Videos\NOVA Studio to play in Motion. The installer adds it with *Add Animate a picture* in the Start menu (about 150 MB, once). Images and clips from open models (Flux, SDXL, Wan 2.2) are in development; the page already checks what your PC can run.
 
 The plan is in [docs/NOVA-STUDIO.md](docs/NOVA-STUDIO.md). The code, settings folder, `novamotion://` links and the installer's ID keep the NOVA Motion name, so installs update in place.
 

@@ -48,6 +48,8 @@ internal sealed class FakeHost : IUiHost
     public void Post(Action action) => action();
     public IReadOnlyList<string>? PickVideoFiles() => Files;
     public string? PickSubtitleFile() => "/tmp/subs.srt";
+    public string? Image;
+    public string? PickImageFile() => Image;
     public string? ClipboardText() => Clipboard;
     public void OpenExternal(string pathOrUrl) => Opened.Add(pathOrUrl);
     public List<string> Ran = new();

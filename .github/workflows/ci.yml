@@ -78,6 +78,7 @@ jobs:
         run: |
           copy /y engine\novamotion.vpy runtime\
           copy /y engine\novamotion_trt.py runtime\
+          copy /y engine\parallax.py runtime\
           xcopy /e /y /i /q engine\mpv runtime\mpv\portable_config
 
       - name: Setup check (the summary build.cmd ends with)
@@ -133,6 +134,22 @@ jobs:
           & $iscc /Q "/DAppVersion=$version" installer\NovaMotion.iss
           if ($LASTEXITCODE -ne 0) { exit 1 }
           Get-ChildItem dist-installer | Format-Table Name, Length
+      # After the installer, so the depth model isn't packed into it (it downloads on first use)
+      - name: Animate a picture with the real depth model (no GPU on the runner, so the processor)
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File setup\Get-StudioParts.ps1
+          if ($LASTEXITCODE -ne 0) { Get-Content runtime\setup-studio.log -Tail 40; exit 1 }
+          New-Item -ItemType Directory -Force uitest | Out-Null
+          foreach ($move in "push", "sway") {
+            & runtime\mpv\python.exe -I runtime\parallax.py --image docs\img\enhance.png --out "uitest\animate-$move.mp4" `
+                --move $move --seconds 2 --fps 30 --model runtime\studio\depth-anything-v2-small.onnx `
+                --mpv runtime\mpv\mpv.exe --packages runtime\studio\packages
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+            $f = Get-Item "uitest\animate-$move.mp4"
+            if ($f.Length -lt 20KB) { Write-Host "::error::animate-$move.mp4 is only $($f.Length) bytes"; exit 1 }
+            Write-Host "::notice title=Animate a picture::$move -> $($f.Length) bytes"
+          }
       # Uploads never fail the build: when the account's artifact storage is full, the build itself is still good
       - uses: actions/upload-artifact@v4
         continue-on-error: true
@@ -190,6 +207,8 @@ jobs:
           python-version: "3.12"
       - run: pip install vapoursynth vapoursynth-mvtools
       - run: python tests/engine/test_engine.py engine/novamotion.vpy
+      - run: pip install numpy pillow onnxruntime onnx
+      - run: python tests/engine/test_parallax.py
 
   player-script:
     name: mpv Lua script tests

@@ -26,6 +26,7 @@ The engineering behind NOVA Motion: the pipeline, the decisions, and the problem
 - **Rates the AI can afford:** a rate that isn't a whole multiple of the source makes the AI work on almost every frame (25 → 72 needs 71 new frames a second). During playback the engine picks a whole multiple near the target when there is one (25 fps on 144 Hz → 75, which needs 50), and when tuning says even the fastest option can't keep up, it plays a lower multiple (25 → 50) instead of dropping frames.
 - **Steady under load, on any screen:** if frames keep dropping during playback, the player first steps to a lighter model or AI size while one exists, then lowers the frame rate one whole multiple of the video at a time (75 → 50 for 25 fps), down to twice the video's rate. Each new video starts at the best setting again. Tuning and the benchmark measure on moving test frames, as real video is: a still test clip is all repeats, which the engine skips, and read several times faster than real playback.
 - **Never stuck:** a TensorRT engine build freezes the player for minutes, and steps down used to start one mid-video (a new AI size needs its own engine), then count the frozen time as dropped frames and step again. Step-downs now only go to engines already built, drops in the first seconds after the engine starts don't count, and when the player stops answering a **Play without smoothing** card offers the way out (Ctrl+S too): it restarts at the same moment without the engine. With no build under way it does that by itself after 25 seconds.
+- **Animate a picture (Generate):** `engine/parallax.py` runs on the runtime's Python. Depth Anything V2 Small (Apache-2.0) works out depth on onnxruntime with DirectML, so any DirectX 12 card runs it, the GTX 1650 and Intel Xe included, with the processor as the fallback. The camera move is drawn in numpy: each output pixel finds its source by solving p = c + (q − c − shift·(d − focus)) / (1 + dolly·(0.25 + d)) with d the depth at p itself (two nearest-pixel passes, then one exact), near depths are grown a few pixels first so foreground edges hold together and the stretch at a depth jump lands in the background, and every frame is enlarged just enough that the move never shows an empty edge. Pixels are packed into 32-bit values (one lookup per sample) and frames are drawn in strips on every processor thread. mpv encodes the frames as H.264. Sway and orbit end where they began, so they loop.
 
 ## Hard problems solved
 
@@ -43,12 +44,12 @@ The engineering behind NOVA Motion: the pipeline, the decisions, and the problem
 ```
 app/                    .NET 8 solution: NovaMotion.Core (logic + view models), NovaMotion.App (WPF), NovaMotion.SmokeTest
 docs/                   NOVA-STUDIO.md: the plan for Motion, Enhance and Generate
-engine/                 novamotion.vpy, novamotion_trt.py, mpv config + Lua player script
+engine/                 novamotion.vpy, novamotion_trt.py, parallax.py (Animate a picture), mpv config + Lua player script
 extension/              Chrome/Edge extension (Manifest V3)
-setup/                  Get-Runtime.ps1, Get-TensorRT.ps1, Tune.ps1, TuneVulkan.ps1, Benchmark.ps1, Build-Engines.ps1
+setup/                  Get-Runtime.ps1, Get-TensorRT.ps1, Get-StudioParts.ps1, Tune.ps1, TuneVulkan.ps1, Benchmark.ps1, Build-Engines.ps1
 installer/              Inno Setup script (per-user install)
 tests/                  engine tests (VapourSynth, no GPU), Lua tests (mock mpv), XAML checks
-build.cmd · setup-tensorrt.cmd · get-models.cmd · tune.cmd · prepare-engines.cmd · benchmark.cmd · collect-logs.cmd
+build.cmd · setup-tensorrt.cmd · setup-studio.cmd · get-models.cmd · tune.cmd · prepare-engines.cmd · benchmark.cmd · collect-logs.cmd
 ```
 
 ## Development

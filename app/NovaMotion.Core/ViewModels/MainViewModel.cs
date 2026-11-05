@@ -14,6 +14,8 @@ public interface IUiHost
     void Post(Action action);
     IReadOnlyList<string>? PickVideoFiles();
     string? PickSubtitleFile();
+    /// <summary>A picture for Generate's Animate a picture.</summary>
+    string? PickImageFile();
     string? ClipboardText();
     void OpenExternal(string pathOrUrl);
     /// <summary>Runs a setup script in its own console window, where its progress shows.</summary>
