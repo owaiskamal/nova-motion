@@ -117,6 +117,14 @@ internal static class EnhanceTests
         var fail = ExportRunner.EngineFailure(failLog);
         check(fail?.Contains("Enhance model missing: realesr-general-mid-x4v3.onnx") == true && fail.StartsWith("The AI engine didn't run"),
               $"export: a failed engine script is reported, not passed off as enhanced ({fail})");
+        var trtLog = Path.Combine(dir, "export-trt.log");
+        File.WriteAllLines(trtLog, new[]
+        {
+            "[ 405.0][f][vapoursynth] Script evaluation failed:",
+            @"[ 405.0][f][vapoursynth] RuntimeError: trtexec execution fails, log has been written to C:\Temp\trtexec.log",
+        });
+        check(ExportRunner.EngineFailure(trtLog)?.Contains("couldn't prepare a model for this graphics card") == true,
+              "export: a failed TensorRT build is explained, with what to try");
         var okLog = Path.Combine(dir, "export-ok.log");
         File.WriteAllLines(okLog, new[] { "[   1.0][v][vapoursynth] script loaded", "[   9.0][i][cplayer] Exiting... (End of file)" });
         check(ExportRunner.EngineFailure(okLog) is null, "export: a clean log passes");

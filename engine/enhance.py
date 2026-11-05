@@ -118,12 +118,20 @@ TILE = (640, 384)
 OVERLAP = 16
 
 
-def tiles(width, height, multiple=8):
+# DPIR is a big network (125 MB): its TensorRT build on a 640 x 384 tile ran 7 minutes on a 4 GB GTX
+# 1650 and failed. Smaller tiles keep the build within such cards.
+DPIR_TILE = (384, 256)
+# Fix compression is for low-quality downloads; above this height (4K phone clips) there are no
+# blocks worth the cost, and DPIR on 4K frames is far too slow.
+FIX_COMPRESSION_MAX_HEIGHT = 1440
+
+
+def tiles(width, height, multiple=8, tile=TILE):
     """(tile size, overlap) for a picture: the fixed tile, or the whole picture when it's smaller."""
-    if width <= TILE[0] and height <= TILE[1]:
+    if width <= tile[0] and height <= tile[1]:
         return (width, height), (0, 0)
-    tw = min(TILE[0], width - width % multiple)
-    th = min(TILE[1], height - height % multiple)
+    tw = min(tile[0], width - width % multiple)
+    th = min(tile[1], height - height % multiple)
     return (tw, th), (OVERLAP if tw < width else 0, OVERLAP if th < height else 0)
 
 
@@ -141,7 +149,7 @@ def fix_compression(clip, cfg, matrix, strength=20.0):
     pad_w, pad_h = (-clip.width) % 8, (-clip.height) % 8          # DPIR works on multiples of 8
     if pad_w or pad_h:
         rgb = core.std.AddBorders(rgb, right=pad_w, bottom=pad_h)
-    size, overlap = tiles(rgb.width, rgb.height)
+    size, overlap = tiles(rgb.width, rgb.height, tile=DPIR_TILE)
     out = vsmlrt.DPIR(rgb, strength=strength, model=vsmlrt.DPIRModel.drunet_deblocking_color,
                       tilesize=size, overlap=overlap, backend=be)
     if pad_w or pad_h:

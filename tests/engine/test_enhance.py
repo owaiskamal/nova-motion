@@ -216,6 +216,12 @@ o = run({"engine": "mvtools", "target": 60, "source_frames": 1, "enabled": False
 check(o.num_frames >= 1 and (o.width, o.height) == (1936, 1080) and o.fps.numerator == 24,
       f"frame preview: the before/after crop of an unsmoothed frame ({o.width}x{o.height}, {o.fps})")
 
+calls.clear()
+o = run({"engine": "mvtools", "target": 60, "source_frames": 12, "enhance": {"preset": "film", "height": 2160, "fix_compression": True}},
+        w=2560, h=1600, frames=12)
+check(not [c for c in calls if c[0] == "dpir"], "fix compression: skipped above 1440p (no blocks worth it, far too slow)")
+check(enhance.tiles(1920, 1080, tile=enhance.DPIR_TILE) == ((384, 256), (16, 16)), "fix compression: small tiles, so its build fits 4 GB cards")
+
 # Live playback never runs Enhance
 os.environ["NOVAMOTION_ENGINE_CONFIG"] = os.path.join(tempfile.mkdtemp(), "e.json")
 json.dump({"engine": "mvtools", "target": 60, "enhance": {"preset": "film", "height": 2160}}, open(os.environ["NOVAMOTION_ENGINE_CONFIG"], "w"))

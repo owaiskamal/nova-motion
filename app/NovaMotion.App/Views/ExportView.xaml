@@ -158,7 +158,7 @@
                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding EnhanceFixCompression}" Margin="0,16,0,0">
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource Text.Body}" Text="Fix compression"/>
-                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Takes out the blocks and smearing of heavily compressed downloads before anything else. Slower; leave off for good sources."/>
+                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Takes out the blocks and smearing of heavily compressed downloads before anything else, for videos up to 1440p. Much slower, and preparing it the first time takes several minutes; leave off for good sources and 4K."/>
                                 </StackPanel>
                             </CheckBox>
 

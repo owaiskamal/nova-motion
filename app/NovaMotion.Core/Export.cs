@@ -169,6 +169,9 @@ public static class ExportPlan
         // Before/after videos are for sharing: 720p, so a short clip stays small enough to upload.
         // Enhance's before/after is already a full-size crop: shrinking it would hide the detail it shows.
         if (o.Comparison && !o.Enhancing) stamp += ",lavfi=[scale=-2:'min(720,ih)']";
+        // Before/after clips are plain 8-bit 4:2:0 H.264, which every browser and phone plays; a 10-bit
+        // iPhone clip would otherwise come out as 10-bit H.264, which most don't
+        if (o.Comparison && !o.Still) stamp += ",format=fmt=yuv420p";
         var args = new List<string>
         {
             "--no-config",                     // no player scripts or settings: the export is set up here
@@ -207,7 +210,6 @@ public static class ExportPlan
             // H.264 plays in every browser (GitHub, social sites); HEVC doesn't in most
             args.Add(o.HardwareEncoder ? "--ovc=h264_nvenc" : "--ovc=libx264");
             args.Add(o.HardwareEncoder ? "--ovcopts=preset=p6,rc=vbr,cq=24,b=0" : "--ovcopts=preset=slow,crf=22,profile=high");
-            args.Add("--ovcopts-add=pix_fmt=yuv420p");
         }
         else if (o.HardwareEncoder)
         {
@@ -396,6 +398,9 @@ public sealed class ExportRunner : IExportRunner
                            .Select(l => l[(l.IndexOf("[vapoursynth]", StringComparison.Ordinal) + "[vapoursynth]".Length)..].Trim())
                            .LastOrDefault(l => System.Text.RegularExpressions.Regex.IsMatch(l, @"^[\w.]*(Error|Exception)\b.*:"));
             if (why is not null) why = why[(why.IndexOf(':') + 1)..].Trim();
+            if (why?.Contains("trtexec", StringComparison.OrdinalIgnoreCase) == true)
+                return "The AI engine didn't run, so nothing was enhanced: TensorRT couldn't prepare a model for this graphics card"
+                       + " (often too little graphics memory). Turn off Fix compression, or choose Natural or a smaller size, and try again.";
             return "The AI engine didn't run, so nothing was enhanced" + (string.IsNullOrEmpty(why) ? "." : ": " + why)
                    + " Details are in the exports folder; collect-logs.cmd gathers them.";
         }

@@ -575,8 +575,11 @@ def build_engine(clip):
         boost = enhance.settings(cfg)
     original = clip
     if boost and boost["fix_compression"]:
-        dbg("enhance: fixing compression (DPIR)")
-        clip = enhance.fix_compression(clip, cfg, matrix_for(clip))
+        if clip.height > enhance.FIX_COMPRESSION_MAX_HEIGHT:
+            dbg(f"enhance: fix compression skipped at {clip.height}p (for videos up to {enhance.FIX_COMPRESSION_MAX_HEIGHT}p)")
+        else:
+            dbg("enhance: fixing compression (DPIR)")
+            clip = enhance.fix_compression(clip, cfg, matrix_for(clip))
 
     smooth, dst = smoothed(clip, cfg, src)
     if boost:
