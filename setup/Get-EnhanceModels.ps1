@@ -94,7 +94,10 @@ if (-not $hasScript -or (-not $hasTrt -and -not $hasNcnn)) {
     Step "vs-mlrt on Vulkan (runs the models on any modern graphics card)"
     if (-not $SevenZip) { throw "7-Zip not found in the runtime: run build.cmd again" }
     $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/AmusementClub/vs-mlrt/releases?per_page=15" -Headers $Headers
-    $rel = $releases | Where-Object { -not $_.draft -and ($_.assets | Where-Object { $_.name -match '^VSNCNN-Windows-x64.*\.7z$' }) } | Select-Object -First 1
+    # A stable release with both the Vulkan plugin and the scripts; test builds only if there's none
+    $usable = $releases | Where-Object { -not $_.draft -and ($_.assets | Where-Object { $_.name -match '^VSNCNN-Windows-x64.*\.7z$' }) -and
+                                         ($_.assets | Where-Object { $_.name -match '^scripts\..+\.7z$' }) }
+    $rel = @($usable | Where-Object { -not $_.prerelease }) + @($usable) | Select-Object -First 1
     if (-not $rel) { throw "No Vulkan (vsncnn) build found in vs-mlrt's recent releases" }
     Info "vs-mlrt $($rel.tag_name)"
     if (-not $hasTrt -and -not $hasNcnn) {
@@ -109,7 +112,7 @@ if (-not $hasScript -or (-not $hasTrt -and -not $hasNcnn)) {
         Info "installed $($dll.Name)"
     }
     if (-not $hasScript) {
-        $a = $rel.assets | Where-Object { $_.name -match '^scripts\.v[\d.]+\.7z$' } | Select-Object -First 1
+        $a = $rel.assets | Where-Object { $_.name -match '^scripts\..+\.7z$' } | Select-Object -First 1
         if (-not $a) { throw "vsmlrt.py not found in vs-mlrt $($rel.tag_name)" }
         $file = Join-Path $Cache $a.name
         Invoke-WebRequest -Uri $a.browser_download_url -OutFile $file -UseBasicParsing -Headers $Headers
