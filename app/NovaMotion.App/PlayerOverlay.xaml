@@ -178,9 +178,19 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Orientation="Horizontal">
-                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xED3C;" FontSize="20" Command="{Binding Back10Command}" ToolTip="Back 10 s (double-click the left side)"/>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Command="{Binding Back10Command}" ToolTip="Back 10 s (double-click the left side)">
+                            <Grid>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE7A7;" FontSize="24"/>
+                                <TextBlock Text="10" FontFamily="{StaticResource UiFont}" FontSize="8.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,3,0,0"/>
+                            </Grid>
+                        </Button>
                         <Button Style="{StaticResource Btn.PlayRound}" Content="{Binding PlayPauseGlyph}" Margin="4,0" Command="{Binding TogglePauseCommand}" ToolTip="{Binding PlayPauseTip}"/>
-                        <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xED3D;" FontSize="20" Command="{Binding Forward10Command}" ToolTip="Forward 10 s (double-click the right side)"/>
+                        <Button Style="{StaticResource Btn.VideoIcon}" Command="{Binding Forward10Command}" ToolTip="Forward 10 s (double-click the right side)">
+                            <Grid>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE7A6;" FontSize="24"/>
+                                <TextBlock Text="10" FontFamily="{StaticResource UiFont}" FontSize="8.5" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,3,0,0"/>
+                            </Grid>
+                        </Button>
                         <Button Style="{StaticResource Btn.VideoIcon}" Content="&#xE893;" Command="{Binding NextCommand}" ToolTip="Next (N)"
                                 Visibility="{Binding HasNext, Converter={StaticResource BoolToVis}}"/>
                         <Button x:Name="VolumeButton" Style="{StaticResource Btn.VideoIcon}" Content="{Binding VolumeGlyph}" Margin="8,0,0,0"
