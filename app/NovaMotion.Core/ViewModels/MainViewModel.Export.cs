@@ -142,7 +142,7 @@ public sealed partial class MainViewModel
     /// <summary>Adds files to the export list with the current options and starts working through it.</summary>
     public void QueueExports(IEnumerable<string> files) => QueueExports(files, preview: false);
 
-    private void QueueExports(IEnumerable<string> files, bool preview)
+    private void QueueExports(IEnumerable<string> files, bool preview, bool still = false)
     {
         if (_exporter is null) { ShowToast("The player files are missing. Run build.cmd once."); return; }
         var enhance = EnhanceOn && EnhanceReady ? _settings.Enhance with { } : null;
@@ -150,8 +150,9 @@ public sealed partial class MainViewModel
         {
             Enhance = enhance,
             Preview = preview,
+            Still = still,
             // Previews are to look at, not to keep: they go to a temporary folder, not next to the video
-            OutputFolder = preview ? PreviewFolder : null,
+            OutputFolder = preview || still ? PreviewFolder : null,
             Target = ExportTargets.FirstOrDefault(t => t.IsSelected)?.Value ?? "60",
             Quality = _exportQuality,
             HardwareEncoder = _exportGpuEncoder && _gpu?.IsNvidia != false,
@@ -205,6 +206,7 @@ public sealed partial class MainViewModel
                         item.Status = ExportStatus.Done;
                         item.Progress = 1;
                         item.Detail = "Saved as " + item.OutputName;
+                        if (item.Options.Still) { ShowFramePreview(item.Output); return; }
                         if (item.Options.Preview) { PlayPreview(item.Output); return; }
                         if (!IsExportOpen) ShowToast("Export finished: " + item.OutputName, "Show", () => _host.OpenExternal(Path.GetDirectoryName(item.Output)!));
                     }
@@ -212,6 +214,7 @@ public sealed partial class MainViewModel
                     {
                         item.Status = error == "Cancelled" ? ExportStatus.Cancelled : ExportStatus.Failed;
                         item.Detail = error;
+                        if (item.Options.Still) FramePreviewStatus = "The frame couldn't be made: " + error;
                     }
                 });
             }

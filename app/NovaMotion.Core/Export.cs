@@ -33,6 +33,8 @@ public sealed record ExportOptions
     public EnhanceSettings? Enhance { get; init; }
     /// <summary>A short before/after made to look at in the app, not to keep.</summary>
     public bool Preview { get; init; }
+    /// <summary>One before/after frame as a PNG, at StartSeconds: Enhance's look in seconds, no smoothing.</summary>
+    public bool Still { get; init; }
 
     public bool Enhancing => Enhance is { IsOn: true };
 
@@ -108,6 +110,12 @@ public static class ExportPlan
         exists ??= File.Exists;
         var dir = o.OutputFolder ?? Path.GetDirectoryName(input) ?? ".";
         var name = Path.GetFileNameWithoutExtension(input);
+        if (o.Still)
+        {
+            var still = Path.Combine(dir, $"{name} (NOVA Enhance frame {(o.StartSeconds ?? 0).ToString("0.#", CultureInfo.InvariantCulture)} s).png");
+            for (var i = 2; exists(still); i++) still = Path.Combine(dir, $"{name} (NOVA Enhance frame) ({i}).png");
+            return still;
+        }
         var label = (o.Comparison ? "before-after " : "") + (o.Enhancing ? EnhanceCatalog.SizeName(o.Enhance!.Height) + " " : "")
                   + (o.Target.StartsWith('x') ? $"{o.Target}" : $"{o.Target} fps");
         var product = o.Enhancing ? "NOVA Enhance" : "NOVA Motion";
@@ -120,10 +128,10 @@ public static class ExportPlan
     public static EngineSettings Engine(EngineSettings playing, ExportOptions o, EngineAvailability a, IReadOnlyList<string> vulkanModels)
     {
         var e = playing.Clone();
-        e.Enabled = true;
-        e.Demo = o.Comparison;
+        e.Enabled = !o.Still;               // a frame shows the picture: nothing to interpolate
+        e.Demo = o.Comparison || o.Still;
         e.DemoMode = "side";
-        e.DemoLabels = o.Comparison;
+        e.DemoLabels = o.Comparison || o.Still;
         e.RtxVsr = false;
         e.QualityStep = 0;
         e.SceneDetect = true;
@@ -157,7 +165,7 @@ public static class ExportPlan
         var vpy = rt.EngineScript;
         // mpv times the last few engine frames by the input frames they came after; numbering every
         // frame at the engine's output rate gives the file exact, even timestamps to the end
-        var stamp = rate is { } r ? $",lavfi=[setpts=N*{r.Den}/({r.Num}*TB)]" : "";
+        var stamp = rate is { } r && !o.Still ? $",lavfi=[setpts=N*{r.Den}/({r.Num}*TB)]" : "";
         // Before/after videos are for sharing: 720p, so a short clip stays small enough to upload.
         // Enhance's before/after is already a full-size crop: shrinking it would hide the detail it shows.
         if (o.Comparison && !o.Enhancing) stamp += ",lavfi=[scale=-2:'min(720,ih)']";
@@ -177,9 +185,18 @@ public static class ExportPlan
             // engine trimmed to the real length, the repeats are only ever looked at, never output.
             $"--vf=lavfi=[tpad=stop_mode=clone:stop={TailPad}],@novamotion:vapoursynth=file=%{vpy.Length}%{vpy}:buffered-frames=24:concurrent-frames=auto{stamp}",
             $"--o={output}",
-            "--of=mp4",
-            "--oac=aac", "--oacopts=b=192k",
         };
+        if (o.Still)
+        {
+            // One PNG: the image muxer rewrites the same file for the copy of the last frame mpv asks for
+            args.AddRange(new[] { "--of=image2", "--ofopts=update=1", "--ovc=png", "--no-audio" });
+            if (o.StartSeconds is > 0 and var at) args.Add($"--start={at.ToString(CultureInfo.InvariantCulture)}");
+            args.Add($"--frames={(frames is > 0 ? frames + 1 : 2)}");
+            args.Add("--");
+            args.Add(input);
+            return args;
+        }
+        args.AddRange(new[] { "--of=mp4", "--oac=aac", "--oacopts=b=192k" });
         // The engine pads its end with spare frames; stop at the real ones. mpv holds the last
         // frame it counts back from the encoder, so one more (a copy of the last frame) is asked for.
         if (frames is > 0) args.Add($"--frames={frames + 1}");
@@ -262,9 +279,17 @@ public sealed class ExportRunner : IExportRunner
             var count = options.LengthSeconds is { } len ? (int)Math.Round(len * sf) : whole - from;
             probed.SourceFrames = Math.Max(1, Math.Min(count, whole - from));
         }
+        if (options.Still)
+        {
+            probed.SourceFrames = 1;
+            // No time given: a third of the way in, past titles and fades
+            if (options.StartSeconds is null && source.Frames is > 0 and var count && source.Fps is > 0 and var f)
+                options = options with { StartSeconds = Math.Round(count / f / 3, 2) };
+        }
         File.WriteAllText(cfg, JsonSerializer.Serialize(probed, Json.Options));
         var rate = source.Fps is { } fps ? FrameRate.Output(probed, fps) : null;
-        long? frames = rate is not null && source.Frames is { } n ? FrameRate.Frames(n, FrameRate.Snap(source.Fps!.Value), rate) : null;
+        long? frames = options.Still ? 1
+                     : rate is not null && source.Frames is { } n ? FrameRate.Frames(n, FrameRate.Snap(source.Fps!.Value), rate) : null;
 
         var mpv = new MpvPlayer(_runtime, _store);
         var exited = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -301,7 +326,7 @@ public sealed class ExportRunner : IExportRunner
             TryDelete(cfg);
         }
 
-        if (mpv.ExitCode == 0 && File.Exists(output) && new FileInfo(output).Length > 1024)
+        if ((mpv.ExitCode == 0 || options.Still) && File.Exists(output) && new FileInfo(output).Length > 1024)
         {
             progress.Report(1);
             if (Environment.GetEnvironmentVariable("NOVAMOTION_UITEST") is null) TryDelete(log);

@@ -26,6 +26,11 @@ public sealed partial class MainViewModel
     public Command SelectEnhanceGrainCommand { get; private set; } = null!;
     public Command PreviewEnhanceCommand { get; private set; } = null!;
     public Command SetupEnhanceCommand { get; private set; } = null!;
+    public Command PreviewFrameCommand { get; private set; } = null!;
+    public Command ChangePreviewVideoCommand { get; private set; } = null!;
+    public Command OpenFramePreviewCommand { get; private set; } = null!;
+
+    private string? _previewVideo, _framePreview;
 
     private EnhanceSettings Boost => _settings.Enhance ??= new EnhanceSettings();
 
@@ -51,6 +56,26 @@ public sealed partial class MainViewModel
             ShowToast($"Making a {PreviewSeconds:0}-second before/after" + (ExportStartText.Length > 0 ? $" from {ExportStartText}" : "")
                       + ". It plays when it's ready.");
         });
+        PreviewFrameCommand = new Command(() =>
+        {
+            if (_previewVideo is null || !File.Exists(_previewVideo))
+            {
+                if (_host.PickVideoFiles() is not { Count: > 0 } f) return;
+                _previewVideo = f[0];
+                Raise(nameof(PreviewVideoName));
+            }
+            QueueExports(new[] { _previewVideo }, preview: false, still: true);
+            FramePreviewStatus = "Making a before/after frame" + (ExportStartText.Length > 0 ? $" at {ExportStartText}" : "") + "…";
+        });
+        ChangePreviewVideoCommand = new Command(() =>
+        {
+            if (_host.PickVideoFiles() is not { Count: > 0 } f) return;
+            _previewVideo = f[0];
+            Raise(nameof(PreviewVideoName));
+            PreviewFrameCommand.Execute(null);
+        });
+        OpenFramePreviewCommand = new Command(() => { if (_framePreview is { } p && File.Exists(p)) _host.OpenExternal(p); },
+                                              () => _framePreview is not null);
         SetupEnhanceCommand = new Command(() =>
         {
             if (Runtime is null) return;
@@ -99,6 +124,22 @@ public sealed partial class MainViewModel
 
     /// <summary>Checks again whether setup-enhance.cmd has run: when the Enhance page opens.</summary>
     public void RefreshEnhance() => SyncEnhance();
+
+    /// <summary>The before/after frame on the page: original on the left, enhanced on the right, at full size.</summary>
+    public string? FramePreview => _framePreview;
+    public bool HasFramePreview => _framePreview is not null;
+    public string PreviewVideoName => _previewVideo is { } v ? Path.GetFileName(v) : "";
+    private string _framePreviewStatus = "";
+    public string FramePreviewStatus { get => _framePreviewStatus; private set => Set(ref _framePreviewStatus, value); }
+
+    private void ShowFramePreview(string file)
+    {
+        _framePreview = file;
+        FramePreviewStatus = $"{Path.GetFileName(_previewVideo ?? file)}: original on the left, enhanced on the right, at full size. Click to open it larger.";
+        Raise(nameof(FramePreview), nameof(HasFramePreview));
+        OpenFramePreviewCommand.Refresh();
+        ShowToast("Frame preview ready");
+    }
 
     private void PlayPreview(string file)
     {

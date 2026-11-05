@@ -78,7 +78,7 @@ def fake_vsmlrt(with_pro=True):
         assert tilesize is None or (tilesize[0] <= clip.width and tilesize[1] <= clip.height), "tile bigger than the picture"
         name = os.path.basename(path)
         scale = 4 if ("x4" in name or "animevideov3" in name) else 2
-        calls.append(("inference", name, clip.format.name, tilesize, type(backend).__name__))
+        calls.append(("inference", name, clip.format.name, tilesize, type(backend).__name__, clip.width, clip.height))
         assert clip.format.color_family == vs.RGB and clip.format.sample_type == vs.FLOAT
         return core.resize.Point(clip, clip.width * scale, clip.height * scale)
 
@@ -199,6 +199,22 @@ small = [c for c in calls if c[0] == "inference"]
 check(small and small[0][3] == (480, 270), f"a picture smaller than a tile: the whole picture ({small[:1]})")
 check(enhance.tiles(1920, 1080) == ((640, 384), (16, 16)) and enhance.tiles(640, 1080) == ((640, 384), (0, 16)),
       "tiles overlap only where the picture is split")
+
+# A source already at (or above) the chosen size: the model works at half the finished size
+check(enhance.ai_input_size(3840, 2160, 3840, 2160) == (1920, 1080), "4K to 4K: the model works at 1080p")
+check(enhance.ai_input_size(1920, 1080, 3840, 2160) == (1920, 1080), "1080p to 4K: the model works at the video's size")
+check(enhance.ai_input_size(1280, 720, 3840, 2160) == (1280, 720), "720p to 4K: the video's size")
+calls.clear()
+o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 1440}},
+        w=2560, h=1440, frames=12)
+fed = [c for c in calls if c[0] == "inference"]
+check((o.width, o.height) == (2560, 1440) and fed and fed[0][3] == (640, 384), f"1440p at 1440p: finished at 1440p, the model fed half size ({fed[:1]})")
+
+# Frame preview: one source frame, enhanced, as the before/after crop
+o = run({"engine": "mvtools", "target": 60, "source_frames": 1, "enabled": False, "demo": True, "demo_labels": True,
+         "enhance": {"preset": "film", "height": 2160}}, w=1920, h=1080)
+check(o.num_frames >= 1 and (o.width, o.height) == (1924, 1080) and o.fps.numerator == 24,
+      f"frame preview: the before/after crop of an unsmoothed frame ({o.width}x{o.height}, {o.fps})")
 
 # Live playback never runs Enhance
 os.environ["NOVAMOTION_ENGINE_CONFIG"] = os.path.join(tempfile.mkdtemp(), "e.json")

@@ -65,6 +65,17 @@ def output_size(width, height, target_height):
     return int(round(width * k / 2)) * 2, int(target_height) // 2 * 2
 
 
+def ai_input_size(width, height, out_w, out_h):
+    """The size the model works at: the video's own, but never more than half the finished size.
+    A 4K phone clip exported at 4K ran the 4x model on whole 4K frames (about 40 tiles each, into
+    a 16K picture shrunk back): 40+ minutes for 4 seconds. At half size the model still has room
+    to add detail, and the mix with the original keeps the real 4K detail."""
+    if height * 2 <= out_h * 1.01:
+        return width, height
+    k = (out_h / 2) / height
+    return max(2, int(round(width * k / 2)) * 2), max(2, int(round(height * k / 2)) * 2)
+
+
 def models_dir():
     import vsmlrt
     return vsmlrt.models_path
@@ -143,14 +154,16 @@ def upscale(clip, cfg, e, matrix):
     scaled back down: a cleaner, crisper picture at the same resolution."""
     import vsmlrt
     out_w, out_h = output_size(clip.width, clip.height, e["height"])
-    path, scale = model_plan(e, clip.width, clip.height)
+    in_w, in_h = ai_input_size(clip.width, clip.height, out_w, out_h)
+    path, scale = model_plan(e, in_w, in_h)
     if not os.path.exists(path):
         raise vs.Error(f"Enhance model missing: {os.path.basename(path)} (run setup-enhance.cmd)")
     be = backend(cfg, clip.width, clip.height)
     bits = 16 if isinstance(be, vsmlrt.Backend.TRT) else 32
     rgb = _rgb(clip, bits, matrix)
-    size, overlap = tiles(clip.width, clip.height)
-    big = vsmlrt.inference(rgb, path, overlap=overlap, tilesize=size, backend=be)
+    small = core.resize.Spline36(rgb, in_w, in_h) if (in_w, in_h) != (clip.width, clip.height) else rgb
+    size, overlap = tiles(in_w, in_h)
+    big = vsmlrt.inference(small, path, overlap=overlap, tilesize=size, backend=be)
     if (big.width, big.height) != (out_w, out_h):
         # Downscaling the model's output: Spline36 keeps the detail it made without ringing
         big = core.resize.Spline36(big, out_w, out_h)

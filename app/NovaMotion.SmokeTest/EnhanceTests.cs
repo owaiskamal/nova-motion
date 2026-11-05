@@ -105,6 +105,27 @@ internal static class EnhanceTests
         vm.SetLiveEnhance("nonsense");
         check(vm.Settings.LiveEnhance == "off", "live enhance: unknown modes are off");
 
+        // ---- one before/after frame: a PNG in seconds, no smoothing
+        var still = new ExportOptions { Still = true, Enhance = film, StartSeconds = 12.5 };
+        var stillEngine = ExportPlan.Engine(new EngineSettings(), still, new EngineAvailability(true, 1, true, true, Array.Empty<string>()), Array.Empty<string>());
+        check(!stillEngine.Enabled && stillEngine.Demo && stillEngine.DemoLabels && stillEngine.Enhance is { Preset: "film" },
+              "frame preview: the enhance before/after, nothing interpolated");
+        var stillArgs = ExportPlan.MpvArguments(rt, "in.mp4", "out.png", "pipe", "log", still, null, 1);
+        check(stillArgs.Contains("--ovc=png") && stillArgs.Contains("--of=image2") && stillArgs.Contains("--no-audio")
+              && stillArgs.Contains("--frames=2") && stillArgs.Contains("--start=12.5") && !stillArgs.Any(a => a.StartsWith("--oac")),
+              $"frame preview: one PNG at the chosen time ({string.Join(" ", stillArgs.Where(a => !a.StartsWith("--vf")))})");
+        check(ExportPlan.OutputPath(@"C:\v\Clip.mp4", still, _ => false).EndsWith("Clip (NOVA Enhance frame 12.5 s).png"), "frame preview: named for its time");
+        vm.ExportStartText = "";
+        vm.PreviewFrameCommand.Execute(null);
+        await Task.Delay(80);
+        run = exporter.Runs.Last();
+        check(run.Options.Still && run.Out.EndsWith(".png") && run.Out.StartsWith(vm.PreviewFolder), $"frame preview: queued as a still ({run.Out})");
+        check(vm.HasFramePreview && vm.FramePreview == run.Out && vm.FramePreviewStatus.Contains("original on the left"),
+              $"frame preview: shown on the page ({vm.FramePreviewStatus})");
+        host.Opened.Clear();
+        vm.OpenFramePreviewCommand.Execute(null);
+        check(host.Opened.LastOrDefault() == run.Out, "frame preview: opens larger on click");
+
         // ---- a link the site refuses: its own reason, not "isn't a video format"
         check(MainViewModel.SiteReason("ERROR: [youtube] PRkI15fIJ1w: This video is not available") == "This video is not available",
               "site error: yt-dlp's reason extracted");
