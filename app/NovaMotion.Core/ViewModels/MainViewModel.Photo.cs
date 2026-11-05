@@ -28,6 +28,9 @@ public sealed partial class MainViewModel
     public Command SelectPhotoScaleCommand { get; private set; } = null!;
     public Command SelectPhotoModelCommand { get; private set; } = null!;
     public Command SelectPhotoCleanupCommand { get; private set; } = null!;
+    private Command? _togglePhotoBefore;
+    /// <summary>The whole picture shows the original instead of the result, or back.</summary>
+    public Command TogglePhotoBeforeCommand => _togglePhotoBefore ??= new Command(() => PhotoShowBefore = !PhotoShowBefore);
 
     private PhotoOptions _photoOptions = new();
     private string? _photo, _photoResult, _photoCompare;
@@ -58,6 +61,7 @@ public sealed partial class MainViewModel
         foreach (var o in PhotoModels) o.IsSelected = o.Value == (_photoOptions.MaxDetail ? "max" : "standard");
         foreach (var o in PhotoCleanups) o.IsSelected = o.Value == _photoOptions.Clean;
         Raise(nameof(PhotoOptions), nameof(PhotoModelNote), nameof(PhotoCleanupEnabled));
+        SyncPresets();
     }
 
     public PhotoOptions PhotoOptions => _photoOptions;
@@ -65,7 +69,7 @@ public sealed partial class MainViewModel
     public bool PhotoFixCompression
     {
         get => _photoOptions.FixCompression;
-        set { if (_photoOptions.FixCompression != value) { _photoOptions = _photoOptions with { FixCompression = value }; Raise(nameof(PhotoFixCompression)); } }
+        set { if (_photoOptions.FixCompression != value) { _photoOptions = _photoOptions with { FixCompression = value }; Raise(nameof(PhotoFixCompression)); SyncPresets(); } }
     }
 
     /// <summary>Max detail uses its own fixed clean-up, so the choice only applies to Standard.</summary>
@@ -88,6 +92,7 @@ public sealed partial class MainViewModel
         if (IsEnhancingPhoto) return;
         if (!Animate.IsImage(path) || !File.Exists(path)) { ShowToast("Choose a picture: PNG, JPEG, WebP, BMP or TIFF."); return; }
         _photo = path;
+        _photoSize = ImageSize.Read(path);
         _photoResult = null;
         _photoCompare = null;
         _photoSpot = (0.5, 0.5);

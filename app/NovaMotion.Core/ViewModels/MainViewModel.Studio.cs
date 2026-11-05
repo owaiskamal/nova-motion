@@ -26,6 +26,7 @@ public sealed partial class MainViewModel
         InitAnimate();
         InitEnhance();
         InitPhoto();
+        InitPresets();
         SyncLiveEnhance();
     }
 

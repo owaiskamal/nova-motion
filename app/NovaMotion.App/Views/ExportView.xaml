@@ -2,513 +2,531 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{StaticResource Base}">
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
-        <Grid Margin="56,28,56,48" MaxWidth="1600" HorizontalAlignment="Stretch">
-            <StackPanel>
-                <TextBlock Style="{StaticResource Text.Display}" FontSize="28" LineHeight="36" Text="Enhance"/>
-                <TextBlock Style="{StaticResource Text.Muted}" FontSize="15" LineHeight="23" MaxWidth="640" HorizontalAlignment="Left" Margin="0,12,0,28"
-                           Text="Makes a smooth, sharper copy of a video file with the best settings this PC has: AI cleans and enlarges every frame up to 4K, and RIFE makes it 60 fps. It takes longer than watching, and the copy plays anywhere: on a phone, a TV, or as an upload."/>
-
-                <!-- Options -->
-                <Border Style="{StaticResource Panel}">
+    <!-- Enhance: pick a preset, see the time it takes, press Enhance. Every option is one tap away in
+         the Customize sheet; videos and photos share the page. -->
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+            <StackPanel Margin="40,6,40,48" MaxWidth="1500">
+                <!-- Header -->
+                <DockPanel Margin="0,0,0,22">
+                    <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" VerticalAlignment="Bottom">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource SegmentButton}" Height="34" Padding="20,0" Content="Videos" Tag="{Binding VideoMode}" Command="{Binding ShowVideosCommand}"/>
+                            <Button Style="{StaticResource SegmentButton}" Height="34" Padding="20,0" Content="Photos" Tag="{Binding PhotoMode}" Command="{Binding ShowPhotosCommand}"/>
+                        </StackPanel>
+                    </Border>
                     <StackPanel>
-                        <!-- AI clean-up and upscaling -->
-                        <TextBlock Style="{StaticResource Text.Strong}" Text="AI enhance" Margin="0,0,0,10"/>
-                        <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <ItemsControl ItemsSource="{Binding EnhancePresets}" Focusable="False">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Rows="1"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-preset" Content="{Binding Label}"
-                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
-                                                             Command="{Binding DataContext.SelectEnhancePresetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                        <TextBlock Style="{StaticResource Text.Small}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding EnhancePresetNote}"/>
-
-                        <DockPanel Margin="0,14,0,0" Visibility="{Binding EnhanceNeedsSetup, Converter={StaticResource BoolToVis}}">
-                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Height="38" Padding="18,0" Content="Add the models (about 150 MB)"
-                                    Command="{Binding SetupEnhanceCommand}"/>
-                            <TextBlock Style="{StaticResource Text.Body}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"
-                                       Text="AI enhance needs its models, downloaded once. Smoothing works without them."/>
-                        </DockPanel>
-
-                        <DockPanel Margin="0,12,0,0" Visibility="{Binding EnhanceReady, Converter={StaticResource BoolToVis}}">
-                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Height="34" Padding="14,0" Content="Prepare all models"
-                                    Command="{Binding PrepareModelsCommand}"
-                                    ToolTip="Prepares every model for this graphics card in a separate window, so no setting ever waits. About 3 minutes a model on GTX 16 cards, once."/>
-                            <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0"
-                                       Text="The first use of each model prepares it for this graphics card, which takes minutes on GTX 16 cards. Prepare them all once and every setting starts straight away."/>
-                        </DockPanel>
-                        <StackPanel Visibility="{Binding ShowEnhanceOptions, Converter={StaticResource BoolToVis}}">
-                            <Grid Margin="0,16,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="3*"/>
-                                    <ColumnDefinition Width="24"/>
-                                    <ColumnDefinition Width="2*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource Text.Strong}" Text="Size" Margin="0,0,0,10"/>
-                                    <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <ItemsControl ItemsSource="{Binding EnhanceSizes}" Focusable="False">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Rows="1"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-size" Content="{Binding Label}"
-                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
-                                                             Command="{Binding DataContext.SelectEnhanceSizeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Style="{StaticResource Text.Strong}" Text="Clean-up" Margin="0,0,0,10"/>
-                                    <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <ItemsControl ItemsSource="{Binding EnhanceCleanups}" Focusable="False">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Rows="1"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-clean" Content="{Binding Label}"
-                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
-                                                             Command="{Binding DataContext.SelectEnhanceCleanupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                                </StackPanel>
-                            </Grid>
-                            <TextBlock Style="{StaticResource Text.Strong}" Text="AI strength" Margin="0,16,0,10"/>
-                            <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <ItemsControl ItemsSource="{Binding EnhanceStrengths}" Focusable="False">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Rows="1"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-strength" Content="{Binding Label}"
-                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
-                                                             Command="{Binding DataContext.SelectEnhanceStrengthCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                            <TextBlock Style="{StaticResource Text.Small}" Margin="0,6,0,0" TextWrapping="Wrap"
-                                       Text="How much of the AI's picture is kept, the rest the original. Balanced is sharper without the painted look AI can give real footage."/>
-                            <Grid Margin="0,16,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="24"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource Text.Strong}" Text="Detail" Margin="0,0,0,10"/>
-                                    <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <ItemsControl ItemsSource="{Binding EnhanceDetails}" Focusable="False">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Rows="1"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-detail" Content="{Binding Label}"
-                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
-                                                             Command="{Binding DataContext.SelectEnhanceDetailCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Style="{StaticResource Text.Strong}" Text="Grain" Margin="0,0,0,10"/>
-                                    <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <ItemsControl ItemsSource="{Binding EnhanceGrains}" Focusable="False">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Rows="1"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-grain" Content="{Binding Label}"
-                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
-                                                             Command="{Binding DataContext.SelectEnhanceGrainCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                                </StackPanel>
-                            </Grid>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding EnhanceFixCompression}" Margin="0,16,0,0">
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource Text.Body}" Text="Fix compression"/>
-                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Takes out the blocks and smearing of heavily compressed downloads before anything else, for videos up to 1440p. Much slower, and preparing it the first time takes several minutes; leave off for good sources and 4K."/>
-                                </StackPanel>
-                            </CheckBox>
-
-                            <!-- See one frame first: seconds, not minutes -->
-                            <Border Style="{StaticResource Divider}"/>
-                            <DockPanel>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Style="{StaticResource Btn.Ghost}" Height="38" Padding="16,0" Margin="0,0,10,0" Content="Other video"
-                                            Command="{Binding ChangePreviewVideoCommand}" Visibility="{Binding HasPreviewVideo, Converter={StaticResource BoolToVis}}"/>
-                                    <Button Style="{StaticResource Btn.Primary}" Height="38" Padding="18,0" Content="Preview a frame"
-                                            Command="{Binding PreviewFrameCommand}" IsEnabled="{Binding CanExport}"/>
-                                </StackPanel>
-                                <StackPanel Margin="0,0,20,0">
-                                    <TextBlock Style="{StaticResource Text.Strong}" Text="See it before exporting"/>
-                                    <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Nova}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"
-                                               Visibility="{Binding HasPreviewVideo, Converter={StaticResource BoolToVis}}">
-                                        <Run Text="Video:"/> <Run Text="{Binding PreviewVideoName, Mode=OneWay}"/>
-                                    </TextBlock>
-                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="0,2,0,0"
-                                               Text="One before/after frame with these settings, at full size, in seconds. From the time in From below, or a third of the way in."/>
-                                </StackPanel>
-                            </DockPanel>
-                            <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="0,10,0,0" Text="{Binding FramePreviewStatus}"/>
-                            <Border Margin="0,10,0,0" CornerRadius="8" ClipToBounds="True" Cursor="Hand" ToolTip="Open it larger"
-                                    Visibility="{Binding HasFramePreview, Converter={StaticResource BoolToVis}}">
-                                <Border.InputBindings>
-                                    <MouseBinding MouseAction="LeftClick" Command="{Binding OpenFramePreviewCommand}"/>
-                                </Border.InputBindings>
-                                <!-- The grid takes the picture's size, so the badges sit on its two halves -->
-                                <Grid HorizontalAlignment="Left">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Image Grid.ColumnSpan="2" Source="{Binding FramePreview}" MaxHeight="720" Stretch="Uniform"
-                                           RenderOptions.BitmapScalingMode="HighQuality"/>
-                                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,12" CornerRadius="8" Padding="12,5"
-                                            Background="#E60F1424">
-                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#E6E9F2" Text="Before · original"/>
-                                    </Border>
-                                    <Border Grid.Column="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,12" CornerRadius="8" Padding="12,5"
-                                            Background="{StaticResource Nova}">
-                                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#0F1424" Text="After · AI enhanced"/>
-                                    </Border>
-                                </Grid>
-                            </Border>
-                        </StackPanel>
-                        <Border Style="{StaticResource Divider}"/>
-
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="24"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource Text.Strong}" Text="Frame rate" Margin="0,0,0,10"/>
-                                <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <ItemsControl ItemsSource="{Binding ExportTargets}" Focusable="False">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Rows="1"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <RadioButton Style="{StaticResource Segment}" GroupName="export-target" Content="{Binding Label}"
-                                                             IsChecked="{Binding IsSelected, Mode=OneWay}"
-                                                             Command="{Binding DataContext.SelectExportTargetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Style="{StaticResource Text.Strong}" Text="Quality" Margin="0,0,0,10"/>
-                                <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <UniformGrid Rows="1">
-                                        <RadioButton Style="{StaticResource Segment}" GroupName="export-quality" Content="Best" IsChecked="{Binding ExportBest}"
-                                                     ToolTip="The newest, most detailed model. Slower."/>
-                                        <RadioButton Style="{StaticResource Segment}" GroupName="export-quality" Content="Faster" IsChecked="{Binding ExportFaster}"
-                                                     ToolTip="The model live playback uses. About twice as fast."/>
-                                    </UniformGrid>
-                                </Border>
-                            </StackPanel>
-                        </Grid>
-                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ExportComparison}" Margin="0,18,0,0">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource Text.Body}" Text="Before/after video"/>
-                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="The original and NOVA Motion side by side, labelled. Made for sharing: pick a short part with fast motion below."/>
-                            </StackPanel>
-                        </CheckBox>
-                        <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
-                            <StackPanel Margin="0,0,16,0">
-                                <TextBlock Style="{StaticResource Text.Small}" Text="From (optional)" Margin="0,0,0,6"/>
-                                <TextBox Style="{StaticResource Input}" Width="110" Tag="0:00" Text="{Binding ExportStartText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Where to start, e.g. 3:15. Empty: the beginning."/>
-                            </StackPanel>
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource Text.Small}" Text="Seconds (optional)" Margin="0,0,0,6"/>
-                                <TextBox Style="{StaticResource Input}" Width="110" Tag="All" Text="{Binding ExportLengthText, UpdateSourceTrigger=PropertyChanged}" ToolTip="How long, e.g. 20. Empty: to the end."/>
-                            </StackPanel>
-                            <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Danger}" VerticalAlignment="Bottom" Margin="16,0,0,8" TextWrapping="Wrap" MaxWidth="320" Text="{Binding ExportRangeProblem}"/>
-                        </StackPanel>
-                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ExportGpuEncoder}" Margin="0,18,0,0">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource Text.Body}" Text="Use the GPU encoder"/>
-                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="NVIDIA cards save the file on the graphics card (HEVC). Off: x264 on the CPU, slower, plays everywhere."/>
-                            </StackPanel>
-                        </CheckBox>
-                        <Border Style="{StaticResource Divider}"/>
-                        <DockPanel>
-                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Height="42" Padding="22,0" Command="{Binding AddExportFilesCommand}"
-                                    IsEnabled="{Binding CanExport}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="13" Margin="0,0,10,0" Foreground="{StaticResource NovaInk}"/>
-                                    <TextBlock Text="Choose videos" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Height="42" Padding="18,0" Margin="0,0,10,0" Content="Preview 4 s"
-                                    Command="{Binding PreviewEnhanceCommand}" IsEnabled="{Binding CanExport}"
-                                    ToolTip="A short before/after of one video with these settings, from the time in From. It plays when it's ready."/>
-                            <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"
-                                       Text="{Binding ExportEngineText}"/>
-                        </DockPanel>
+                        <TextBlock Style="{StaticResource Text.LargeTitle}" Text="Enhance"/>
+                        <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,0"
+                                   Text="Drop videos or photos, pick a preset, and see how long it takes before anything starts."/>
                     </StackPanel>
+                </DockPanel>
+
+                <!-- Models not added yet -->
+                <Border Style="{StaticResource Group}" Padding="18,14" Margin="0,0,0,18" Visibility="{Binding EnhanceNeedsSetup, Converter={StaticResource BoolToVis}}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Padding="18,0" Content="Add the models (about 235 MB)" Command="{Binding SetupEnhanceCommand}"/>
+                        <TextBlock Style="{StaticResource Text.Body}" VerticalAlignment="Center" Margin="0,0,20,0"
+                                   Text="AI enhance needs its models, downloaded once. Just smooth works without them."/>
+                    </DockPanel>
                 </Border>
 
-                <!-- Enhance a photo: one picture, the heavy models allowed -->
-                <TextBlock Style="{StaticResource Text.Section}" Text="Enhance a photo" Margin="0,32,0,10"/>
-                <Border Style="{StaticResource Panel}">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource Text.Muted}" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left"
-                                   Text="A photo or a piece of art through the same AI, cleaned and enlarged up to 8K. One picture can use Max detail, the heavy models that add much more texture than a whole video can afford. Drop a picture here or choose one."/>
-                        <DockPanel Margin="0,14,0,0" Visibility="{Binding PhotoNeedsSetup, Converter={StaticResource BoolToVis}}">
-                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Height="38" Padding="18,0" Content="Add the models"
-                                    Command="{Binding SetupEnhanceCommand}"/>
-                            <TextBlock Style="{StaticResource Text.Body}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="360"/>
+                        <ColumnDefinition Width="28"/>
+                        <ColumnDefinition Width="460"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- ================================================================ left: videos -->
+                    <StackPanel Visibility="{Binding VideoMode, Converter={StaticResource BoolToVis}}">
+                        <Button Command="{Binding ChooseVideosCommand}" Cursor="Hand" Height="88" FocusVisualStyle="{StaticResource FocusRing}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" CornerRadius="16" Background="#121216" BorderBrush="#3A3A42" BorderThickness="1.5">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="18" Foreground="{StaticResource Nova}" Margin="0,0,12,0"/>
+                                            <TextBlock Text="Drop videos here, or choose files" Foreground="{StaticResource Muted}" FontSize="14.5" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Nova}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+
+                        <!-- Chosen, not started: each with its time -->
+                        <StackPanel Visibility="{Binding HasStagedVideos, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Style="{StaticResource Text.GroupHeader}" Text="Ready to enhance"/>
+                            <Border Style="{StaticResource Group}">
+                                <ItemsControl ItemsSource="{Binding StagedVideos}" Focusable="False">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{StaticResource Separator}" BorderThickness="0,0,0,1" Padding="14,10">
+                                                <DockPanel>
+                                                    <Border DockPanel.Dock="Left" Width="64" Height="40" CornerRadius="8" Background="#26262C" Margin="0,0,14,0">
+                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE768;" FontSize="14" Foreground="{StaticResource Muted}"/>
+                                                    </Border>
+                                                    <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Icon}" Content="&#xE711;" ToolTip="Remove" Margin="10,0,0,0"
+                                                            Command="{Binding DataContext.RemoveStagedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"/>
+                                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Text.Small}" Text="{Binding Eta}" VerticalAlignment="Center"/>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock Style="{StaticResource Text.Strong}" Text="{Binding Name}"/>
+                                                        <TextBlock Style="{StaticResource Text.Small}" Text="{Binding Meta}" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Working and done -->
+                        <StackPanel Visibility="{Binding HasExports, Converter={StaticResource BoolToVis}}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Link}" Content="Clear finished" Margin="0,12,8,0" Height="28"
+                                        Command="{Binding ClearFinishedExportsCommand}"/>
+                                <TextBlock Style="{StaticResource Text.GroupHeader}" Text="Enhancing and done"/>
+                            </DockPanel>
+                            <Border Style="{StaticResource Group}">
+                                <ItemsControl ItemsSource="{Binding Exports}" Focusable="False">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{StaticResource Separator}" BorderThickness="0,0,0,1" Padding="16,12">
+                                                <StackPanel>
+                                                    <DockPanel>
+                                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                                            <Button Style="{StaticResource Btn.Link}" Content="Stop" Foreground="{StaticResource Danger}" Height="26"
+                                                                    Command="{Binding DataContext.CancelExportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                                                    Visibility="{Binding CanCancel, Converter={StaticResource BoolToVis}}"/>
+                                                            <Button Style="{StaticResource Btn.Link}" Content="Show in folder" Height="26"
+                                                                    Command="{Binding DataContext.ShowExportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                                                    Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}}"/>
+                                                            <Button Style="{StaticResource Btn.Icon}" Content="&#xE711;" ToolTip="Remove from the list"
+                                                                    Command="{Binding DataContext.RemoveExportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                                                    Visibility="{Binding CanRemove, Converter={StaticResource BoolToVis}}"/>
+                                                        </StackPanel>
+                                                        <StackPanel>
+                                                            <TextBlock Style="{StaticResource Text.Strong}" Text="{Binding Title}"/>
+                                                            <TextBlock Style="{StaticResource Text.Small}" Text="{Binding Summary}" Margin="0,3,0,0"/>
+                                                        </StackPanel>
+                                                    </DockPanel>
+                                                    <ProgressBar Style="{StaticResource ThinProgress}" Height="5" Maximum="1" Margin="0,10,0,4" Value="{Binding Progress, Mode=OneWay}"
+                                                                 Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}"/>
+                                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding Detail}" Margin="0,4,0,0"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- ================================================================ left: photo -->
+                    <StackPanel Visibility="{Binding PhotoMode, Converter={StaticResource BoolToVis}}">
+                        <DockPanel Margin="0,0,0,14" Visibility="{Binding PhotoNeedsSetup, Converter={StaticResource BoolToVis}}">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Padding="18,0" Content="Add the models" Command="{Binding SetupEnhanceCommand}"/>
+                            <TextBlock Style="{StaticResource Text.Body}" VerticalAlignment="Center" Margin="0,0,20,0"
                                        Text="Enhance a photo needs the Enhance models and picture support, added once by setup-enhance."/>
                         </DockPanel>
-                        <Grid Margin="0,16,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="24"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource Text.Strong}" Text="Kind of picture" Margin="0,0,0,10"/>
-                                <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <ItemsControl ItemsSource="{Binding PhotoPresets}" Focusable="False">
-                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <RadioButton Style="{StaticResource Segment}" GroupName="photo-preset" Content="{Binding Label}"
-                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
-                                                             Command="{Binding DataContext.SelectPhotoPresetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Style="{StaticResource Text.Strong}" Text="Size" Margin="0,0,0,10"/>
-                                <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <ItemsControl ItemsSource="{Binding PhotoScales}" Focusable="False">
-                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <RadioButton Style="{StaticResource Segment}" GroupName="photo-scale" Content="{Binding Label}"
-                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
-                                                             Command="{Binding DataContext.SelectPhotoScaleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                            </StackPanel>
-                        </Grid>
-                        <Grid Margin="0,16,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="24"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource Text.Strong}" Text="Model" Margin="0,0,0,10"/>
-                                <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <ItemsControl ItemsSource="{Binding PhotoModels}" Focusable="False">
-                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <RadioButton Style="{StaticResource Segment}" GroupName="photo-model" Content="{Binding Label}"
-                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
-                                                             Command="{Binding DataContext.SelectPhotoModelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                                <TextBlock Style="{StaticResource Text.Small}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding PhotoModelNote}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2" IsEnabled="{Binding PhotoCleanupEnabled}">
-                                <TextBlock Style="{StaticResource Text.Strong}" Text="Clean-up" Margin="0,0,0,10"/>
-                                <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
-                                    <ItemsControl ItemsSource="{Binding PhotoCleanups}" Focusable="False">
-                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <RadioButton Style="{StaticResource Segment}" GroupName="photo-clean" Content="{Binding Label}"
-                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
-                                                             Command="{Binding DataContext.SelectPhotoCleanupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             CommandParameter="{Binding}"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-                            </StackPanel>
-                        </Grid>
-                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding PhotoFixCompression}" Margin="0,18,0,0">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource Text.Body}" Text="Fix compression"/>
-                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Takes out JPEG blocks and ringing first: for pictures saved from chats and websites."/>
-                            </StackPanel>
-                        </CheckBox>
-                        <Border Style="{StaticResource Divider}"/>
-                        <DockPanel>
-                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Height="42" Padding="22,0" Content="Enhance"
-                                    Command="{Binding EnhancePhotoCommand}"/>
-                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Height="42" Padding="18,0" Margin="0,0,10,0" Content="Cancel"
-                                    Command="{Binding CancelPhotoCommand}" Visibility="{Binding IsEnhancingPhoto, Converter={StaticResource BoolToVis}}"/>
-                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Height="42" Padding="18,0" Margin="0,0,10,0" Content="Choose a picture"
-                                    Command="{Binding ChoosePhotoCommand}"/>
-                            <StackPanel VerticalAlignment="Center" Margin="0,0,20,0">
-                                <TextBlock Style="{StaticResource Text.Body}" Text="{Binding PhotoName}" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding PhotoStatus}"/>
-                            </StackPanel>
-                        </DockPanel>
-                        <ProgressBar Style="{StaticResource ThinProgress}" Height="4" Margin="0,12,0,0" IsIndeterminate="True"
+                        <Button Command="{Binding ChoosePhotoCommand}" Cursor="Hand" Height="88" FocusVisualStyle="{StaticResource FocusRing}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" CornerRadius="16" Background="#121216" BorderBrush="#3A3A42" BorderThickness="1.5">
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE91B;" FontSize="18" Foreground="{StaticResource Nova}" Margin="0,0,12,0"/>
+                                                <TextBlock Text="{Binding PhotoName}" Foreground="{StaticResource Text}" FontSize="14.5" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <TextBlock Text="Drop a photo or a picture here, or choose one" Foreground="{StaticResource Muted}" FontSize="12.5" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Nova}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="4,10,0,0" Text="{Binding PhotoStatus}"/>
+                        <ProgressBar Style="{StaticResource ThinProgress}" Height="4" Margin="0,10,0,0" IsIndeterminate="True"
                                      Visibility="{Binding IsEnhancingPhoto, Converter={StaticResource BoolToVis}}"/>
-                        <!-- Before | after of one part at 100% (the whole picture shrunk to fit hides what changed),
-                             then the whole picture: click it to compare another part -->
-                        <Border Margin="0,14,0,0" CornerRadius="8" ClipToBounds="True" HorizontalAlignment="Left"
+                        <!-- Before | after of one part at 100%, then the whole picture: click it to compare another part -->
+                        <Border Margin="0,14,0,0" CornerRadius="14" ClipToBounds="True" HorizontalAlignment="Left"
                                 Visibility="{Binding HasPhotoCompare, Converter={StaticResource BoolToVis}}">
                             <Image Source="{Binding PhotoCompare}" MaxHeight="880" Stretch="Uniform" StretchDirection="DownOnly"
                                    RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                         </Border>
                         <DockPanel Margin="0,14,0,0" Visibility="{Binding HasPhoto, Converter={StaticResource BoolToVis}}">
-                            <Border CornerRadius="8" ClipToBounds="True" HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="Cross"
+                            <Border CornerRadius="12" ClipToBounds="True" HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="Cross"
                                     ToolTip="Click where you'd like to compare at 100%">
                                 <Grid>
                                     <Image x:Name="PhotoOverview" Source="{Binding PhotoShown}" Stretch="Uniform"
                                            RenderOptions.BitmapScalingMode="HighQuality" MouseLeftButtonUp="PhotoOverview_Click">
                                         <Image.Style>
                                             <Style TargetType="Image">
-                                                <Setter Property="MaxHeight" Value="720"/>
+                                                <Setter Property="MaxHeight" Value="640"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding HasPhotoCompare}" Value="True">
-                                                        <Setter Property="MaxHeight" Value="240"/>
+                                                        <Setter Property="MaxHeight" Value="220"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </Image.Style>
                                     </Image>
-                                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8" CornerRadius="6" Padding="9,3" Background="#E60F1424"
+                                    <Border VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8" CornerRadius="7" Padding="9,3" Background="#E60B0B0F"
                                             IsHitTestVisible="False">
-                                        <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#E6E9F2" Text="{Binding PhotoShownLabel}"/>
+                                        <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Text}" Text="{Binding PhotoShownLabel}"/>
                                     </Border>
                                 </Grid>
                             </Border>
                             <StackPanel Margin="18,0,0,0" VerticalAlignment="Top" Visibility="{Binding HasPhotoResult, Converter={StaticResource BoolToVis}}">
-                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" MaxWidth="320"
+                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" MaxWidth="300"
                                            Text="Above: the same part before and after, at 100%. Click the picture to compare another part."/>
-                                <ToggleButton Style="{StaticResource Segment}" Height="34" Padding="16,0" Margin="0,12,0,0" HorizontalAlignment="Left"
-                                              Content="Whole original" IsChecked="{Binding PhotoShowBefore}"/>
-                                <Button Style="{StaticResource Btn.Ghost}" Height="34" Padding="14,0" Margin="0,10,0,0" HorizontalAlignment="Left" Content="Open full size"
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                    <Border Style="{StaticResource SegmentGroup}">
+                                        <Button Style="{StaticResource SegmentButton}" Content="Whole original" Tag="{Binding PhotoShowBefore}"
+                                                Command="{Binding TogglePhotoBeforeCommand}"/>
+                                    </Border>
+                                </StackPanel>
+                                <Button Style="{StaticResource Btn.Secondary}" Padding="16,0" Margin="0,10,0,0" HorizontalAlignment="Left" Content="Open full size"
                                         Command="{Binding OpenPhotoResultCommand}"/>
-                                <Button Style="{StaticResource Btn.Ghost}" Height="34" Padding="14,0" Margin="0,10,0,0" HorizontalAlignment="Left"
-                                        Foreground="{StaticResource Nova}" Content="Show in folder" Command="{Binding ShowPhotoResultCommand}"/>
+                                <Button Style="{StaticResource Btn.Link}" Margin="0,8,0,0" HorizontalAlignment="Left" Content="Show in folder"
+                                        Command="{Binding ShowPhotoResultCommand}"/>
                             </StackPanel>
                         </DockPanel>
                     </StackPanel>
-                </Border>
 
-                <!-- List -->
-                <DockPanel Margin="0,32,0,10">
-                    <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Content="Clear finished" Command="{Binding ClearFinishedExportsCommand}"
-                            Visibility="{Binding HasExports, Converter={StaticResource BoolToVis}}"/>
-                    <TextBlock Style="{StaticResource Text.Section}" Text="Exports" Margin="0" VerticalAlignment="Center"/>
-                </DockPanel>
-                <Border CornerRadius="14" BorderThickness="1" BorderBrush="{StaticResource Line}" Padding="22,26"
-                        Visibility="{Binding HasExports, Converter={StaticResource InvBoolToVis}}">
-                    <TextBlock Style="{StaticResource Text.Muted}"
-                               Text="Nothing here yet. Choose videos above, or press Export while one is playing. Each one is saved next to the original, with NOVA Motion in its name."/>
-                </Border>
-                <ItemsControl ItemsSource="{Binding Exports}" Focusable="False">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{StaticResource Surface}" CornerRadius="12" Padding="18,14" Margin="0,0,0,10">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource Text.Strong}" Text="{Binding Title}"/>
-                                        <TextBlock Style="{StaticResource Text.Small}" Margin="0,2,0,10" Text="{Binding Summary}"/>
-                                        <ProgressBar Style="{StaticResource ThinProgress}" Height="5" Value="{Binding Progress, Mode=OneWay}"/>
-                                        <TextBlock Margin="0,8,0,0" FontSize="12.5" TextWrapping="Wrap" Text="{Binding Detail}">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="{StaticResource Muted}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsFailed}" Value="True">
-                                                            <Setter Property="Foreground" Value="{StaticResource Danger}"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsDone}" Value="True">
-                                                            <Setter Property="Foreground" Value="{StaticResource Nova}"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" Margin="16,0,0,0">
-                                        <TextBlock Text="{Binding PercentText}" FontSize="13" Foreground="{StaticResource Text}" VerticalAlignment="Center" Margin="0,0,12,0"
-                                                   Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}"/>
-                                        <Button Style="{StaticResource Btn.Ghost}" Height="30" Content="Cancel"
-                                                Command="{Binding DataContext.CancelExportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
-                                                Visibility="{Binding CanCancel, Converter={StaticResource BoolToVis}}"/>
-                                        <Button Style="{StaticResource Btn.Ghost}" Height="30" Foreground="{StaticResource Nova}" Content="Show in folder"
-                                                Command="{Binding DataContext.ShowExportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
-                                                Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}}"/>
-                                        <Button Style="{StaticResource Btn.Icon}" Width="30" Height="30" FontSize="10" Content="&#xE711;" ToolTip="Remove from list"
-                                                Command="{Binding DataContext.RemoveExportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
-                                                Visibility="{Binding CanRemove, Converter={StaticResource BoolToVis}}"/>
-                                    </StackPanel>
+                    <!-- ================================================================ right: the inspector -->
+                    <StackPanel Grid.Column="2">
+                        <!-- Videos: see one frame first -->
+                        <Border Style="{StaticResource Group}" Margin="0,0,0,20" Visibility="{Binding VideoMode, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <Grid MinHeight="160" Background="#23232A" Cursor="Hand" ToolTip="Open it larger">
+                                    <Grid.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick" Command="{Binding OpenFramePreviewCommand}"/>
+                                    </Grid.InputBindings>
+                                    <TextBlock Style="{StaticResource Text.Small}" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="24"
+                                               TextWrapping="Wrap" Text="Preview a frame: one before/after frame with these settings, at full size, in seconds."
+                                               Visibility="{Binding HasFramePreview, Converter={StaticResource InvBoolToVis}}"/>
+                                    <Image Source="{Binding FramePreview}" Stretch="Uniform" MaxHeight="300" RenderOptions.BitmapScalingMode="HighQuality"/>
                                 </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="14,10,14,0" Text="{Binding FramePreviewStatus}"/>
+                                <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Nova}" Margin="14,4,14,0"
+                                           Visibility="{Binding HasPreviewVideo, Converter={StaticResource BoolToVis}}">
+                                    <Run Text="From"/> <Run Text="{Binding PreviewVideoName, Mode=OneWay}"/>
+                                </TextBlock>
+                                <UniformGrid Columns="2" Margin="12">
+                                    <Button Style="{StaticResource Btn.Secondary}" Margin="0,0,5,0" Content="Preview a frame" Command="{Binding PreviewFrameCommand}" IsEnabled="{Binding CanExport}"/>
+                                    <Button Style="{StaticResource Btn.Secondary}" Margin="5,0,0,0" Content="Preview 4 s" Command="{Binding PreviewEnhanceCommand}" IsEnabled="{Binding CanExport}"/>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Presets -->
+                        <DockPanel Margin="4,0,4,10">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Link}" Content="Customize" FontWeight="SemiBold" Height="28" Command="{Binding OpenCustomizeCommand}"/>
+                            <TextBlock Text="Preset" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <ItemsControl Focusable="False" Visibility="{Binding VideoMode, Converter={StaticResource BoolToVis}}" ItemsSource="{Binding VideoPresetItems}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource PresetCard}" Command="{Binding DataContext.UseVideoPresetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14.5" Foreground="{StaticResource Text}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="12.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <ItemsControl Focusable="False" Visibility="{Binding PhotoMode, Converter={StaticResource BoolToVis}}" ItemsSource="{Binding PhotoPresetItems}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource PresetCard}" Command="{Binding DataContext.UsePhotoPresetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14.5" Foreground="{StaticResource Text}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="12.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Nova}" Margin="6,0,0,10" Text="Edited: Customize to save it as your own preset"
+                                   Visibility="{Binding PresetEdited, Converter={StaticResource BoolToVis}}"/>
+
+                        <!-- What the preset sets: tap a row to change it -->
+                        <Border Style="{StaticResource Group}" Visibility="{Binding VideoMode, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <Button Style="{StaticResource GroupRow.First}" Content="Size" Tag="{Binding SizeRow}" Command="{Binding OpenCustomizeCommand}"/>
+                                <Button Style="{StaticResource GroupRow}" Content="Frame rate" Tag="{Binding FrameRateRow}" Command="{Binding OpenCustomizeCommand}"/>
+                                <Button Style="{StaticResource GroupRow}" Content="Clean-up" Tag="{Binding CleanupRow}" Command="{Binding OpenCustomizeCommand}"/>
+                                <Button Style="{StaticResource GroupRow}" Content="AI strength" Tag="{Binding StrengthRow}" Command="{Binding OpenCustomizeCommand}"/>
+                                <Button Style="{StaticResource GroupRow}" Content="Fix compression" Tag="{Binding FixCompressionRow}" Command="{Binding OpenCustomizeCommand}"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Group}" Visibility="{Binding PhotoMode, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <Button Style="{StaticResource GroupRow.First}" Content="Kind of picture" Tag="{Binding PhotoKindRow}" Command="{Binding OpenCustomizeCommand}"/>
+                                <Button Style="{StaticResource GroupRow}" Content="Size" Tag="{Binding PhotoSizeRow}" Command="{Binding OpenCustomizeCommand}"/>
+                                <Button Style="{StaticResource GroupRow}" Content="Model" Tag="{Binding PhotoModelRow}" Command="{Binding OpenCustomizeCommand}"/>
+                                <Button Style="{StaticResource GroupRow}" Content="Clean-up" Tag="{Binding PhotoCleanupRow}" Command="{Binding OpenCustomizeCommand}"/>
+                                <Button Style="{StaticResource GroupRow}" Content="Fix compression" Tag="{Binding PhotoFixRow}" Command="{Binding OpenCustomizeCommand}"/>
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Style="{StaticResource Text.GroupFooter}" Text="{Binding PhotoModelNote}" Visibility="{Binding PhotoMode, Converter={StaticResource BoolToVis}}"/>
+
+                        <!-- How long, then go -->
+                        <StackPanel Orientation="Horizontal" Margin="6,18,0,10">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE916;" FontSize="13" Foreground="{StaticResource Muted}" Margin="0,0,8,0"/>
+                            <TextBlock Style="{StaticResource Text.Small}" Text="{Binding EtaText}"/>
+                        </StackPanel>
+                        <Button Style="{StaticResource Btn.Large}" Content="{Binding EnhanceButtonText}" Command="{Binding EnhanceStagedCommand}"
+                                Visibility="{Binding VideoMode, Converter={StaticResource BoolToVis}}"/>
+                        <Button Style="{StaticResource Btn.Large}" Content="Enhance photo" Command="{Binding EnhancePhotoCommand}"
+                                Visibility="{Binding PhotoMode, Converter={StaticResource BoolToVis}}"/>
+                        <Button Style="{StaticResource Btn.Secondary}" Margin="0,10,0,0" Content="Cancel" Command="{Binding CancelPhotoCommand}"
+                                Visibility="{Binding IsEnhancingPhoto, Converter={StaticResource BoolToVis}}"/>
+                        <DockPanel Margin="6,16,0,0" Visibility="{Binding EnhanceReady, Converter={StaticResource BoolToVis}}">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Link}" Content="Prepare all models" Height="26" Command="{Binding PrepareModelsCommand}"
+                                    ToolTip="Prepares every model for this graphics card in the background, so no preset ever waits. Once."/>
+                            <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
+                                       Text="Each model is prepared for this graphics card the first time it's used."/>
+                        </DockPanel>
+                    </StackPanel>
+                </Grid>
             </StackPanel>
+        </ScrollViewer>
+
+        <!-- ================================================================ Customize sheet -->
+        <Grid Visibility="{Binding IsCustomizeOpen, Converter={StaticResource BoolToVis}}">
+            <Border Background="{StaticResource Scrim}">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding CloseCustomizeCommand}"/>
+                </Border.InputBindings>
+            </Border>
+            <Border Width="640" Margin="0,28" CornerRadius="22" Background="#0F0F13" BorderBrush="{StaticResource Separator}" BorderThickness="1"
+                    HorizontalAlignment="Center">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" BorderBrush="{StaticResource Separator}" BorderThickness="0,0,0,1" Padding="20,12">
+                        <Grid>
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding PresetName}" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                <TextBlock Style="{StaticResource Text.Small}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="{Binding EtaText}"/>
+                            </StackPanel>
+                            <Button Style="{StaticResource Btn.Link}" HorizontalAlignment="Right" Content="Done" FontWeight="Bold" FontSize="15" Command="{Binding CloseCustomizeCommand}"/>
+                        </Grid>
+                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="22,4,22,24">
+                            <!-- Videos -->
+                            <StackPanel Visibility="{Binding VideoMode, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource Text.GroupHeader}" Text="Picture"/>
+                                <Border Style="{StaticResource Group}">
+                                    <StackPanel>
+                                        <DockPanel Margin="16,9">
+                                            <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" Background="#2C2C33">
+                                                <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding EnhancePresets}" Tag="{Binding SelectEnhancePresetCommand}"/>
+                                            </Border>
+                                            <TextBlock Text="Kind" VerticalAlignment="Center"/>
+                                        </DockPanel>
+                                        <StackPanel Visibility="{Binding EnhanceOn, Converter={StaticResource BoolToVis}}">
+                                            <Border Style="{StaticResource GroupCell}">
+                                                <DockPanel>
+                                                    <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" Background="#2C2C33">
+                                                        <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding EnhanceSizes}" Tag="{Binding SelectEnhanceSizeCommand}"/>
+                                                    </Border>
+                                                    <TextBlock Text="Size" VerticalAlignment="Center"/>
+                                                </DockPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource GroupCell}">
+                                                <DockPanel>
+                                                    <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" Background="#2C2C33">
+                                                        <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding EnhanceCleanups}" Tag="{Binding SelectEnhanceCleanupCommand}"/>
+                                                    </Border>
+                                                    <TextBlock Text="Clean-up" VerticalAlignment="Center"/>
+                                                </DockPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource GroupCell}">
+                                                <DockPanel>
+                                                    <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" Background="#2C2C33">
+                                                        <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding EnhanceStrengths}" Tag="{Binding SelectEnhanceStrengthCommand}"/>
+                                                    </Border>
+                                                    <TextBlock Text="AI strength" VerticalAlignment="Center"/>
+                                                </DockPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Style="{StaticResource Text.GroupFooter}" Text="{Binding EnhancePresetNote}"/>
+
+                                <StackPanel Visibility="{Binding EnhanceOn, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Style="{StaticResource Text.GroupHeader}" Text="Finishing"/>
+                                    <Border Style="{StaticResource Group}">
+                                        <StackPanel>
+                                            <DockPanel Margin="16,9">
+                                                <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" Background="#2C2C33">
+                                                    <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding EnhanceDetails}" Tag="{Binding SelectEnhanceDetailCommand}"/>
+                                                </Border>
+                                                <TextBlock Text="Detail" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                            <Border Style="{StaticResource GroupCell}">
+                                                <DockPanel>
+                                                    <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" Background="#2C2C33">
+                                                        <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding EnhanceGrains}" Tag="{Binding SelectEnhanceGrainCommand}"/>
+                                                    </Border>
+                                                    <TextBlock Text="Grain" VerticalAlignment="Center"/>
+                                                </DockPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource GroupCell}">
+                                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding EnhanceFixCompression}">
+                                                    <StackPanel>
+                                                        <TextBlock Text="Fix compression"/>
+                                                        <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="For blocky downloads up to 1440p. Much slower: leave off for clean files."/>
+                                                    </StackPanel>
+                                                </CheckBox>
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <TextBlock Style="{StaticResource Text.GroupHeader}" Text="Motion and file"/>
+                                <Border Style="{StaticResource Group}">
+                                    <StackPanel>
+                                        <DockPanel Margin="16,9">
+                                            <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" Background="#2C2C33">
+                                                <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding ExportTargets}" Tag="{Binding SelectExportTargetCommand}"/>
+                                            </Border>
+                                            <TextBlock Text="Frame rate" VerticalAlignment="Center"/>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource GroupCell}">
+                                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ExportFaster}">
+                                                <StackPanel>
+                                                    <TextBlock Text="Faster smoothing"/>
+                                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="A lighter model: quicker, slightly less precise motion."/>
+                                                </StackPanel>
+                                            </CheckBox>
+                                        </Border>
+                                        <Border Style="{StaticResource GroupCell}">
+                                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ExportGpuEncoder}">
+                                                <StackPanel>
+                                                    <TextBlock Text="Save on the graphics card"/>
+                                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="NVIDIA: HEVC, fast. Off: H.264 on the CPU, plays everywhere."/>
+                                                </StackPanel>
+                                            </CheckBox>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Style="{StaticResource Text.GroupHeader}" Text="Part of the video"/>
+                                <Border Style="{StaticResource Group}">
+                                    <StackPanel>
+                                        <DockPanel Margin="16,9">
+                                            <TextBox DockPanel.Dock="Right" Style="{StaticResource Input}" Width="120" Text="{Binding ExportStartText, UpdateSourceTrigger=PropertyChanged}"
+                                                     ToolTip="3:15 or 195; empty for the start"/>
+                                            <TextBlock Text="From" VerticalAlignment="Center"/>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource GroupCell}">
+                                            <DockPanel>
+                                                <TextBox DockPanel.Dock="Right" Style="{StaticResource Input}" Width="120" Text="{Binding ExportLengthText, UpdateSourceTrigger=PropertyChanged}"
+                                                         ToolTip="Seconds; empty for the rest"/>
+                                                <TextBlock Text="Seconds" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                        </Border>
+                                        <Border Style="{StaticResource GroupCell}">
+                                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ExportComparison}">
+                                                <StackPanel>
+                                                    <TextBlock Text="Before/after video"/>
+                                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="The original and NOVA side by side, labelled: for sharing a short part."/>
+                                                </StackPanel>
+                                            </CheckBox>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Style="{StaticResource Text.GroupFooter}" Foreground="{StaticResource Danger}" Text="{Binding ExportRangeProblem}"/>
+                            </StackPanel>
+
+                            <!-- Photos -->
+                            <StackPanel Visibility="{Binding PhotoMode, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource Text.GroupHeader}" Text="Picture"/>
+                                <Border Style="{StaticResource Group}">
+                                    <StackPanel>
+                                        <DockPanel Margin="16,9">
+                                            <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" Background="#2C2C33">
+                                                <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding PhotoPresets}" Tag="{Binding SelectPhotoPresetCommand}"/>
+                                            </Border>
+                                            <TextBlock Text="Kind" VerticalAlignment="Center"/>
+                                        </DockPanel>
+                                        <Border Style="{StaticResource GroupCell}">
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" Background="#2C2C33">
+                                                    <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding PhotoScales}" Tag="{Binding SelectPhotoScaleCommand}"/>
+                                                </Border>
+                                                <TextBlock Text="Size" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                        </Border>
+                                        <Border Style="{StaticResource GroupCell}">
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" Background="#2C2C33">
+                                                    <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding PhotoModels}" Tag="{Binding SelectPhotoModelCommand}"/>
+                                                </Border>
+                                                <TextBlock Text="Model" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                        </Border>
+                                        <Border Style="{StaticResource GroupCell}" IsEnabled="{Binding PhotoCleanupEnabled}">
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Right" Style="{StaticResource SegmentGroup}" Background="#2C2C33">
+                                                    <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding PhotoCleanups}" Tag="{Binding SelectPhotoCleanupCommand}"/>
+                                                </Border>
+                                                <TextBlock Text="Clean-up" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                        </Border>
+                                        <Border Style="{StaticResource GroupCell}">
+                                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding PhotoFixCompression}">
+                                                <StackPanel>
+                                                    <TextBlock Text="Fix compression"/>
+                                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Takes out JPEG blocks first: for pictures saved from chats and websites."/>
+                                                </StackPanel>
+                                            </CheckBox>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Style="{StaticResource Text.GroupFooter}" Text="{Binding PhotoModelNote}"/>
+                            </StackPanel>
+
+                            <!-- The preset itself -->
+                            <TextBlock Style="{StaticResource Text.GroupHeader}" Text="Preset"/>
+                            <Border Style="{StaticResource Group}">
+                                <StackPanel>
+                                    <DockPanel Margin="16,9">
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Height="36" Padding="14,0" Margin="10,0,0,0"
+                                                Content="Save as a new preset" Command="{Binding SavePresetCommand}"/>
+                                        <TextBox Style="{StaticResource Input}" Text="{Binding NewPresetName, UpdateSourceTrigger=PropertyChanged}" ToolTip="A name for your preset"/>
+                                    </DockPanel>
+                                    <Border Style="{StaticResource GroupCell}" Visibility="{Binding PresetEdited, Converter={StaticResource BoolToVis}}">
+                                        <Button Style="{StaticResource Btn.Link}" HorizontalAlignment="Left" Command="{Binding ResetPresetCommand}">
+                                            <TextBlock><Run Text="Back to"/> <Run Text="{Binding PresetName, Mode=OneWay}"/> <Run Text="as it was"/></TextBlock>
+                                        </Button>
+                                    </Border>
+                                    <Border Style="{StaticResource GroupCell}" Visibility="{Binding CanDeletePreset, Converter={StaticResource BoolToVis}}">
+                                        <Button Style="{StaticResource Btn.Link}" HorizontalAlignment="Left" Foreground="{StaticResource Danger}" Content="Delete this preset"
+                                                Command="{Binding DeletePresetCommand}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Style="{StaticResource Text.GroupFooter}" Text="Your presets also appear in the sidebar."/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
         </Grid>
-    </ScrollViewer>
+    </Grid>
 </UserControl>

@@ -155,6 +155,7 @@ public partial class MainWindow : Window, IUiHost
                 break;
             case nameof(MainViewModel.IsFullscreen):
                 SetFullscreen(_vm.IsFullscreen);
+                UpdatePlayerSurface();
                 break;
             case nameof(MainViewModel.EngineState):
                 EngineDot.Fill = (Brush)FindResource(_vm.EngineState switch
@@ -176,6 +177,8 @@ public partial class MainWindow : Window, IUiHost
     {
         var show = _vm.HasMedia && !_vm.IsSettingsOpen && !_vm.IsExportOpen && !_vm.IsGenerateOpen;
         Video.Visibility = show ? Visibility.Visible : Visibility.Hidden;
+        // The player has the whole window; the sidebar is for the pages
+        Sidebar.Visibility = show || _vm.IsFullscreen ? Visibility.Collapsed : Visibility.Visible;
         if (_overlay is null) return;
         if (show && IsVisible && WindowState != WindowState.Minimized)
         {
@@ -285,11 +288,24 @@ public partial class MainWindow : Window, IUiHost
                 _vm.SetAnimateImage(picture);
             return;
         }
-        // A picture dropped on the Enhance page: Enhance a photo
-        if (_vm.IsEnhanceModule && e.Data.GetData(DataFormats.FileDrop) is string[] pics && pics.Length > 0 && pics.All(Animate.IsImage))
+        // Dropped on the Enhance page: pictures are enhanced as photos, videos wait there for Enhance
+        if (_vm.IsExportOpen && e.Data.GetData(DataFormats.FileDrop) is string[] onEnhance && onEnhance.Length > 0)
         {
-            _vm.SetPhoto(pics[0]);
-            return;
+            if (onEnhance.All(Animate.IsImage))
+            {
+                _vm.PhotoMode = true;
+                _vm.SetPhoto(onEnhance[0]);
+                return;
+            }
+            var videos = onEnhance.SelectMany(f => Directory.Exists(f)
+                    ? Directory.GetFiles(f).Where(MediaSource.IsVideoFile).OrderBy(x => x, NaturalComparer.Instance)
+                    : MediaSource.IsVideoFile(f) ? new[] { f } : Array.Empty<string>()).ToList();
+            if (videos.Count > 0)
+            {
+                _vm.PhotoMode = false;
+                _vm.StageVideos(videos);
+                return;
+            }
         }
         if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
         {
