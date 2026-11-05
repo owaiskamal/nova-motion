@@ -41,6 +41,13 @@
                         </DockPanel>
 
                         <StackPanel Visibility="{Binding ShowEnhanceOptions, Converter={StaticResource BoolToVis}}">
+                            <DockPanel Margin="0,12,0,0">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Height="34" Padding="14,0" Content="Prepare all models"
+                                        Command="{Binding SetupEnhanceCommand}"
+                                        ToolTip="Prepares every model for this graphics card in a separate window, so no setting ever waits. About 3 minutes a model on GTX 16 cards, once."/>
+                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0"
+                                           Text="The first use of each model prepares it for this graphics card, which takes minutes on GTX 16 cards. Prepare them all once and every setting starts straight away."/>
+                            </DockPanel>
                             <Grid Margin="0,16,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="3*"/>

@@ -220,7 +220,13 @@ calls.clear()
 o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 1080}},
         w=480, h=270)
 small = [c for c in calls if c[0] == "inference"]
-check(small and small[0][3] == (480, 270), f"a picture smaller than a tile: the whole picture ({small[:1]})")
+check(small and small[0][3] == (640, 384) and small[0][5:] == (640, 384) and (o.width, o.height) == (1920, 1080),
+      f"a picture smaller than a tile: padded to it, so the one engine serves it; padding cropped off ({small[:1]}, {o.width}x{o.height})")
+calls.clear()
+o = run({"engine": "mvtools", "target": 60, "source_frames": 12, "enhance": {"preset": "film", "height": 1280}}, w=480, h=640, frames=12)
+fed = [c for c in calls if c[0] == "inference"]
+check(fed and fed[0][3] == (640, 384) and (o.width, o.height) == (960, 1280),
+      f"a 480 x 640 portrait clip: the same tile, finished at 960 x 1280 ({fed[:1]}, {o.width}x{o.height})")
 check(enhance.tiles(1920, 1080) == ((640, 384), (16, 16)) and enhance.tiles(640, 1080) == ((640, 384), (0, 16)),
       "tiles overlap only where the picture is split")
 

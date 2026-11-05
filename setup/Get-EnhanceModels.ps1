@@ -131,7 +131,7 @@ Copy-Item (Join-Path $Root "engine\enhance_build.py") $Runtime -Force
 
 # TensorRT prepares each model for this graphics card once. Done here, so the first export doesn't wait
 if ((Test-Path (Join-Path $Plugins "vstrt.dll")) -and -not $NoPrepare) {
-    Step "Preparing the two everyday models for this graphics card (a few minutes, once)"
+    Step "Preparing every model for this graphics card, so no setting has to wait later (about 3 minutes a model on GTX 16 cards, once)"
     & (Join-Path $MpvDir "python.exe") (Join-Path $Runtime "enhance_build.py")
     if ($LASTEXITCODE -ne 0) { Write-Warning "Not all models were prepared; the first export with them prepares them instead." }
 }

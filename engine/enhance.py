@@ -127,12 +127,16 @@ FIX_COMPRESSION_MAX_HEIGHT = 1440
 
 
 def tiles(width, height, multiple=8, tile=TILE):
-    """(tile size, overlap) for a picture: the fixed tile, or the whole picture when it's smaller."""
-    if width <= tile[0] and height <= tile[1]:
-        return (width, height), (0, 0)
-    tw = min(tile[0], width - width % multiple)
-    th = min(tile[1], height - height % multiple)
-    return (tw, th), (OVERLAP if tw < width else 0, OVERLAP if th < height else 0)
+    """(tile size, overlap): always the fixed tile, overlapping where the picture is split. Pictures
+    smaller than a tile in either direction are padded to it first (pad_to_tile): a 480 x 640
+    portrait clip otherwise asked for a 480 x 384 engine, a build of minutes in the middle of a preview."""
+    return tile, (OVERLAP if width > tile[0] else 0, OVERLAP if height > tile[1] else 0)
+
+
+def pad_to_tile(clip, tile):
+    """(clip at least the tile's size, padding right, padding bottom); the padding is cropped off after."""
+    pw, ph = max(0, tile[0] - clip.width), max(0, tile[1] - clip.height)
+    return (core.std.AddBorders(clip, right=pw, bottom=ph) if pw or ph else clip), pw, ph
 
 
 def _rgb(clip, sample_bits, matrix):
@@ -149,6 +153,8 @@ def fix_compression(clip, cfg, matrix, strength=20.0):
     pad_w, pad_h = (-clip.width) % 8, (-clip.height) % 8          # DPIR works on multiples of 8
     if pad_w or pad_h:
         rgb = core.std.AddBorders(rgb, right=pad_w, bottom=pad_h)
+    rgb, tw, th = pad_to_tile(rgb, DPIR_TILE)
+    pad_w, pad_h = pad_w + tw, pad_h + th
     size, overlap = tiles(rgb.width, rgb.height, tile=DPIR_TILE)
     out = vsmlrt.DPIR(rgb, strength=strength, model=vsmlrt.DPIRModel.drunet_deblocking_color,
                       tilesize=size, overlap=overlap, backend=be)
@@ -170,8 +176,12 @@ def upscale(clip, cfg, e, matrix):
     bits = 16 if isinstance(be, vsmlrt.Backend.TRT) else 32
     rgb = _rgb(clip, bits, matrix)
     small = core.resize.Spline36(rgb, in_w, in_h) if (in_w, in_h) != (clip.width, clip.height) else rgb
-    size, overlap = tiles(in_w, in_h)
+    small, pw, ph = pad_to_tile(small, TILE)
+    size, overlap = tiles(small.width, small.height)
     big = vsmlrt.inference(small, path, overlap=overlap, tilesize=size, backend=be)
+    if pw or ph:
+        k = big.width // small.width
+        big = core.std.Crop(big, right=pw * k, bottom=ph * k)
     if (big.width, big.height) != (out_w, out_h):
         # Downscaling the model's output: Spline36 keeps the detail it made without ringing
         big = core.resize.Spline36(big, out_w, out_h)
