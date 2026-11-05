@@ -24,7 +24,7 @@ public interface IUiHost
 
 public enum EngineState { Idle, Off, Opening, Preparing, PreparingLong, Active, Failed, HighFrameRate, NoVideo }
 
-public enum Drawer { None, Motion, Tracks, Queue }
+public enum Drawer { None, Motion, Tracks, Queue, Picture }
 
 /// <summary>Segoe Fluent Icons glyphs used by state-dependent buttons.</summary>
 public static class Glyphs
@@ -391,7 +391,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         get => _volume;
         set
         {
-            value = Math.Clamp(value, 0, 130);
+            value = Math.Clamp(value, 0, MaxVolume);
             if (!Set(ref _volume, value)) return;
             Raise(nameof(VolumeGlyph), nameof(VolumeText));
             _settings.Volume = value;
@@ -429,19 +429,20 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         set
         {
             if (!Set(ref _activeDrawer, value)) return;
-            Raise(nameof(IsMotionOpen), nameof(IsTracksOpen), nameof(IsQueueOpen), nameof(IsDrawerOpen));
+            Raise(nameof(IsMotionOpen), nameof(IsTracksOpen), nameof(IsQueueOpen), nameof(IsPictureOpen), nameof(IsDrawerOpen));
         }
     }
     public bool IsDrawerOpen => ActiveDrawer != Drawer.None;
     public bool IsMotionOpen => ActiveDrawer == Drawer.Motion;
     public bool IsTracksOpen => ActiveDrawer == Drawer.Tracks;
     public bool IsQueueOpen => ActiveDrawer == Drawer.Queue;
+    public bool IsPictureOpen => ActiveDrawer == Drawer.Picture;
 
     private void ToggleDrawer(string? which)
     {
         var d = which?.ToLowerInvariant() switch
         {
-            "motion" => Drawer.Motion, "tracks" => Drawer.Tracks, "queue" => Drawer.Queue, _ => Drawer.None,
+            "motion" => Drawer.Motion, "tracks" => Drawer.Tracks, "queue" => Drawer.Queue, "picture" => Drawer.Picture, _ => Drawer.None,
         };
         ActiveDrawer = ActiveDrawer == d ? Drawer.None : d;
     }
@@ -548,6 +549,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
                 if (_pendingResume is { } r && r > 0)
                     ShowToast($"Resumed at {TimeFormat.Format(r)}", "Start over", () => _ = SeekAsync(0, relative: false));
                 _pendingResume = null;
+                ResetPerFile();
                 Raise(PlaybackProps);
                 Raise(nameof(Origin), nameof(IsOnline));
                 break;
@@ -613,8 +615,9 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
             _history.Record(_current, _state.Title, _state.Duration, _state.Duration, _clock());
             _history.Save();
         }
-        if (_queue.HasNext) _ = PlayNextAsync();
+        if (_queue.HasNext && !_upNextCancelled) _ = PlayNextAsync();
         else IsFullscreen = false;
+        _upNextCancelled = false;
     }
 
     private void OnExited()
@@ -653,10 +656,13 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
             case PlayerAction.SeekBackLong: await SeekAsync(-30, true); break;
             case PlayerAction.SeekForwardLong: await SeekAsync(30, true); break;
             case PlayerAction.SeekPercent: await SeekPercentAsync(arg); break;
-            case PlayerAction.VolumeUp: Volume = Math.Min(130, Math.Round(Volume) + 5); ShowToast($"Volume {Volume:0}%"); break;
+            case PlayerAction.VolumeUp: Volume = Math.Min(MaxVolume, Math.Round(Volume) + 5); ShowToast($"Volume {Volume:0}%"); break;
             case PlayerAction.VolumeDown: Volume = Math.Max(0, Math.Round(Volume) - 5); ShowToast($"Volume {Volume:0}%"); break;
             case PlayerAction.ToggleMute: await Send("cycle", "mute"); break;
             case PlayerAction.ToggleFullscreen: IsFullscreen = !IsFullscreen; break;
+            case PlayerAction.ExitFullscreen when IsPip:
+                IsPip = false;
+                break;
             case PlayerAction.ExitFullscreen:
                 if (ActiveDrawer != Drawer.None) ActiveDrawer = Drawer.None;
                 else IsFullscreen = false;
@@ -680,6 +686,14 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
             case PlayerAction.CycleAudio: await Send("cycle", "audio"); break;
             case PlayerAction.Screenshot: await ScreenshotAsync(); break;
             case PlayerAction.Stop: await StopAsync(); break;
+            case PlayerAction.NextChapter: NextChapterCommand.Execute(null); break;
+            case PlayerAction.PreviousChapter: PreviousChapterCommand.Execute(null); break;
+            case PlayerAction.SubEarlier: SubEarlierCommand.Execute(null); ShowToast("Subtitles " + SubDelayText); break;
+            case PlayerAction.SubLater: SubLaterCommand.Execute(null); ShowToast("Subtitles " + SubDelayText); break;
+            case PlayerAction.ToggleShortcuts: ShowShortcuts = !ShowShortcuts; break;
+            case PlayerAction.ABLoop: ABLoopCommand.Execute(null); break;
+            case PlayerAction.TogglePip: IsPip = !IsPip; break;
+            case PlayerAction.ToggleNightMode: NightMode = !NightMode; break;
         }
     }
 
@@ -740,6 +754,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         WatchStall(now);
         WatchDrops(now);
         ReadEngineState(now);
+        PlayerTick(now);
     }
 
     private static bool TryNumber(object? p, out double v)

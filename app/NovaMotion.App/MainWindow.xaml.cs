@@ -57,6 +57,7 @@ public partial class MainWindow : Window, IUiHost
         StateChanged += (_, _) => OnStateChanged();
         Video.SizeChanged += (_, _) => PlaceOverlay();
         PreviewKeyDown += (_, e) => OnKey(e);
+        PreviewKeyUp += (_, e) => OnKeyUp(e);
         DragEnter += OnDragEnter;
         DragOver += (_, e) => { e.Effects = DragDropEffects.Copy; e.Handled = true; };
         DragLeave += (_, _) => DropHint.Visibility = Visibility.Collapsed;
@@ -157,6 +158,9 @@ public partial class MainWindow : Window, IUiHost
                 SetFullscreen(_vm.IsFullscreen);
                 UpdatePlayerSurface();
                 break;
+            case nameof(MainViewModel.IsPip):
+                SetPip(_vm.IsPip);
+                break;
             case nameof(MainViewModel.EngineState):
                 EngineDot.Fill = (Brush)FindResource(_vm.EngineState switch
                 {
@@ -210,6 +214,37 @@ public partial class MainWindow : Window, IUiHost
         UpdatePlayerSurface();
     }
 
+    private Rect _pipRestore;
+    private WindowState _pipRestoreState;
+
+    /// <summary>Picture in picture: the video alone in a small always-on-top window in the screen's
+    /// bottom-right corner; the controls still show on hover. Off: back where it was.</summary>
+    private void SetPip(bool on)
+    {
+        var work = SystemParameters.WorkArea;
+        if (on)
+        {
+            _pipRestoreState = WindowState;
+            _pipRestore = WindowState == WindowState.Normal ? new Rect(Left, Top, Width, Height) : RestoreBounds;
+            WindowState = WindowState.Normal;
+            TitleRow.Height = new GridLength(0);
+            MinWidth = 320; MinHeight = 180;
+            Width = 480; Height = 270;
+            Left = work.Right - Width - 24; Top = work.Bottom - Height - 24;
+            Topmost = true;
+        }
+        else
+        {
+            Topmost = false;
+            MinWidth = 900; MinHeight = 580;
+            TitleRow.Height = new GridLength(44);
+            if (!_pipRestore.IsEmpty) { Left = _pipRestore.Left; Top = _pipRestore.Top; Width = _pipRestore.Width; Height = _pipRestore.Height; }
+            WindowState = _pipRestoreState;
+        }
+        UpdatePlayerSurface();
+        Dispatcher.BeginInvoke(PlaceOverlay, DispatcherPriority.Background);
+    }
+
     private void SetFullscreen(bool on)
     {
         if (on)
@@ -256,12 +291,29 @@ public partial class MainWindow : Window, IUiHost
 
     // ------------------------------------------------------------------ input
 
+    private bool _fastHeld;
+
+    private void OnKeyUp(KeyEventArgs e)
+    {
+        if (e.Key != Key.Right || !_fastHeld) return;
+        _fastHeld = false;
+        _vm.SetSpeedCommand.Execute(1.0);
+        e.Handled = true;
+    }
+
     private void OnKey(KeyEventArgs e)
     {
         if (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsExportOpen || _vm.IsGenerateOpen) return;
         if (Keyboard.FocusedElement is TextBox) return;
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         var mods = Keyboard.Modifiers;
+        // Holding → plays at 2× until it's let go; a tap still jumps 5 s
+        if (key == Key.Right && e.IsRepeat && mods == ModifierKeys.None)
+        {
+            if (!_fastHeld) { _fastHeld = true; _vm.SetSpeedCommand.Execute(2.0); _vm.ShowToast("2× while held"); }
+            e.Handled = true;
+            return;
+        }
         var (action, arg) = KeyMap.Resolve(key.ToString(), mods.HasFlag(ModifierKeys.Control), mods.HasFlag(ModifierKeys.Shift), mods.HasFlag(ModifierKeys.Alt));
         if (action == PlayerAction.None) return;
         e.Handled = true;

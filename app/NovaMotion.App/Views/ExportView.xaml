@@ -32,10 +32,11 @@
                 </Border>
 
                 <Grid>
+                    <!-- The inspector takes up to 480 px; on a small window both columns share the width -->
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" MinWidth="360"/>
-                        <ColumnDefinition Width="28"/>
-                        <ColumnDefinition Width="460"/>
+                        <ColumnDefinition Width="*" MinWidth="260"/>
+                        <ColumnDefinition Width="24"/>
+                        <ColumnDefinition Width="*" MinWidth="320" MaxWidth="480"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- ================================================================ left: videos -->
@@ -223,8 +224,8 @@
                                     <Run Text="From"/> <Run Text="{Binding PreviewVideoName, Mode=OneWay}"/>
                                 </TextBlock>
                                 <UniformGrid Columns="2" Margin="12">
-                                    <Button Style="{StaticResource Btn.Secondary}" Margin="0,0,5,0" Content="Preview a frame" Command="{Binding PreviewFrameCommand}" IsEnabled="{Binding CanExport}"/>
-                                    <Button Style="{StaticResource Btn.Secondary}" Margin="5,0,0,0" Content="Preview 4 s" Command="{Binding PreviewEnhanceCommand}" IsEnabled="{Binding CanExport}"/>
+                                    <Button Style="{StaticResource Btn.Secondary}" Background="#2C2C33" Padding="8,0" Margin="0,0,5,0" Content="Preview a frame" Command="{Binding PreviewFrameCommand}" IsEnabled="{Binding CanExport}"/>
+                                    <Button Style="{StaticResource Btn.Secondary}" Background="#2C2C33" Padding="8,0" Margin="5,0,0,0" Content="Preview 4 s" Command="{Binding PreviewEnhanceCommand}" IsEnabled="{Binding CanExport}"/>
                                 </UniformGrid>
                             </StackPanel>
                         </Border>

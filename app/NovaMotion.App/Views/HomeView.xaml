@@ -4,50 +4,40 @@
              xmlns:c="clr-namespace:NovaMotion.App.Controls"
              x:Name="Root">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
-        <Grid MaxWidth="1180" Margin="56,28,56,48">
+        <Grid MaxWidth="1500" Margin="40,6,40,48">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- ==================================================== open -->
-            <StackPanel Grid.Row="0" Margin="0,24,0,44">
-                <TextBlock Style="{StaticResource Text.Display}" MaxWidth="720" HorizontalAlignment="Left"
-                           Text="Watch at your screen's full frame rate."/>
-                <TextBlock Style="{StaticResource Text.Muted}" FontSize="15" LineHeight="23" MaxWidth="620" HorizontalAlignment="Left"
-                           Margin="0,14,0,28"
-                           Text="Open a file, or paste a link from YouTube and 1,000+ other sites. NOVA Motion generates the in-between frames while you watch."/>
+            <StackPanel Grid.Row="0" Margin="0,6,0,36">
+                <TextBlock Style="{StaticResource Text.LargeTitle}" Text="Watch"/>
+                <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,22"
+                           Text="Any file or link from YouTube and 1,000+ sites, at your screen's full frame rate."/>
 
-                <Grid MaxWidth="960" HorizontalAlignment="Left">
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBox x:Name="LinkBox" Style="{StaticResource Input.Hero}" Tag="Paste a link, or drop a video anywhere"
                              Text="{Binding TargetText, UpdateSourceTrigger=PropertyChanged}" KeyDown="LinkBox_KeyDown"
                              AutomationProperties.Name="Video link or file path"/>
-                    <Button Grid.Column="1" Style="{StaticResource Btn.Primary}" Height="52" Padding="26,0" Margin="10,0,0,0"
-                            Command="{Binding PlayCommand}" Content="Play"/>
-                    <Button Grid.Column="3" Style="{StaticResource Btn.Secondary}" Height="52" Margin="10,0,0,0"
-                            Command="{Binding OpenExportCommand}" ToolTip="Save a smooth copy of a video file">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE74E;" Margin="0,0,10,0"/>
-                            <TextBlock Text="Export" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Grid.Column="2" Style="{StaticResource Btn.Secondary}" Height="52" Margin="10,0,0,0"
+                    <Button Grid.Column="1" Style="{StaticResource Btn.Secondary}" Height="52" Margin="10,0,0,0" Padding="20,0"
                             Command="{Binding OpenFilesCommand}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Style="{StaticResource Icon}" Text="&#xE8E5;" Margin="0,0,10,0"/>
                             <TextBlock Text="Open files" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+                    <Button Grid.Column="2" Style="{StaticResource Btn.Primary}" Height="52" Padding="28,0" Margin="10,0,0,0" FontWeight="Bold"
+                            Command="{Binding PlayCommand}" Content="Play"/>
                 </Grid>
 
                 <!-- A link on the clipboard: one click to play it -->
-                <Border Margin="0,12,0,0" HorizontalAlignment="Left" CornerRadius="10" Background="{StaticResource NovaSoft}"
+                <Border Margin="0,12,0,0" HorizontalAlignment="Left" CornerRadius="12" Background="{StaticResource NovaSoft}"
                         Padding="14,6,6,6" Visibility="{Binding HasClipboardLink, Converter={StaticResource BoolToVis}}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource Icon}" Text="&#xE77F;" Foreground="{StaticResource Nova}" FontSize="14" Margin="0,0,10,0"/>
@@ -62,19 +52,41 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Playback presets: the smoothing profiles -->
+                <DockPanel Margin="4,30,4,10">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Link}" Content="Customize" FontWeight="SemiBold" Height="28" Click="SmoothingSettings_Click"/>
+                    <TextBlock Text="Smooth for" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
+                </DockPanel>
+                <ItemsControl ItemsSource="{Binding Profiles}" Focusable="False">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource PresetCard}" Command="{Binding DataContext.SelectProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="14.5" Foreground="{StaticResource Text}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="12.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
                 <!-- The signature: what NOVA Motion does to a 24 fps film on a 60 Hz screen -->
-                <StackPanel Orientation="Horizontal" Margin="0,40,0,0">
-                    <c:CadenceStrip Ticks="{Binding CadenceTicks}" Repeat="8" BarWidth="5" Gap="5" Height="30"
-                                    RealBrush="{StaticResource Text}" GeneratedBrush="{StaticResource Nova}" VerticalAlignment="Center"/>
-                    <StackPanel Margin="22,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Text}">
-                            <Run Text="24 fps in, 60 fps out." FontWeight="SemiBold"/>
-                        </TextBlock>
-                        <TextBlock Style="{StaticResource Text.Small}" Margin="0,3,0,0">
-                            <Run Text="White bars are frames from the film; gold bars are the ones NOVA Motion makes."/>
-                        </TextBlock>
+                <Border Style="{StaticResource Group}" Padding="16,12" Margin="0,4,10,0">
+                    <StackPanel Orientation="Horizontal">
+                        <c:CadenceStrip Ticks="{Binding CadenceTicks}" Repeat="8" BarWidth="4" Gap="4" Height="24"
+                                        RealBrush="{StaticResource Text}" GeneratedBrush="{StaticResource Nova}" VerticalAlignment="Center"/>
+                        <StackPanel Margin="18,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Text}">
+                                <Run Text="{Binding EngineName, Mode=OneWay}" FontWeight="SemiBold"/>
+                                <Run Text="·"/>
+                                <Run Text="{Binding TargetName, Mode=OneWay}"/>
+                            </TextBlock>
+                            <TextBlock Style="{StaticResource Text.Small}" Margin="0,3,0,0"
+                                       Text="White bars are frames from the video; gold bars are the ones NOVA Motion makes."/>
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
+                </Border>
             </StackPanel>
 
             <!-- ==================================================== recent + this PC -->

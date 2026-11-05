@@ -906,7 +906,7 @@
                     <Border x:Name="Bd" Background="Transparent" BorderBrush="{StaticResource Separator}" BorderThickness="0,1,0,0" Padding="16,0">
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Right" Style="{StaticResource Icon}" Text="&#xE76C;" FontSize="11" Foreground="{StaticResource Faint}" Margin="10,0,0,0"/>
-                            <TextBlock DockPanel.Dock="Right" Text="{TemplateBinding Tag}" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
                             <ContentPresenter VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </DockPanel>
                     </Border>
@@ -930,7 +930,7 @@
                     <Border x:Name="Bd" Background="Transparent" Padding="16,0">
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Right" Style="{StaticResource Icon}" Text="&#xE76C;" FontSize="11" Foreground="{StaticResource Faint}" Margin="10,0,0,0"/>
-                            <TextBlock DockPanel.Dock="Right" Text="{TemplateBinding Tag}" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
                             <ContentPresenter VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </DockPanel>
                     </Border>
@@ -1045,7 +1045,7 @@
                 <ControlTemplate TargetType="ToggleButton">
                     <Border x:Name="Bd" Background="Transparent" CornerRadius="10" Padding="12,0">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock x:Name="Glyph" Style="{StaticResource Icon}" Text="{TemplateBinding Tag}" FontSize="17" Width="22" Margin="0,0,12,0"
+                            <TextBlock x:Name="Glyph" Style="{StaticResource Icon}" Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" FontSize="17" Width="22" Margin="0,0,12,0"
                                        Foreground="{TemplateBinding Foreground}"/>
                             <ContentPresenter VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </StackPanel>
@@ -1079,7 +1079,7 @@
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Bd" Background="Transparent" CornerRadius="10" Padding="12,0">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="{TemplateBinding Tag}" FontSize="17" Width="22" Margin="0,0,12,0"
+                            <TextBlock Style="{StaticResource Icon}" Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" FontSize="17" Width="22" Margin="0,0,12,0"
                                        Foreground="{TemplateBinding Foreground}"/>
                             <ContentPresenter VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </StackPanel>
@@ -1087,6 +1087,84 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="#14FFFFFF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============================================================ player (over the video) -->
+    <!-- A round glass button: back, picture in picture, shortcuts -->
+    <Style x:Key="Btn.Round" TargetType="Button">
+        <Setter Property="Width" Value="42"/>
+        <Setter Property="Height" Value="42"/>
+        <Setter Property="FontFamily" Value="{StaticResource IconFont}"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="Foreground" Value="{StaticResource OnVideo}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="#99282830" CornerRadius="21">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#CC3A3A42"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- A glass pill with text: the smoothing status, Skip intro -->
+    <Style x:Key="Btn.Pill" TargetType="Button">
+        <Setter Property="Height" Value="38"/>
+        <Setter Property="Padding" Value="14,0"/>
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource OnVideo}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="#D91C1C21" BorderBrush="#40FFFFFF" BorderThickness="1" CornerRadius="19" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#F02A2A31"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- Play / pause: a white circle -->
+    <Style x:Key="Btn.PlayRound" TargetType="Button">
+        <Setter Property="Width" Value="52"/>
+        <Setter Property="Height" Value="52"/>
+        <Setter Property="FontFamily" Value="{StaticResource IconFont}"/>
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="Foreground" Value="#FF0B0B0F"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="#FFF5F5F7" CornerRadius="26">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#FFFFFFFF"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

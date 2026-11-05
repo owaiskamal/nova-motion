@@ -40,7 +40,8 @@ public partial class PlayerOverlay : Window
         Root.MouseWheel += OnWheel;
         Root.MouseLeave += (_, _) => { if (CanHide()) _idle.Start(); };
         Seek.HoverChanged += OnSeekHover;
-        PreviewKeyDown += (_, e) => KeyPressed?.Invoke(e);
+        PreviewKeyDown += OnKeyDown;
+        PreviewKeyUp += OnKeyUp;
         Drop += (_, e) => Dropped?.Invoke(e);
         DragOver += (_, e) => { e.Effects = DragDropEffects.Copy; e.Handled = true; };
         vm.PropertyChanged += OnVmChanged;
@@ -123,7 +124,11 @@ public partial class PlayerOverlay : Window
         if (e.ClickCount == 2)
         {
             _click.Stop();             // the first click of a double-click must not pause
-            _vm.IsFullscreen = !_vm.IsFullscreen;
+            // Double-click the sides to jump 10 s, as phone players do; the middle goes full screen
+            var x = e.GetPosition(Root).X / Math.Max(1, Root.ActualWidth);
+            if (x < 0.3) { _ = _vm.SeekAsync(-10, true); _vm.ShowToast("−10 s"); }
+            else if (x > 0.7) { _ = _vm.SeekAsync(10, true); _vm.ShowToast("+10 s"); }
+            else _vm.IsFullscreen = !_vm.IsFullscreen;
         }
         else _click.Start();
         e.Handled = true;
@@ -132,20 +137,70 @@ public partial class PlayerOverlay : Window
     private void OnWheel(object sender, MouseWheelEventArgs e)
     {
         if (DrawerPanel.IsMouseOver) return;      // scrolling the panel
-        _vm.Volume = Math.Clamp(Math.Round(_vm.Volume) + (e.Delta > 0 ? 5 : -5), 0, 130);
+        _vm.Volume = Math.Clamp(Math.Round(_vm.Volume) + (e.Delta > 0 ? 5 : -5), 0, _vm.MaxVolume);
         _vm.ShowToast($"Volume {_vm.Volume:0}%");
         ShowControls();
         e.Handled = true;
     }
 
-    private void OnSeekHover(double? fraction, double x)
+    private double _hoverFraction = -1;
+
+    private async void OnSeekHover(double? fraction, double x)
     {
-        if (fraction is not { } f || _vm.Duration <= 0) { HoverBubble.Visibility = Visibility.Collapsed; return; }
+        if (fraction is not { } f || _vm.Duration <= 0)
+        {
+            HoverBubble.Visibility = Visibility.Collapsed;
+            HoverPicture.Visibility = Visibility.Collapsed;
+            _hoverFraction = -1;
+            return;
+        }
         var chapter = _vm.ChapterAt(f);
         HoverText.Text = chapter is null ? _vm.TimeAt(f) : $"{_vm.TimeAt(f)}  ·  {chapter}";
         HoverBubble.Visibility = Visibility.Visible;
         HoverBubble.UpdateLayout();
         var w = HoverBubble.ActualWidth;
         Canvas.SetLeft(HoverBubble, Math.Clamp(x - w / 2, 0, Math.Max(0, Seek.ActualWidth - w)));
+        // A picture of that moment, for files on this PC (made in the background, kept for the next hover)
+        _hoverFraction = f;
+        var file = await _vm.ThumbnailAtAsync(f);
+        if (file is null || Math.Abs(_hoverFraction - f) > 0.0001 || HoverBubble.Visibility != Visibility.Visible) return;
+        try
+        {
+            var img = new System.Windows.Media.Imaging.BitmapImage();
+            img.BeginInit();
+            img.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;   // no lock on the file
+            img.UriSource = new Uri(file);
+            img.EndInit();
+            HoverImage.Source = img;
+            HoverPicture.Visibility = Visibility.Visible;
+            HoverBubble.UpdateLayout();
+            w = HoverBubble.ActualWidth;
+            Canvas.SetLeft(HoverBubble, Math.Clamp(x - w / 2, 0, Math.Max(0, Seek.ActualWidth - w)));
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or NotSupportedException or UriFormatException) { }
+    }
+
+    // ------------------------------------------------------------------ keys
+
+    private bool _fastHeld;
+
+    /// <summary>Holding → plays at 2× until it's let go (a tap still jumps 5 s).</summary>
+    private void OnKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Right && e.IsRepeat && Keyboard.Modifiers == ModifierKeys.None && _vm.HasMedia)
+        {
+            if (!_fastHeld) { _fastHeld = true; _vm.SetSpeedCommand.Execute(2.0); _vm.ShowToast("2× while held"); }
+            e.Handled = true;
+            return;
+        }
+        KeyPressed?.Invoke(e);
+    }
+
+    private void OnKeyUp(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Right || !_fastHeld) return;
+        _fastHeld = false;
+        _vm.SetSpeedCommand.Execute(1.0);
+        e.Handled = true;
     }
 }

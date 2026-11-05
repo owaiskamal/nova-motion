@@ -7,7 +7,8 @@ public enum PlayerAction
     None, TogglePause, SeekBack, SeekForward, SeekBackLong, SeekForwardLong, VolumeUp, VolumeDown, ToggleMute,
     ToggleFullscreen, ExitFullscreen, Next, Previous, FrameStep, FrameBackStep, SpeedUp, SpeedDown, SpeedReset,
     ToggleSmoothing, CycleEngine, CycleTarget, ToggleDemo, ToggleVsr, ToggleMotionPanel, CycleSubtitles, CycleAudio,
-    Screenshot, Stop, SeekPercent,
+    Screenshot, Stop, SeekPercent, NextChapter, PreviousChapter, SubEarlier, SubLater, ToggleShortcuts, ABLoop, TogglePip,
+    ToggleNightMode,
 }
 
 /// <summary>
@@ -45,7 +46,7 @@ public static class KeyMap
             "Left" => (shift ? PlayerAction.SeekBackLong : PlayerAction.SeekBack, 0),
             "Right" => (shift ? PlayerAction.SeekForwardLong : PlayerAction.SeekForward, 0),
             "J" => (PlayerAction.SeekBackLong, 0),
-            "L" => (PlayerAction.SeekForwardLong, 0),
+            "L" when !shift => (PlayerAction.SeekForwardLong, 0),
             "Up" => (PlayerAction.VolumeUp, 0),
             "Down" => (PlayerAction.VolumeDown, 0),
             "VolumeUp" => (PlayerAction.VolumeUp, 0),
@@ -65,6 +66,14 @@ public static class KeyMap
             "A" => (PlayerAction.CycleAudio, 0),
             "S" => (PlayerAction.Screenshot, 0),
             "MediaStop" => (PlayerAction.Stop, 0),
+            "PageDown" => (PlayerAction.NextChapter, 0),
+            "PageUp" => (PlayerAction.PreviousChapter, 0),
+            "Z" => (PlayerAction.SubEarlier, 0),
+            "X" => (PlayerAction.SubLater, 0),
+            "OemQuestion" or "F1" => (PlayerAction.ToggleShortcuts, 0),
+            "L" when shift => (PlayerAction.ABLoop, 0),
+            "I" => (PlayerAction.TogglePip, 0),
+            "D" when shift => (PlayerAction.ToggleNightMode, 0),
             _ => (PlayerAction.None, 0),
         };
     }
@@ -90,5 +99,14 @@ public static class KeyMap
         new("Ctrl + T", "Next frame-rate target"),
         new("Ctrl + D", "Before / after split screen"),
         new("Ctrl + R", "RTX Video Super Resolution"),
+        new("Page Up / Page Down", "Previous or next chapter"),
+        new("Z / X", "Subtitles earlier or later"),
+        new("Shift + L", "Loop a part (A–B)"),
+        new("Shift + D", "Night mode"),
+        new("I", "Picture in picture"),
+        new("Double-click left or right", "Back or forward 10 s"),
+        new("Hold →", "Play at 2× while held"),
+        new("Scroll", "Volume"),
+        new("? · F1", "This list"),
     };
 }

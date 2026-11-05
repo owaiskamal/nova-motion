@@ -834,6 +834,9 @@ public sealed partial class MainViewModel
             _settings = AppSettings.CreateDefaults(gpu);
             _settings.Volume = volume;
             _settings.FirstRunDone = true;
+            // The fresh settings start on a preset too
+            InitPresets();
+            SyncEnhance();
         }
         else if (_settings.DefaultsVersion < AppSettings.CurrentDefaults)
         {

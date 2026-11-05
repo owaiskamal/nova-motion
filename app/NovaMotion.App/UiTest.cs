@@ -83,7 +83,14 @@ internal static class UiTest
             vm.ToggleDrawerCommand.Execute("tracks");
             await Task.Delay(700);
             Shot(w, "06-tracks-panel");
+            vm.ToggleDrawerCommand.Execute("picture");
+            await Task.Delay(700);
+            Shot(w, "06b-picture-panel");
             vm.CloseDrawerCommand.Execute(null);
+            vm.ShowShortcuts = true;
+            await Task.Delay(600);
+            Shot(w, "06c-shortcuts");
+            vm.ShowShortcuts = false;
             vm.IsFullscreen = true;
             await Task.Delay(1500);
             Shot(w, "07-fullscreen");
