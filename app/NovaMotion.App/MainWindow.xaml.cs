@@ -297,7 +297,7 @@ public partial class MainWindow : Window, IUiHost
                 _vm.SetPhoto(onEnhance[0]);
                 return;
             }
-            var videos = onEnhance.SelectMany(f => Directory.Exists(f)
+            var videos = onEnhance.SelectMany<string, string>(f => Directory.Exists(f)
                     ? Directory.GetFiles(f).Where(MediaSource.IsVideoFile).OrderBy(x => x, NaturalComparer.Instance)
                     : MediaSource.IsVideoFile(f) ? new[] { f } : Array.Empty<string>()).ToList();
             if (videos.Count > 0)

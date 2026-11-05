@@ -182,7 +182,15 @@ public sealed partial class MainViewModel
     {
         // Before presets, the page's own choices were the settings: they start as a built-in preset
         // when they match one, else as they are (shown as edited)
-        if (Presets.FindVideo(_settings, _settings.VideoPreset) is null) _settings.VideoPreset = Presets.Video[0].Id;
+        if (Presets.FindVideo(_settings, _settings.VideoPreset) is null)
+        {
+            // First time with presets: the preset the old choices match, else the first one
+            var now = CurrentRecipe();
+            var match = Presets.Video.FirstOrDefault(p => !Presets.IsEdited(p, now));
+            if (match is not null) _settings.VideoPreset = match.Id;
+            else { _settings.VideoPreset = Presets.Video[0].Id; ApplyRecipe(Presets.Video[0].Recipe); }
+            _store.Save(_settings);
+        }
         if (Presets.FindPhoto(_settings, _settings.PhotoPreset) is { } pp) _photoOptions = pp.Options;
         else { _settings.PhotoPreset = Presets.Photo[0].Id; _photoOptions = Presets.Photo[0].Options; }
         BuildPresetItems();
@@ -271,12 +279,18 @@ public sealed partial class MainViewModel
     {
         if (!HasStagedVideos) return;
         var work = StagedVideos.ToDictionary(v => v.Path, v => v.Source is { } s ? WorkFor(s) : null, StringComparer.OrdinalIgnoreCase);
+        var already = Exports.ToHashSet();
+        // Recorded before the queue starts: the first one begins straight away
+        _queuedWork = work;
         QueueExports(StagedVideos.Select(v => v.Path).ToList());
-        foreach (var e in Exports.Where(e => e.Status == ExportStatus.Waiting && work.GetValueOrDefault(e.Input) is not null))
-            e.EstimatedWork ??= work[e.Input];
+        _queuedWork = null;
+        foreach (var e in Exports.Where(e => !already.Contains(e)))
+            e.EstimatedWork ??= work.GetValueOrDefault(e.Input);
         StagedVideos.Clear();
         RaiseStaged();
     }
+
+    private Dictionary<string, Dictionary<string, double>?>? _queuedWork;
 
     private Dictionary<string, double>? WorkFor(SourceInfo s) =>
         s is { Width: > 0, Height: > 0, Fps: > 0, Seconds: > 0 }

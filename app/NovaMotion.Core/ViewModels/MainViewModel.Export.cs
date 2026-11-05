@@ -168,7 +168,7 @@ public sealed partial class MainViewModel
         {
             var output = ExportPlan.OutputPath(f, options, p => File.Exists(p) || taken.Contains(p));
             taken.Add(output);
-            Exports.Add(new ExportItem(f, output, options));
+            Exports.Add(new ExportItem(f, output, options) { EstimatedWork = _queuedWork?.GetValueOrDefault(f) });
         }
         Raise(nameof(HasExports));
         _ = RunExportsAsync();

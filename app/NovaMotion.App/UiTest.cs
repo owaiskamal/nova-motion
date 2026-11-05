@@ -54,6 +54,14 @@ internal static class UiTest
             vm.SelectModule(StudioModule.Enhance);
             await Task.Delay(500);
             Shot(w, "03c-enhance");
+            vm.OpenCustomizeCommand.Execute(null);
+            await Task.Delay(500);
+            Shot(w, "03d-enhance-customize");
+            vm.CloseCustomizeCommand.Execute(null);
+            vm.PhotoMode = true;
+            await Task.Delay(500);
+            Shot(w, "03e-enhance-photos");
+            vm.PhotoMode = false;
             vm.SelectModule(StudioModule.Motion);
 
             var video = Environment.GetEnvironmentVariable("NOVAMOTION_UITEST_VIDEO") is { Length: > 0 } v
@@ -90,10 +98,19 @@ internal static class UiTest
             if (Environment.GetEnvironmentVariable("NOVAMOTION_UITEST_FILE") is { Length: > 0 } file && File.Exists(file))
             {
                 vm.OpenExportCommand.Execute(null);
+                vm.ApplyVideoPreset("smooth");
                 vm.ExportFaster = true;
-                vm.QueueExports(new[] { file });
+                vm.StageVideos(new[] { file });
+                for (var i = 0; i < 20 && vm.StagedVideos.Any(v => v.Source is null); i++) await Task.Delay(500);
+                Note($"staged: {string.Join(", ", vm.StagedVideos.Select(v => $"{v.Name} {v.Meta} {v.Eta}"))}; eta '{vm.EtaText}'");
+                Shot(w, "09a-enhance-ready");
+                vm.EnhanceStagedCommand.Execute(null);
                 await Task.Delay(1500);
                 Shot(w, "09-export-running");
+                vm.ToggleActivityCommand.Execute(null);
+                await Task.Delay(500);
+                Shot(w, "09b-activity");
+                vm.CloseActivityCommand.Execute(null);
                 for (var i = 0; i < 360 && vm.Exports.Any(e => e.CanCancel); i++) await Task.Delay(500);
                 foreach (var e in vm.Exports) Note($"export: {e.Status} '{e.Detail}' -> {e.Output}");
                 Shot(w, "10-export-done");

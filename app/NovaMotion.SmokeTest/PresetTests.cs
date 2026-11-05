@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Novabit
 // Enhance presets (built in and saved) and time estimates before an export starts.
 using NovaMotion.Core;
+using NovaMotion.Core.ViewModels;
 
 internal static class PresetTests
 {
@@ -60,4 +61,56 @@ internal static class PresetTests
               && Estimate.Words(TimeSpan.FromHours(60)) == "about 3 days" && Estimate.Words(TimeSpan.FromSeconds(20)) == "under a minute",
               "estimate: in words");
     }
+
+    /// <summary>The Enhance page: preset cards, edited state, saving, videos waiting with their time, Activity.</summary>
+    public static async Task RunPageAsync(Action<bool, string> check)
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "nm-page-" + Guid.NewGuid().ToString("N")[..6]);
+        Directory.CreateDirectory(Path.Combine(dir, "runtime"));
+        File.WriteAllText(Path.Combine(dir, "runtime", "novamotion.vpy"), "");
+        var rt = RuntimeLayout.Find(dir)!;
+        var exporter = new FakeExporter { Gate = new TaskCompletionSource() };
+        var vm = new MainViewModel(new FakeHost(), new SettingsStore(Path.Combine(dir, "settings")), rt, () => new FakeBackend(), () => DateTime.UtcNow, exporter)
+        {
+            ProbeVideo = (p, ct) => Task.FromResult(new SourceInfo(14400, 24, 1920, 1080, 600)),
+        };
+        check(vm.VideoPresetItems.Count == 6 && vm.VideoPresetItems.Single(i => i.IsSelected).Id == "anime" && !vm.PresetEdited && vm.SizeRow == "Same size",
+              $"page: starts on Anime episode, not edited ({vm.SizeRow})");
+        vm.UseVideoPresetCommand.Execute(vm.VideoPresetItems.Single(i => i.Id == "remaster"));
+        check(vm.SizeRow == "4K" && vm.VideoPresetItems.Single(i => i.IsSelected).Id == "remaster" && vm.CurrentRecipe().Enhance.Height == 2160,
+              "page: a preset card sets every option");
+        vm.SelectEnhanceSizeCommand.Execute(vm.EnhanceSizes.Single(o => o.Value == "1440"));
+        check(vm.PresetEdited && !vm.VideoPresetItems.Any(i => i.IsSelected) && vm.SizeRow == "1440p", "page: changing an option shows the preset as edited");
+        vm.NewPresetName = "Big screen";
+        vm.SavePresetCommand.Execute(null);
+        check(vm.VideoPresetItems.Count == 7 && vm.VideoPresetItems.Single(i => i.IsSelected).Name == "Big screen" && !vm.PresetEdited
+              && vm.HasMyPresets && vm.MyPresetItems.Single().Name == "Big screen", "page: saved as my own preset, chosen, and in the sidebar");
+        vm.ResetPresetCommand.Execute(null);
+        vm.UseVideoPresetCommand.Execute(vm.VideoPresetItems.Single(i => i.Id == "film"));
+        vm.UseMyPresetCommand.Execute(vm.MyPresetItems.Single());
+        check(vm.IsEnhanceModule && vm.SizeRow == "1440p" && vm.CanDeletePreset, "page: a sidebar preset opens Enhance with it");
+        vm.DeletePresetCommand.Execute(null);
+        check(!vm.HasMyPresets && vm.VideoPresetItems.Count == 6 && !vm.CanDeletePreset, "page: my preset deleted; back to a built-in one");
+
+        check(vm.EnhanceButtonText == "Choose videos to enhance" && !vm.EnhanceStagedCommand.CanExecute(null), "page: nothing chosen, nothing to start");
+        vm.StageVideos(new[] { Path.Combine(dir, "a.mkv"), Path.Combine(dir, "b.mkv"), Path.Combine(dir, "a.mkv") });
+        await Task.Delay(50);
+        check(vm.StagedVideos.Count == 2 && vm.StagedVideos.All(v => v.Eta.StartsWith("about")) && vm.EtaText.Contains("on this PC")
+              && vm.StagedVideos[0].Meta == "1080p · 24 fps · 10:00" && vm.EnhanceButtonText == "Enhance 2 videos",
+              $"page: chosen videos are read and estimated before starting ({vm.EtaText}; {vm.StagedVideos[0].Meta})");
+        var before = vm.EtaText;
+        vm.ApplyVideoPreset("smooth");
+        check(vm.EtaText != before, $"page: the estimate follows the preset ({before} → {vm.EtaText})");
+        check(!vm.HasActivity && vm.ActivityTitle == "Nothing running", "activity: nothing running");
+        vm.EnhanceStagedCommand.Execute(null);
+        await Task.Delay(50);
+        check(!vm.HasStagedVideos && vm.Exports.Count == 2 && vm.Exports.All(e => e.EstimatedWork is not null) && exporter.Runs.Count == 1,
+              "page: Enhance starts them, each with its estimate to learn from");
+        check(vm.HasActivity && vm.ActivityCount == 2 && vm.ActivityTitle == "2 working" && vm.ActivityDetail.StartsWith("a"),
+              $"activity: one exporting and one waiting ({vm.ActivityTitle}: {vm.ActivityDetail})");
+        exporter.Gate.SetResult();
+        await Task.Delay(100);
+        check(vm.Exports.All(e => e.IsDone), "page: both finished");
+    }
 }
+
