@@ -32,8 +32,11 @@ def main(argv):
         model = getattr(RIFEModel, model_name)
         frame = core.std.BlankClip(width=width, height=height, format=vs.RGBH, length=4, fpsnum=60)
         mask = core.std.BlankClip(frame, format=vs.GRAYH, color=0.5)
-        merged = RIFEMerge(frame, frame, mask, model=model, backend=t.backend(gpu, streams or None))
-        merged.get_frame(0)
+        import jobs
+        with jobs.Job("Preparing smoothing for this video size", f"RIFE {model.name} at {width}x{height}, in the background",
+                      key=f"rife:{model.name}:{width}x{height}"):
+            merged = RIFEMerge(frame, frame, mask, model=model, backend=t.backend(gpu, streams or None))
+            merged.get_frame(0)
         t.record_engine(width, height, model.name)
         result = f"built {model.name} at {width}x{height} in {time.time() - t0:.0f} s"
         code = 0

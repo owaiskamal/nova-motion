@@ -10,3 +10,5 @@ obj/
 .vscode/
 *.user
 __pycache__/
+engine/jobs/
+engine/trt-engines/

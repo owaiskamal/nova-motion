@@ -84,6 +84,22 @@
                 <!-- Settings opens over whichever module is showing -->
                 <v:SettingsView x:Name="SettingsPage" Visibility="{Binding IsSettingsOpen, Converter={StaticResource BoolToVis}}"/>
 
+                <!-- AI preparation in progress (TensorRT building engines): on every page -->
+                <Border Style="{StaticResource Panel}" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" MaxWidth="900" Margin="24,0,24,20"
+                        Padding="18,12" BorderBrush="{StaticResource Nova}" BorderThickness="1"
+                        Visibility="{Binding HasJob, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Text.Small}" Foreground="{StaticResource Nova}"
+                                       Text="{Binding JobProgress, StringFormat={}{0:P0}}"/>
+                            <TextBlock Style="{StaticResource Text.Strong}" Text="{Binding JobTitle}"/>
+                        </DockPanel>
+                        <ProgressBar Style="{StaticResource ThinProgress}" Height="6" Maximum="1" Margin="0,8,0,6"
+                                     Value="{Binding JobProgress, Mode=OneWay}"/>
+                        <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding JobStatus}"/>
+                    </StackPanel>
+                </Border>
+
                 <!-- Drop target highlight -->
                 <Border x:Name="DropHint" Visibility="Collapsed" Margin="16" CornerRadius="16" BorderThickness="2"
                         BorderBrush="{StaticResource Nova}" Background="#D90F1424" IsHitTestVisible="False">

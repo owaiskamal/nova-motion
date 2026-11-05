@@ -32,6 +32,7 @@ if (-not (Test-Path (Join-Path $MpvDir "vs-plugins\vstrt.dll"))) { throw "Tensor
 New-Item -ItemType Directory -Force -Path $Work | Out-Null
 Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\novamotion_build.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\jobs.py") $Runtime -Force
 
 $failed = 0
 foreach ($size in $Sizes) {

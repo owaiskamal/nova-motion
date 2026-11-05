@@ -33,26 +33,36 @@ def main(argv):
     if not hasattr(core, "trt"):
         print("No TensorRT on this PC: the models run on Vulkan, which needs no preparing.")
         return 0
+    import jobs
     names = [n for n in argv[1:] if n != "all"] or ALL
+
+    def path_of(name):
+        return os.path.join(vsmlrt.models_path, "dpir", "drunet_deblocking_color.onnx") if name == "dpir" \
+            else os.path.join(vsmlrt.models_path, *name.split("/")) + ".onnx"
+
+    names = [n for n in names if os.path.isfile(path_of(n))]     # installed ones (Real-CUGAN Pro may not be)
+    total = sum(jobs.expected_seconds(f"enhance:{os.path.basename(path_of(n))}", "entry") for n in names)
+    print(f"    {len(names)} models; about {total / 60:.0f} minutes on a GTX 16 card the first time, much less after"
+          " (a model that's ready takes seconds). A line appears every 30 s while one is being prepared.", flush=True)
     failed = 0
     for i, name in enumerate(names, 1):
-        path = os.path.join(vsmlrt.models_path, "dpir", "drunet_deblocking_color.onnx") if name == "dpir" \
-            else os.path.join(vsmlrt.models_path, *name.split("/")) + ".onnx"
-        if not os.path.isfile(path):
-            continue                       # not installed (e.g. Real-CUGAN Pro)
+        path = path_of(name)
         t0 = time.time()
         print(f"    [{i}/{len(names)}] preparing {os.path.basename(path)} ...", flush=True)
+        job = jobs.Job("Preparing AI models for this graphics card", os.path.basename(path)[:-5], step=i, steps=len(names),
+                       key=f"enhance:{os.path.basename(path)}", gpu_class="entry", say=lambda m: print(m, flush=True))
         try:
-            backend = enhance.backend({}, *enhance.TILE)
-            if name == "dpir":
-                # Exactly as Fix compression runs it: its own tile size, through vs-mlrt's DPIR
-                frame = core.std.BlankClip(width=enhance.DPIR_TILE[0], height=enhance.DPIR_TILE[1], format=vs.RGBH, length=1)
-                out = vsmlrt.DPIR(frame, strength=20.0, model=vsmlrt.DPIRModel.drunet_deblocking_color,
-                                  tilesize=enhance.DPIR_TILE, overlap=(0, 0), backend=backend)
-            else:
-                frame = core.std.BlankClip(width=enhance.TILE[0], height=enhance.TILE[1], format=vs.RGBH, length=1)
-                out = vsmlrt.inference(frame, path, overlap=(0, 0), tilesize=enhance.TILE, backend=backend)
-            out.get_frame(0)
+            with job:
+              backend = enhance.backend({}, *enhance.TILE)
+              if name == "dpir":
+                  # Exactly as Fix compression runs it: its own tile size, through vs-mlrt's DPIR
+                  frame = core.std.BlankClip(width=enhance.DPIR_TILE[0], height=enhance.DPIR_TILE[1], format=vs.RGBH, length=1)
+                  out = vsmlrt.DPIR(frame, strength=20.0, model=vsmlrt.DPIRModel.drunet_deblocking_color,
+                                    tilesize=enhance.DPIR_TILE, overlap=(0, 0), backend=backend)
+              else:
+                  frame = core.std.BlankClip(width=enhance.TILE[0], height=enhance.TILE[1], format=vs.RGBH, length=1)
+                  out = vsmlrt.inference(frame, path, overlap=(0, 0), tilesize=enhance.TILE, backend=backend)
+              out.get_frame(0)
             print(f"    ready  {os.path.basename(path)} ({time.time() - t0:.0f} s)", flush=True)
         except Exception as e:          # noqa: BLE001 - the export prepares it later instead
             failed += 1

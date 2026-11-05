@@ -171,6 +171,7 @@ if ($missing) {
 Copy-Item (Join-Path $Root "engine\novamotion.vpy") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\novamotion_build.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\jobs.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\parallax.py") $Runtime -Force
 $portable = Join-Path $MpvDir "portable_config"

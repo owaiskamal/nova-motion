@@ -727,6 +727,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         var now = _clock();
         if (ToastVisible && _toastUntil is { } until && now >= until) HideToast();
         if (_state.Seeking || IsBusy) Raise(nameof(IsBusy), nameof(BusyText));
+        PollJobs();
 
         if (HasMedia && !IsOpening && !_state.Paused && _state.OutputFps > 0)
         {

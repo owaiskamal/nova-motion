@@ -203,6 +203,34 @@ internal static class EnhanceTests
         await Task.Delay(30);
         check(fb.Applied is null, "preparing: switches only once");
 
+        // ---- AI preparation progress, on every page
+        var t0 = new DateTime(2026, 11, 5, 12, 0, 0, DateTimeKind.Utc);
+        var job = new JobInfo("Preparing AI models for this graphics card", "realesr-general-x4v3", 2, 4, t0, 180);
+        check(Math.Abs(job.Fraction(t0.AddSeconds(60)) - (1 + 60.0 / 180) / 4) < 1e-9, "progress: steps done plus the current one by time");
+        check(job.Fraction(t0.AddSeconds(900)) < 0.5, "progress: an overrunning step stays short of done");
+        check(job.Status(t0.AddSeconds(60)) == "2 of 4 · realesr-general-x4v3 · about 8 min left", $"progress: says where it is ({job.Status(t0.AddSeconds(60))})");
+        check(job.Status(t0.AddSeconds(400)).Contains("taking longer than usual"), "progress: honest when it overruns");
+        var jobNow = t0.AddSeconds(30);
+        var jobList = new List<JobInfo> { job };
+        var jvm = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "s4")), rt, () => new FakeBackend(), () => jobNow, exporter)
+        {
+            ReadJobs = () => jobList,
+        };
+        jvm.Tick();
+        check(jvm.HasJob && jvm.JobTitle.StartsWith("Preparing AI models") && jvm.JobProgress > 0.25 && !jvm.PrepareModelsCommand.CanExecute(null),
+              "progress: shown while a model is prepared; Prepare all waits");
+        jobList = new List<JobInfo>();
+        jvm.ReadJobs = () => jobList;
+        jobNow = jobNow.AddSeconds(2);
+        jvm.Tick();
+        check(!jvm.HasJob && jvm.ToastText.Contains("finished"), "progress: says when it's finished");
+        File.WriteAllText(Path.Combine(rt.Root, "enhance_build.py"), "");
+        System.Diagnostics.ProcessStartInfo? started = null;
+        jvm.StartProcess = psi => { started = psi; return true; };
+        jvm.PrepareModelsCommand.Execute(null);
+        check(started is not null && started.CreateNoWindow && started.ArgumentList.Last() == "all"
+              && started.ArgumentList[0].EndsWith("enhance_build.py"), "Prepare all models: runs inside the app, no console");
+
         // ---- not set up: offers setup, exports go ahead without AI enhance
         var bare = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "s2")), RuntimeLayout.Find(Path.GetTempPath()) ?? null, () => backend, () => DateTime.UtcNow, exporter);
         bare.SelectEnhancePresetCommand.Execute(bare.EnhancePresets.Single(p => p.Value == "film"));

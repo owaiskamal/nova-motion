@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{StaticResource Base}">
     <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
-        <Grid Margin="56,28,56,48" MaxWidth="900" HorizontalAlignment="Left">
+        <Grid Margin="56,28,56,48" MaxWidth="1600" HorizontalAlignment="Stretch">
             <StackPanel>
                 <TextBlock Style="{StaticResource Text.Display}" FontSize="28" LineHeight="36" Text="Enhance"/>
                 <TextBlock Style="{StaticResource Text.Muted}" FontSize="15" LineHeight="23" MaxWidth="640" HorizontalAlignment="Left" Margin="0,12,0,28"
@@ -40,14 +40,14 @@
                                        Text="AI enhance needs its models, downloaded once. Smoothing works without them."/>
                         </DockPanel>
 
+                        <DockPanel Margin="0,12,0,0" Visibility="{Binding EnhanceReady, Converter={StaticResource BoolToVis}}">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Height="34" Padding="14,0" Content="Prepare all models"
+                                    Command="{Binding PrepareModelsCommand}"
+                                    ToolTip="Prepares every model for this graphics card in a separate window, so no setting ever waits. About 3 minutes a model on GTX 16 cards, once."/>
+                            <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0"
+                                       Text="The first use of each model prepares it for this graphics card, which takes minutes on GTX 16 cards. Prepare them all once and every setting starts straight away."/>
+                        </DockPanel>
                         <StackPanel Visibility="{Binding ShowEnhanceOptions, Converter={StaticResource BoolToVis}}">
-                            <DockPanel Margin="0,12,0,0">
-                                <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Ghost}" Height="34" Padding="14,0" Content="Prepare all models"
-                                        Command="{Binding SetupEnhanceCommand}"
-                                        ToolTip="Prepares every model for this graphics card in a separate window, so no setting ever waits. About 3 minutes a model on GTX 16 cards, once."/>
-                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0"
-                                           Text="The first use of each model prepares it for this graphics card, which takes minutes on GTX 16 cards. Prepare them all once and every setting starts straight away."/>
-                            </DockPanel>
                             <Grid Margin="0,16,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="3*"/>
@@ -200,7 +200,7 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Image Grid.ColumnSpan="2" Source="{Binding FramePreview}" MaxHeight="440" Stretch="Uniform"
+                                    <Image Grid.ColumnSpan="2" Source="{Binding FramePreview}" MaxHeight="720" Stretch="Uniform"
                                            RenderOptions.BitmapScalingMode="HighQuality"/>
                                     <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,12" CornerRadius="8" Padding="12,5"
                                             Background="#E60F1424">

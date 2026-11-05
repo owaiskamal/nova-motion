@@ -128,6 +128,7 @@ if (-not $hasScript -or (-not $hasTrt -and -not $hasNcnn)) {
 }
 Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\enhance_build.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\jobs.py") $Runtime -Force
 
 # TensorRT prepares each model for this graphics card once. Done here, so the first export doesn't wait
 if ((Test-Path (Join-Path $Plugins "vstrt.dll")) -and -not $NoPrepare) {
