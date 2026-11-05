@@ -144,6 +144,14 @@ internal static class EnhanceTests
         await Task.Delay(80);
         run = exporter.Runs.Last();
         check(run.Options.Still && run.Out.EndsWith(".png") && run.Out.StartsWith(vm.PreviewFolder), $"frame preview: queued as a still ({run.Out})");
+        check(vm.HasPreviewVideo && vm.PreviewVideoName == "Episode 01.mkv", "frame preview: the chosen video is named, and Other video is offered");
+        var other = Path.Combine(dir, "Clip 2.mp4");
+        File.WriteAllText(other, "");
+        host.Files = new[] { other };
+        vm.ChangePreviewVideoCommand.Execute(null);
+        await Task.Delay(80);
+        check(exporter.Runs.Last().In == other && vm.PreviewVideoName == "Clip 2.mp4", "frame preview: Other video previews the new one");
+        run = exporter.Runs.Last();
         check(vm.HasFramePreview && vm.FramePreview == run.Out && vm.FramePreviewStatus.Contains("Left of the amber line is the original"),
               $"frame preview: shown on the page ({vm.FramePreviewStatus})");
         Directory.CreateDirectory(Path.GetDirectoryName(run.Out)!);

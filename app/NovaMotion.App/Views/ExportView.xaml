@@ -167,12 +167,16 @@
                             <DockPanel>
                                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Style="{StaticResource Btn.Ghost}" Height="38" Padding="16,0" Margin="0,0,10,0" Content="Other video"
-                                            Command="{Binding ChangePreviewVideoCommand}" Visibility="{Binding HasFramePreview, Converter={StaticResource BoolToVis}}"/>
+                                            Command="{Binding ChangePreviewVideoCommand}" Visibility="{Binding HasPreviewVideo, Converter={StaticResource BoolToVis}}"/>
                                     <Button Style="{StaticResource Btn.Primary}" Height="38" Padding="18,0" Content="Preview a frame"
                                             Command="{Binding PreviewFrameCommand}" IsEnabled="{Binding CanExport}"/>
                                 </StackPanel>
                                 <StackPanel Margin="0,0,20,0">
                                     <TextBlock Style="{StaticResource Text.Strong}" Text="See it before exporting"/>
+                                    <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Nova}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"
+                                               Visibility="{Binding HasPreviewVideo, Converter={StaticResource BoolToVis}}">
+                                        <Run Text="Video:"/> <Run Text="{Binding PreviewVideoName, Mode=OneWay}"/>
+                                    </TextBlock>
                                     <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="0,2,0,0"
                                                Text="One before/after frame with these settings, at full size, in seconds. From the time in From below, or a third of the way in."/>
                                 </StackPanel>

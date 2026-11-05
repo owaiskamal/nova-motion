@@ -62,7 +62,7 @@ public sealed partial class MainViewModel
             {
                 if (_host.PickVideoFiles() is not { Count: > 0 } f) return;
                 _previewVideo = f[0];
-                Raise(nameof(PreviewVideoName));
+                Raise(nameof(PreviewVideoName), nameof(HasPreviewVideo));
             }
             // Said first: the frame can be ready before this returns
             FramePreviewStatus = "Making a before/after frame" + (ExportStartText.Length > 0 ? $" at {ExportStartText}" : "") + "…";
@@ -72,7 +72,7 @@ public sealed partial class MainViewModel
         {
             if (_host.PickVideoFiles() is not { Count: > 0 } f) return;
             _previewVideo = f[0];
-            Raise(nameof(PreviewVideoName));
+            Raise(nameof(PreviewVideoName), nameof(HasPreviewVideo));
             PreviewFrameCommand.Execute(null);
         });
         OpenFramePreviewCommand = new Command(() => { if (_framePreview is { } p && File.Exists(p)) _host.OpenExternal(p); },
@@ -130,6 +130,8 @@ public sealed partial class MainViewModel
     public string? FramePreview => _framePreview;
     public bool HasFramePreview => _framePreview is not null;
     public string PreviewVideoName => _previewVideo is { } v ? Path.GetFileName(v) : "";
+    /// <summary>A video is chosen for frame previews: "Other video" shows from then on, whatever happened to the last preview.</summary>
+    public bool HasPreviewVideo => _previewVideo is not null;
     private string _framePreviewStatus = "";
     public string FramePreviewStatus { get => _framePreviewStatus; private set => Set(ref _framePreviewStatus, value); }
 
