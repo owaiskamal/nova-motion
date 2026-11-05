@@ -157,11 +157,17 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force uitest | Out-Null
-          & runtime\mpv\mpv.exe --no-config --player-operation-mode=cplayer --idle=no "--o=uitest\frame.png" `
-              --of=image2 --ofopts=update=1 --ovc=png --no-audio --start=1 --frames=2 "av://lavfi:testsrc=duration=3:size=640x360:rate=24"
+          # mpv.exe is a windowed program: PowerShell has to be told to wait for it
+          $p = Start-Process runtime\mpv\mpv.exe -Wait -PassThru -NoNewWindow -ArgumentList @(
+              "--no-config", "--player-operation-mode=cplayer", "--idle=no", "--log-file=uitest\frame.log", "--o=uitest\frame.png",
+              "--of=image2", "--ofopts=update=1", "--ovc=png", "--no-audio", "--start=1", "--frames=2",
+              "av://lavfi:testsrc=duration=3:size=640x360:rate=24")
           $f = Get-Item uitest\frame.png -ErrorAction SilentlyContinue
-          if (-not $f -or $f.Length -lt 1KB) { Write-Host "::error::no frame preview PNG (exit $LASTEXITCODE)"; exit 1 }
-          Write-Host "::notice title=Frame preview::PNG $($f.Length) bytes, mpv exit $LASTEXITCODE"
+          if (-not $f -or $f.Length -lt 1KB) {
+            Get-Content uitest\frame.log -Tail 30 -ErrorAction SilentlyContinue
+            Write-Host "::error::no frame preview PNG (mpv exit $($p.ExitCode))"; exit 1
+          }
+          Write-Host "::notice title=Frame preview::PNG $($f.Length) bytes, mpv exit $($p.ExitCode)"
       # The Enhance models' setup exactly as users run it: download, checksums, the Vulkan runtime
       - name: Enhance models setup
         shell: pwsh
