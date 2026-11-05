@@ -218,6 +218,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         if (target is null) return;
         SaveHistory();
         _current = target;
+        _siteError = null;
         _loadedAt = null;
         _handledEof = false;
         _fpsSamples.Clear();
@@ -550,12 +551,17 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
                 Raise(PlaybackProps);
                 Raise(nameof(Origin), nameof(IsOnline));
                 break;
+            case "log-message":
+                // yt-dlp's own reason, e.g. "ERROR: [youtube] PRkI15fIJ1w: This video is not available"
+                if (TrackInfo.Str(msg?["prefix"]) == "ytdl_hook" && TrackInfo.Str(msg?["text"]) is { } t && t.StartsWith("ERROR:"))
+                    _siteError ??= SiteReason(t);
+                break;
             case "end-file":
                 if (TrackInfo.Str(msg?["reason"]) == "error")
                 {
                     IsOpening = false;
                     var why = TrackInfo.Str(msg?["file_error"]);
-                    ShowToast(FriendlyError(why, _current));
+                    ShowToast(FriendlyError(why, _current, _siteError));
                     if (_queue.HasNext) _ = PlayNextAsync();
                 }
                 break;
@@ -564,11 +570,32 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         }
     }
 
-    private static string FriendlyError(string? mpvError, string? target)
+    private string? _siteError;
+
+    /// <summary>"ERROR: [youtube] PRkI15fIJ1w: This video is not available" -> "This video is not available".</summary>
+    public static string SiteReason(string line)
+    {
+        var text = line["ERROR:".Length..].Trim();
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\[[^\]]+\]\s*(\S+:\s+)?", "");
+        return text.TrimEnd('.', ' ');
+    }
+
+    public static string FriendlyError(string? mpvError, string? target, string? siteReason = null)
     {
         var online = target is not null && MediaSource.IsOnline(target);
+        if (online && !string.IsNullOrWhiteSpace(siteReason))
+        {
+            var site = MediaSource.GuessTitle(target!);
+            var lower = siteReason.ToLowerInvariant();
+            var hint = lower.Contains("sign in") || lower.Contains("age") ? " It needs a signed-in account, which NOVA Studio doesn't use yet."
+                     : lower.Contains("not available") || lower.Contains("country") || lower.Contains("private") || lower.Contains("removed")
+                         ? " It may be blocked in your country, private or removed. Other videos still play."
+                     : " If other videos play, it's this one; if none do, run build.cmd to update yt-dlp.";
+            return $"{site} won't play this video: {siteReason}.{hint}";
+        }
         return mpvError switch
         {
+            "unrecognized file format" when online => "This link couldn't be opened. The site may need a newer yt-dlp, or the video is private.",
             "loading failed" when online => "This link couldn't be opened. The site may need a newer yt-dlp, or the video is private.",
             "loading failed" => "This file couldn't be opened. It may be missing or damaged.",
             "unrecognized file format" => "This isn't a video format NOVA Studio can play.",

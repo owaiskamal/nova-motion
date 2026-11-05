@@ -98,6 +98,19 @@ internal static class EnhanceTests
         vm.SetLiveEnhance("nonsense");
         check(vm.Settings.LiveEnhance == "off", "live enhance: unknown modes are off");
 
+        // ---- a link the site refuses: its own reason, not "isn't a video format"
+        check(MainViewModel.SiteReason("ERROR: [youtube] PRkI15fIJ1w: This video is not available") == "This video is not available",
+              "site error: yt-dlp's reason extracted");
+        var msg = MainViewModel.FriendlyError("unrecognized file format", "https://www.youtube.com/watch?v=PRkI15fIJ1w", "This video is not available");
+        check(msg.StartsWith("youtube.com won't play this video: This video is not available.") && msg.Contains("blocked in your country"), $"site error: explained ({msg})");
+        check(!MainViewModel.FriendlyError("unrecognized file format", "https://youtu.be/x").Contains("video format"), "site error: an online link is never called a bad format");
+        vm.TargetText = "https://www.youtube.com/watch?v=PRkI15fIJ1w";
+        vm.PlayCommand.Execute(null);
+        await Task.Delay(30);
+        backend.Event("log-message", "{\"prefix\":\"ytdl_hook\",\"level\":\"error\",\"text\":\"ERROR: [youtube] PRkI15fIJ1w: This video is not available\"}");
+        backend.Event("end-file", "{\"reason\":\"error\",\"file_error\":\"unrecognized file format\"}");
+        check(vm.ToastText.Contains("This video is not available"), $"site error: shown to the user ({vm.ToastText})");
+
         // ---- not set up: offers setup, exports go ahead without AI enhance
         var bare = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "s2")), RuntimeLayout.Find(Path.GetTempPath()) ?? null, () => backend, () => DateTime.UtcNow, exporter);
         bare.SelectEnhancePresetCommand.Execute(bare.EnhancePresets.Single(p => p.Value == "film"));

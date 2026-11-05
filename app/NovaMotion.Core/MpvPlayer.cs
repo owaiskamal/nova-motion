@@ -125,6 +125,9 @@ public sealed class MpvPlayer : IPlayerBackend
             ["NOVAMOTION_ENGINE_STATE"] = _store.EngineStatePath,
         }, ct);
         await ObserveAsync(PlayerState.Observed);
+        // Error messages arrive as "log-message" events: yt-dlp's reason a link won't open is only there
+        try { await CommandAsync("request_log_messages", "error"); }
+        catch (MpvException) { }
     }
 
     /// <summary>Starts mpv with exactly these arguments and connects to its IPC pipe (see PipePath).</summary>
