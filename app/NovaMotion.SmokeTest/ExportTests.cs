@@ -85,6 +85,9 @@ internal static class ExportTests
               && cmpArgs.Any(a => a.Contains("scale=-2:'min(720,ih)'"))
               && ExportPlan.OutputPath("/v/Tears of Steel.mkv", cmp, _ => false).EndsWith("Tears of Steel (NOVA Motion before-after 60 fps).mp4"),
               "export: a before/after part of a video: start, length and its own file name");
+        check(cmpArgs.Any(a => a.StartsWith("--vf=lavfi=[trim=start=194.996,tpad=stop_mode=clone:stop=8],"))
+              && ExportPlan.OnFrame(2.94, 60000 / 1001.0) == Math.Round(176 / (60000 / 1001.0), 6),
+              "export: from a start time, the frames before it never reach the engine (its frame 0 is the start)");
         check(ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o, new FrameRate(60000, 1001)).Any(x => x.EndsWith(",lavfi=[setpts=N*1001/(60000*TB)]")),
               "export: frames numbered at the output rate after the engine");
         check(FrameRate.Frames(50, new FrameRate(25, 1), new FrameRate(60, 1)) == 120

@@ -158,6 +158,22 @@ public static class ExportPlan
         return m.Success ? double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) : 0;
     }
 
+    /// <summary>
+    /// From a start time, mpv decodes from the keyframe before it and the engine would see those earlier
+    /// frames too: its first frame wouldn't be the start, and an engine trimmed to the part's frame count
+    /// would run out before mpv reached the start ("Invalid frame number ... requested"). Dropping them
+    /// before the engine makes its frame 0 the start frame. A few ms early, so the start frame itself is
+    /// kept whatever the file's timestamp rounding; the frame before it is a whole frame earlier.
+    /// </summary>
+    public static string SeekTrim(ExportOptions o) =>
+        o.StartSeconds is > 0 and var at
+            ? $"trim=start={Math.Max(0, at - 0.004).ToString("0.######", CultureInfo.InvariantCulture)},"
+            : "";
+
+    /// <summary>A start time on a frame, so the engine's first frame and mpv's agree.</summary>
+    public static double OnFrame(double seconds, double fps) =>
+        fps > 0 ? Math.Round(Math.Round(seconds * fps) / fps, 6) : seconds;
+
     /// <summary>mpv in encoding mode: decode, run the engine, encode. No window, no audio device.</summary>
     public static IReadOnlyList<string> MpvArguments(RuntimeLayout rt, string input, string output, string pipePath,
                                                      string logPath, ExportOptions o, FrameRate? rate = null, long? frames = null)
@@ -186,7 +202,7 @@ public static class ExportPlan
             // tpad repeats the last frame a few times: mpv's filter stops at the first request past the end
             // of the input and drops the frames in flight, and the engine looks a few frames ahead. With the
             // engine trimmed to the real length, the repeats are only ever looked at, never output.
-            $"--vf=lavfi=[tpad=stop_mode=clone:stop={TailPad}],@novamotion:vapoursynth=file=%{vpy.Length}%{vpy}:buffered-frames=24:concurrent-frames=auto{stamp}",
+            $"--vf=lavfi=[{SeekTrim(o)}tpad=stop_mode=clone:stop={TailPad}],@novamotion:vapoursynth=file=%{vpy.Length}%{vpy}:buffered-frames=24:concurrent-frames=auto{stamp}",
             $"--o={output}",
         };
         if (o.Still)
@@ -288,6 +304,8 @@ public sealed class ExportRunner : IExportRunner
             if (options.StartSeconds is null && source.Frames is > 0 and var count && source.Fps is > 0 and var f)
                 options = options with { StartSeconds = Math.Round(count / f / 3, 2) };
         }
+        if (options.StartSeconds is > 0 and var st && source.Fps is > 0 and var sfps)
+            options = options with { StartSeconds = ExportPlan.OnFrame(st, sfps) };
         File.WriteAllText(cfg, JsonSerializer.Serialize(probed, Json.Options));
         var rate = source.Fps is { } fps ? FrameRate.Output(probed, fps) : null;
         long? frames = options.Still ? 1
