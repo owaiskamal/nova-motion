@@ -116,6 +116,14 @@ public sealed class AppSettings
     public string LiveEnhance { get; set; } = "off";
     /// <summary>The Enhance choices last used, so the page opens as it was left.</summary>
     public EnhanceSettings Enhance { get; set; } = new();
+    /// <summary>The person's own Enhance presets ("Save as a new preset"), after the built-in ones.</summary>
+    public List<VideoPreset> MyVideoPresets { get; set; } = new();
+    public List<PhotoPreset> MyPhotoPresets { get; set; } = new();
+    /// <summary>The preset chosen last, which new videos and photos start with.</summary>
+    public string VideoPreset { get; set; } = "anime";
+    public string PhotoPreset { get; set; } = "phone";
+    /// <summary>How long exports really took against their estimate, by model family: estimates learn this PC.</summary>
+    public Dictionary<string, double> EstimateCalibration { get; set; } = new();
 
     public Profile Active =>
         Profiles.FirstOrDefault(p => p.Name == ActiveProfile) ?? Profiles.FirstOrDefault() ?? new Profile();

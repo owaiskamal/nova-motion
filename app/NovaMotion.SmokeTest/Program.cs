@@ -118,6 +118,7 @@ await StuckTests.RunAsync(Check);
 await AnimateTests.RunAsync(Check);
 await EnhanceTests.RunAsync(Check);
 await PhotoTests.RunAsync(Check);
+PresetTests.Run(Check);
 await StudioTests.RunAsync(Check);
 Console.WriteLine(failures == 0 ? "\nALL PASSED" : $"\n{failures} FAILED");
 return failures == 0 ? 0 : 1;
