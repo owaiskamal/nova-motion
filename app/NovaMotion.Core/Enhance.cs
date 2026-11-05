@@ -32,9 +32,16 @@ public static class EnhanceCatalog
         new Choice("strong", "Strong", "For noisy, low-light or old footage. Smoother, less texture."),
     };
 
+    public static readonly IReadOnlyList<Choice> Strengths = new[]
+    {
+        new Choice("natural", "Natural", "Mostly the original, gently sharpened by the AI."),
+        new Choice("balanced", "Balanced", "Half AI, half original: sharper without the painted look. The usual choice."),
+        new Choice("full", "Full AI", "The AI's picture alone: the most detail, and on real footage it can look painted."),
+    };
+
     public static readonly IReadOnlyList<Choice> Details = new[]
     {
-        new Choice("0", "Natural"), new Choice("0.3", "Crisp"), new Choice("0.7", "Extra crisp"),
+        new Choice("0", "Off"), new Choice("0.3", "Crisp"), new Choice("0.7", "Extra crisp"),
     };
 
     public static readonly IReadOnlyList<Choice> Grains = new[]
@@ -56,7 +63,8 @@ public static class EnhanceCatalog
         if (!e.IsOn) return "";
         var preset = Presets.First(p => p.Value == e.Preset).Label;
         var clean = e.Clean switch { "off" => "grain kept", "strong" => "strong clean-up", _ => "light clean-up" };
-        return $"{preset} · {SizeName(e.Height)} · {clean}" + (e.FixCompression ? " · compression fixed" : "");
+        var strength = e.Strength switch { "natural" => "natural", "full" => "full AI", _ => "balanced" };
+        return $"{preset} · {SizeName(e.Height)} · {clean} · {strength}" + (e.FixCompression ? " · compression fixed" : "");
     }
 
     /// <summary>The models Enhance needs, relative to vs-plugins\models.</summary>

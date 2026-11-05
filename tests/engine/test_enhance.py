@@ -160,6 +160,8 @@ check(o.fps.numerator == 60, f"export: still smoothed to 60 ({o.fps})")
 check(any(c[0] == "inference" and c[1] == "realesr-general-mid-x4v3.onnx" and c[2] == "RGBH" for c in calls),
       f"export: the light model on half floats for TensorRT ({calls[:1]})")
 
+check(enhance.settings({"enhance": {"preset": "film"}})["strength"] == "balanced" and enhance.MIX["film"]["balanced"] == 0.5,
+      "film: half AI, half the original by default (no painted look)")
 o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 0, "clean": "strong"}})
 check((o.width, o.height) == (640, 360), f"export: at the video's own size the model's result is scaled back ({o.width}x{o.height})")
 

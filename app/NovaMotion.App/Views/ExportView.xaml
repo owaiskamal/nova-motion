@@ -88,6 +88,26 @@
                                 </Border>
                                 </StackPanel>
                             </Grid>
+                            <TextBlock Style="{StaticResource Text.Strong}" Text="AI strength" Margin="0,16,0,10"/>
+                            <Border Background="{StaticResource Raised}" CornerRadius="9" Padding="2">
+                                    <ItemsControl ItemsSource="{Binding EnhanceStrengths}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <RadioButton Style="{StaticResource Segment}" GroupName="enhance-strength" Content="{Binding Label}"
+                                                             IsChecked="{Binding IsSelected, Mode=OneWay}" ToolTip="{Binding Description}"
+                                                             Command="{Binding DataContext.SelectEnhanceStrengthCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                             CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                            <TextBlock Style="{StaticResource Text.Small}" Margin="0,6,0,0" TextWrapping="Wrap"
+                                       Text="How much of the AI's picture is kept, the rest the original. Balanced is sharper without the painted look AI can give real footage."/>
                             <Grid Margin="0,16,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>

@@ -14,6 +14,7 @@ public sealed partial class MainViewModel
     public ObservableCollection<OptionItem> EnhancePresets { get; } = new(EnhanceCatalog.Presets.Select(c => new OptionItem(c)));
     public ObservableCollection<OptionItem> EnhanceSizes { get; } = new(EnhanceCatalog.Sizes.Select(c => new OptionItem(c)));
     public ObservableCollection<OptionItem> EnhanceCleanups { get; } = new(EnhanceCatalog.Cleanups.Select(c => new OptionItem(c)));
+    public ObservableCollection<OptionItem> EnhanceStrengths { get; } = new(EnhanceCatalog.Strengths.Select(c => new OptionItem(c)));
     public ObservableCollection<OptionItem> EnhanceDetails { get; } = new(EnhanceCatalog.Details.Select(c => new OptionItem(c)));
     public ObservableCollection<OptionItem> EnhanceGrains { get; } = new(EnhanceCatalog.Grains.Select(c => new OptionItem(c)));
 
@@ -21,6 +22,7 @@ public sealed partial class MainViewModel
     public Command SelectEnhanceSizeCommand { get; private set; } = null!;
     public Command SelectEnhanceCleanupCommand { get; private set; } = null!;
     public Command SelectEnhanceDetailCommand { get; private set; } = null!;
+    public Command SelectEnhanceStrengthCommand { get; private set; } = null!;
     public Command SelectEnhanceGrainCommand { get; private set; } = null!;
     public Command PreviewEnhanceCommand { get; private set; } = null!;
     public Command SetupEnhanceCommand { get; private set; } = null!;
@@ -29,6 +31,14 @@ public sealed partial class MainViewModel
 
     private void InitEnhance()
     {
+        if (Boost.Tuning < EnhanceSettings.CurrentTuning)
+        {
+            // Sharpening on top of the AI drew dark outlines on real footage: off, once, for everyone
+            Boost.Detail = 0;
+            Boost.Tuning = EnhanceSettings.CurrentTuning;
+            _store.Save(_settings);
+        }
+        SelectEnhanceStrengthCommand = new Command(p => ChangeEnhance(p, (e, v) => e.Strength = v));
         SelectEnhancePresetCommand = new Command(p => ChangeEnhance(p, (e, v) => e.Preset = v));
         SelectEnhanceSizeCommand = new Command(p => ChangeEnhance(p, (e, v) => e.Height = (int)EnhanceCatalog.Number(v)));
         SelectEnhanceCleanupCommand = new Command(p => ChangeEnhance(p, (e, v) => e.Clean = v));
@@ -66,6 +76,7 @@ public sealed partial class MainViewModel
         foreach (var o in EnhanceSizes) o.IsSelected = Same(o.Value, e.Height);
         foreach (var o in EnhanceCleanups) o.IsSelected = o.Value == e.Clean;
         foreach (var o in EnhanceDetails) o.IsSelected = Same(o.Value, e.Detail);
+        foreach (var o in EnhanceStrengths) o.IsSelected = o.Value == (e.Strength ?? "balanced");
         foreach (var o in EnhanceGrains) o.IsSelected = Same(o.Value, e.Grain);
         Raise(nameof(EnhanceOn), nameof(EnhanceReady), nameof(EnhanceNeedsSetup), nameof(ShowEnhanceOptions),
               nameof(EnhancePresetNote), nameof(EnhanceFixCompression), nameof(EnhanceSummary));

@@ -72,8 +72,14 @@ public sealed record EnhanceSettings
     [JsonPropertyName("clean")] public string Clean { get; set; } = "light";
     /// <summary>Take out compression blocks first (DPIR): for heavily compressed downloads. Slow.</summary>
     [JsonPropertyName("fix_compression")] public bool FixCompression { get; set; }
-    /// <summary>Sharpening after the upscale, 0..1.</summary>
-    [JsonPropertyName("detail")] public double Detail { get; set; } = 0.3;
+    /// <summary>How much of the AI's picture is kept, the rest the original enlarged plainly:
+    /// "natural", "balanced" (the default) or "full".</summary>
+    [JsonPropertyName("strength")] public string Strength { get; set; } = "balanced";
+    /// <summary>Sharpening after the upscale, 0..1. Off by default: on top of the AI it drew dark outlines.</summary>
+    [JsonPropertyName("detail")] public double Detail { get; set; }
+    /// <summary>Settings saved before the November 2026 tuning had sharpening on; moved over once.</summary>
+    [JsonPropertyName("tuning")] public int Tuning { get; set; }
+    public const int CurrentTuning = 2;
     /// <summary>Fine film grain, 0..1.</summary>
     [JsonPropertyName("grain")] public double Grain { get; set; }
 

@@ -17,7 +17,7 @@ Models (all allow commercial use), in vs-plugins/models:
 
 The "enhance" setting:
     {"preset": "film" | "anime" | "off", "height": 2160 (0: the video's own), "clean": "off" | "light" | "strong",
-     "fix_compression": false, "detail": 0..1, "grain": 0..1}
+     "strength": "natural" | "balanced" | "full", "fix_compression": false, "detail": 0..1, "grain": 0..1}
 """
 import os
 
@@ -27,6 +27,13 @@ core = vs.core
 
 PRESETS = ("film", "anime")
 CLEAN = ("off", "light", "strong")
+STRENGTHS = ("natural", "balanced", "full")
+# How much of the AI's picture is kept, the rest a plain enlargement of the original: on real
+# footage the model's full result turns foliage into dark-outlined blobs and water into plastic.
+# Half and half kept the texture and still looked clearly sharper (tuned on a phone clip). Anime's
+# flat colour and lines suit the model, so it keeps more.
+MIX = {"film": {"natural": 0.35, "balanced": 0.5, "full": 1.0},
+       "anime": {"natural": 0.6, "balanced": 0.8, "full": 1.0}}
 
 FILM_MODELS = {"off": "realesr-general-wdn-x4v3", "light": "realesr-general-mid-x4v3", "strong": "realesr-general-x4v3"}
 ANIME_MODELS = {"off": ("no-denoise", "pro-no-denoise3x"), "light": ("conservative", "pro-conservative"),
@@ -40,9 +47,11 @@ def settings(cfg):
         return None
     out = {"preset": e["preset"], "height": int(e.get("height") or 0), "clean": e.get("clean", "light"),
            "fix_compression": bool(e.get("fix_compression")), "detail": float(e.get("detail") or 0),
-           "grain": float(e.get("grain") or 0)}
+           "grain": float(e.get("grain") or 0), "strength": e.get("strength", "balanced")}
     if out["clean"] not in CLEAN:
         out["clean"] = "light"
+    if out["strength"] not in STRENGTHS:
+        out["strength"] = "balanced"
     out["detail"] = min(1.0, max(0.0, out["detail"]))
     out["grain"] = min(1.0, max(0.0, out["grain"]))
     return out
@@ -145,6 +154,10 @@ def upscale(clip, cfg, e, matrix):
     if (big.width, big.height) != (out_w, out_h):
         # Downscaling the model's output: Spline36 keeps the detail it made without ringing
         big = core.resize.Spline36(big, out_w, out_h)
+    mix = MIX[e["preset"]][e["strength"]]
+    if mix < 1.0:
+        plain = core.resize.Spline36(rgb, out_w, out_h)
+        big = core.std.Merge(plain, big, weight=mix)
     out_matrix = "709" if out_h >= 600 else matrix
     return core.resize.Bicubic(big, format=clip.format.id, matrix_s=out_matrix, dither_type="error_diffusion")
 

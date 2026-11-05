@@ -16,12 +16,12 @@ internal static class EnhanceTests
         var rt = RuntimeLayout.Find(dir)!;
 
         // ---- export plan
-        var film = new EnhanceSettings { Preset = "film", Height = 2160, Clean = "strong", Detail = 0.3 };
+        var film = new EnhanceSettings { Preset = "film", Height = 2160, Clean = "strong" };
         var o = new ExportOptions { Target = "60", Enhance = film };
         var e = ExportPlan.Engine(new EngineSettings(), o, new EngineAvailability(true, 1, true, true, Array.Empty<string>()), Array.Empty<string>());
         var json = JsonSerializer.Serialize(e);
         check(e.Enhance == film && !ReferenceEquals(e.Enhance, film), "enhance: the engine gets a copy of the choices");
-        check(json.Contains("\"enhance\"") && json.Contains("\"preset\":\"film\"") && json.Contains("\"height\":2160") && json.Contains("\"clean\":\"strong\""),
+        check(json.Contains("\"enhance\"") && json.Contains("\"preset\":\"film\"") && json.Contains("\"height\":2160") && json.Contains("\"clean\":\"strong\"") && json.Contains("\"strength\":\"balanced\""),
               "enhance: written for the engine as it reads it");
         var plain = ExportPlan.Engine(new EngineSettings(), new ExportOptions(), new EngineAvailability(true, 1, true, true, Array.Empty<string>()), Array.Empty<string>());
         check(plain.Enhance is null && !JsonSerializer.Serialize(plain).Contains("\"enhance\""), "enhance: off leaves the engine config as before");
@@ -35,7 +35,7 @@ internal static class EnhanceTests
         check(ExportPlan.Waiting(0, TimeSpan.FromMinutes(2), o)?.Contains("Preparing the AI models") == true
               && ExportPlan.Waiting(0, TimeSpan.FromSeconds(10), o) is null && ExportPlan.Waiting(0.2, TimeSpan.FromMinutes(5), o) is null,
               "export: a long wait before the first frame says the models are being prepared");
-        check(EnhanceCatalog.Describe(film) == "Film & live action · 4K · strong clean-up", $"enhance: described ({EnhanceCatalog.Describe(film)})");
+        check(EnhanceCatalog.Describe(film) == "Film & live action · 4K · strong clean-up · balanced", $"enhance: described ({EnhanceCatalog.Describe(film)})");
 
         // ---- setup detection
         check(!EnhanceCatalog.IsReady(rt), "enhance: not ready before setup-enhance.cmd");
@@ -58,6 +58,8 @@ internal static class EnhanceTests
         var backend = new FakeBackend();
         var vm = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "settings")), rt, () => backend, () => DateTime.UtcNow, exporter);
         check(!vm.EnhanceOn && !vm.ShowEnhanceOptions && vm.EnhancePresets.Single(p => p.IsSelected).Value == "off", "enhance: starts as smooth only");
+        check(vm.EnhanceStrengths.Single(p => p.IsSelected).Value == "balanced" && vm.EnhanceDetails.Single(p => p.IsSelected).Label == "Off",
+              "enhance: balanced AI strength and no extra sharpening by default");
         vm.SelectEnhancePresetCommand.Execute(vm.EnhancePresets.Single(p => p.Value == "anime"));
         check(vm.EnhanceOn && vm.ShowEnhanceOptions && !vm.EnhanceNeedsSetup && vm.EnhancePresetNote.Contains("Real-CUGAN"), "enhance: anime chosen, options shown");
         check(vm.EnhanceSizes.Single(p => p.IsSelected).Label == "4K", "enhance: 4K by default");
@@ -65,7 +67,9 @@ internal static class EnhanceTests
         vm.SelectEnhanceCleanupCommand.Execute(vm.EnhanceCleanups.Single(p => p.Value == "off"));
         vm.SelectEnhanceGrainCommand.Execute(vm.EnhanceGrains.Single(p => p.Label == "Film"));
         vm.EnhanceFixCompression = true;
-        check(vm.Settings.Enhance == new EnhanceSettings { Preset = "anime", Height = 1440, Clean = "off", Detail = 0.3, Grain = 0.7, FixCompression = true },
+        vm.SelectEnhanceStrengthCommand.Execute(vm.EnhanceStrengths.Single(p => p.Value == "full"));
+        check(vm.Settings.Enhance == new EnhanceSettings { Preset = "anime", Height = 1440, Clean = "off", Detail = 0, Grain = 0.7, FixCompression = true,
+                                                           Strength = "full", Tuning = EnhanceSettings.CurrentTuning },
               $"enhance: choices kept in settings ({vm.Settings.Enhance})");
         var again = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "settings")), rt, () => backend, () => DateTime.UtcNow, exporter);
         check(again.EnhancePresets.Single(p => p.IsSelected).Value == "anime" && again.EnhanceSizes.Single(p => p.IsSelected).Label == "1440p",
@@ -77,7 +81,7 @@ internal static class EnhanceTests
         await Task.Delay(50);
         var run = exporter.Runs.Last();
         check(run.Options.Enhance is { Preset: "anime", Height: 1440 } && run.Engine.Enhance is { Preset: "anime" }, "enhance: exports use the choices");
-        check(vm.Exports.Last().Summary.StartsWith("Anime & art · 1440p · grain kept · compression fixed"), $"enhance: shown in the list ({vm.Exports.Last().Summary})");
+        check(vm.Exports.Last().Summary.StartsWith("Anime & art · 1440p · grain kept · full AI · compression fixed"), $"enhance: shown in the list ({vm.Exports.Last().Summary})");
 
         // ---- preview: 4 s before/after, in a temporary folder, played when ready
         vm.PreviewFolder = Path.Combine(dir, "previews");
