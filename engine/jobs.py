@@ -41,6 +41,12 @@ def weight(key):
     """How long a network takes to prepare next to a compact one (Real-ESRGAN v3, RIFE): Real-CUGAN is
     a full U-Net and took over 10 minutes on a GTX 1650 where the compact models take 3-6."""
     k = key.lower()
+    # Real-ESRGAN x4plus (Max detail) is a full RRDB network: TensorRT tries its options layer by layer,
+    # and x4plus has about ten times the layers of the compact models (the anime 6B version about three)
+    if "x4plus_anime_6b" in k:
+        return 3.0
+    if "x4plus" in k:
+        return 10.0
     if "cugan" in k or "up2x" in k or "pro-" in k:
         return 3.0
     if "drunet" in k or "dpir" in k:
@@ -109,8 +115,13 @@ class Job:
         while not self._stop.wait(30):
             spent = time.time() - self.started
             left = max(0, self.expected - spent)
-            self.say(f"      still working: {spent / 60:.0f} min so far"
-                     + (f", about {left / 60:.0f} min left" if left > 30 else ", nearly done") + " ...")
+            if spent > self.expected * 1.2:
+                tail = ", longer than expected on this card; still working (it can't show finer progress)"
+            elif left > 30:
+                tail = f", about {left / 60:.0f} min left"
+            else:
+                tail = ", should finish soon"
+            self.say(f"      still working: {spent / 60:.0f} min so far{tail} ...")
 
     def __enter__(self):
         self.started = time.time()

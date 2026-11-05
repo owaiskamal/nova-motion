@@ -91,6 +91,16 @@ with jobs.preparing("Preparing AI models", "up2x-latest-no-denoise", module=fake
     fake.subprocess.run(["trtexec", "--onnx=x/up2x.onnx", f"--saveEngine={engine}"])
 check(len(calls) == 1, "an engine another process made meanwhile isn't built again")
 
+check(jobs.weight("enhance:RealESRGAN_x4plus.onnx") == 10 and jobs.weight("enhance:RealESRGAN_x4plus_anime_6B.onnx") == 3,
+      "Max detail models expect much longer builds")
+said = []
+j = jobs.Job("x", "y", key="enhance:z.onnx", say=said.append)
+j.expected, j.started = 60, time.time() - 600
+j._stop.set()
+j._stop = type("S", (), {"n": 0, "wait": lambda self, t: (setattr(self, "n", self.n + 1), self.n > 1)[1]})()
+j._heartbeat()
+check(said and "longer than expected" in said[0] and "nearly" not in said[0], f"an overrunning build doesn't say nearly done ({said})")
+
 print()
 print("ALL PASSED" if not fails else f"{fails} FAILED")
 sys.exit(1 if fails else 0)
