@@ -161,8 +161,9 @@ internal static class PhotoTests
               $"photo: a real progress bar, with the time left ({vm.PhotoProgress:P0}: {vm.PhotoProgressText})");
         check(Photo.ParseProgress("3/12") == 0.25 && Photo.ParseProgress("x") is null, "photo: progress lines read");
         runner.Gate.SetResult();
-        await Task.Delay(50);
         var result = Path.Combine(dir, "out", "Portrait (NOVA Enhance 4x max).jpg");
+        // A slow test machine: wait for the run to finish, up to 3 s
+        for (var t = 0; t < 60 && !(vm.HasPhotoResult && vm.PhotoShown == result); t++) await Task.Delay(50);
         check(!vm.IsEnhancingPhoto && vm.HasPhotoResult && vm.PhotoShown == result,
               $"photo: finished, the result shown ({vm.PhotoShown})");
         check(vm.HasPhotoCompare && File.Exists(vm.PhotoCompare) && runner.Spot == (0.5, 0.5),
