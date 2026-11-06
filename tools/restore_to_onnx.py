@@ -56,7 +56,8 @@ class LayerNorm2d(nn.Module):
         k = diff.abs().amax(1, keepdim=True).clamp_min(self.eps ** 0.5)
         d = diff / k
         var = (d * d).mean(1, keepdim=True)
-        y = d / (var + self.eps / (k * k)).sqrt()
+        floor = (self.eps ** 0.5) / k          # at most 1: eps / k^2 without squaring k
+        y = d / (var + floor * floor).sqrt()
         return self.weight.view(1, -1, 1, 1) * y + self.bias.view(1, -1, 1, 1)
 
 
