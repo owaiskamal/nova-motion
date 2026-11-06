@@ -49,7 +49,7 @@ public sealed partial class MainViewModel
         ShowPhotoResultCommand = new Command(() => { if (_photoResult is { } r) _host.OpenExternal(Path.GetDirectoryName(r)!); }, () => HasPhotoResult);
         SelectPhotoPresetCommand = new Command(p => { if (p is OptionItem o) { _photoOptions = _photoOptions with { Preset = o.Value }; SyncPhoto(); } });
         SelectPhotoScaleCommand = new Command(p => { if (p is OptionItem o && int.TryParse(o.Value, out var s)) { _photoOptions = _photoOptions with { Scale = s }; SyncPhoto(); } });
-        SelectPhotoModelCommand = new Command(p => { if (p is OptionItem o) { _photoOptions = _photoOptions with { MaxDetail = o.Value == "max" }; SyncPhoto(); } });
+        SelectPhotoModelCommand = new Command(p => { if (p is OptionItem o) { _photoOptions = _photoOptions with { MaxDetail = o.Value == "max", Generative = o.Value == "generative" }; SyncPhoto(); } });
         SelectPhotoCleanupCommand = new Command(p => { if (p is OptionItem o) { _photoOptions = _photoOptions with { Clean = o.Value }; SyncPhoto(); } });
         SyncPhoto();
     }
@@ -58,9 +58,9 @@ public sealed partial class MainViewModel
     {
         foreach (var o in PhotoPresets) o.IsSelected = o.Value == _photoOptions.Preset;
         foreach (var o in PhotoScales) o.IsSelected = o.Value == _photoOptions.Scale.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        foreach (var o in PhotoModels) o.IsSelected = o.Value == (_photoOptions.MaxDetail ? "max" : "standard");
+        foreach (var o in PhotoModels) o.IsSelected = o.Value == _photoOptions.Model;
         foreach (var o in PhotoCleanups) o.IsSelected = o.Value == _photoOptions.Clean;
-        Raise(nameof(PhotoOptions), nameof(PhotoModelNote), nameof(PhotoCleanupEnabled), nameof(PhotoRestore));
+        Raise(nameof(PhotoOptions), nameof(PhotoModelNote), nameof(PhotoCleanupEnabled), nameof(PhotoRestore), nameof(PhotoRestoreEnabled), nameof(CanEnhancePhoto));
         SyncPresets();
     }
 
@@ -86,10 +86,20 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>Max detail uses its own fixed clean-up, so the choice only applies to Standard.</summary>
-    public bool PhotoCleanupEnabled => !_photoOptions.MaxDetail;
+    public bool PhotoCleanupEnabled => !_photoOptions.MaxDetail && !_photoOptions.Generative;
+    /// <summary>Generative restores the picture itself.</summary>
+    public bool PhotoRestoreEnabled => !_photoOptions.Generative;
+    /// <summary>Generative is chosen and can run here.</summary>
+    private bool GenerativeUsable => Photo.HasGenerative(Runtime) && Photo.GenerateVramGb(Runtime) is 0 or >= 7.5;
 
     public string PhotoModelNote =>
-        _photoOptions.Restore > 0 && !Photo.HasRestore(Runtime)
+        _photoOptions.Generative && !Photo.HasGenerative(Runtime)
+            ? "Generative needs its own setup: run setup-generate.cmd (about 8 GB; an NVIDIA card with 8 GB or more)."
+        : _photoOptions.Generative && !GenerativeUsable
+            ? $"Generative needs an NVIDIA card with 8 GB or more; this one has {Photo.GenerateVramGb(Runtime):0.#} GB. Max detail works on it."
+        : _photoOptions.Generative
+            ? "Generative: SeedVR2 looks at the whole picture and makes new detail that fits it. It cleans the picture itself, so the other choices don't apply."
+        : _photoOptions.Restore > 0 && !Photo.HasRestore(Runtime)
             ? "Remove noise and blur needs its model: run setup-enhance.cmd again once it's published. Until then the photo is enhanced without it."
         : _photoOptions.MaxDetail && !Photo.HasMaxDetail(Runtime)
             ? "Max detail needs its models: run setup-enhance.cmd again once they're published. Until then the standard ones are used."
@@ -149,7 +159,8 @@ public sealed partial class MainViewModel
     public string PhotoStatus { get => _photoStatus; private set => Set(ref _photoStatus, value); }
     public bool HasPhotoResult => _photoResult is not null && !IsEnhancingPhoto;
     public string PhotoResultName => _photoResult is { } r ? Path.GetFileName(r) : "";
-    public bool CanEnhancePhoto => PhotoReady && HasPhoto && !IsEnhancingPhoto && PhotoEnhancer is not null;
+    public bool CanEnhancePhoto => PhotoReady && HasPhoto && !IsEnhancingPhoto && PhotoEnhancer is not null
+                                   && (!_photoOptions.Generative || GenerativeUsable);
 
     /// <summary>The whole picture: the result once there is one (click it to choose where to compare), else the original.</summary>
     public string? PhotoShown => _photoResult is { } r && !_photoShowBefore ? r : _photo;

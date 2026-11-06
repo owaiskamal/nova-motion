@@ -254,6 +254,27 @@ jobs:
       - run: pip install numpy pillow onnxruntime onnx
       - run: python tests/engine/test_parallax.py
       - run: python tests/engine/test_photo.py
+      - run: python tests/engine/test_generate.py
+
+  generative-runner:
+    name: Generative detail against SeedVR2's real runner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: The runner at the commit setup-generate.cmd installs
+        run: |
+          commit=$(grep -oP '\$RunnerCommit\s*=\s*"\K[0-9a-f]{40}' setup/Get-Generate.ps1)
+          git init -q runner && git -C runner fetch -q --depth 1 https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler $commit && git -C runner checkout -q FETCH_HEAD
+      - name: Its argument parser takes our command lines
+        run: pip install pillow && SEEDVR2_RUNNER=runner python tests/engine/test_generate.py
+      - name: The pinned packages install and the runner starts (PyTorch for CPU here, CUDA on the PC)
+        run: |
+          pip install -q torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -q -r setup/generate-requirements.txt
+          cd runner && python inference_cli.py --help | head -5
 
   player-script:
     name: mpv Lua script tests

@@ -503,7 +503,7 @@
                                                 <TextBlock Text="Clean-up" VerticalAlignment="Center"/>
                                             </DockPanel>
                                         </Border>
-                                        <Border Style="{StaticResource GroupCell}">
+                                        <Border Style="{StaticResource GroupCell}" IsEnabled="{Binding PhotoRestoreEnabled}">
                                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding PhotoRestore}">
                                                 <StackPanel>
                                                     <TextBlock Text="Remove noise and blur"/>

@@ -104,6 +104,28 @@ internal static class PhotoTests
 
         vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "max"));
         check(!vm.PhotoCleanupEnabled && vm.PhotoModelNote.Contains("setup-enhance"), "photo: Max detail says when its models are missing");
+
+        // ---- Generative (SeedVR2)
+        vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "generative"));
+        check(vm.PhotoOptions.Generative && !vm.PhotoOptions.MaxDetail && !vm.CanEnhancePhoto && vm.PhotoModelNote.Contains("setup-generate.cmd")
+              && !vm.PhotoRestoreEnabled && vm.PhotoSummary.EndsWith("Generative"),
+              $"photo: Generative before its setup says what to run, and can't start ({vm.PhotoModelNote})");
+        Directory.CreateDirectory(Path.GetDirectoryName(rt.GeneratePython)!);
+        File.WriteAllText(rt.GeneratePython, "");
+        File.WriteAllText(rt.GenerateScript, "");
+        File.WriteAllText(rt.GenerateReady, "runner 4490bd1\nmodel seedvr2_ema_3b_fp8_e4m3fn.safetensors\nvram_mb 4096\n");
+        vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "generative"));
+        check(!vm.CanEnhancePhoto && vm.PhotoModelNote.Contains("this one has 4 GB"), $"photo: Generative on a 4 GB card: says why not ({vm.PhotoModelNote})");
+        File.WriteAllText(rt.GenerateReady, "runner 4490bd1\nmodel seedvr2_ema_3b_fp8_e4m3fn.safetensors\nvram_mb 12282\n");
+        vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "generative"));
+        check(vm.CanEnhancePhoto && Photo.GenerateVramGb(rt) == 12, "photo: Generative ready on a 12 GB card");
+        var gargs = Photo.GenerateArguments(rt, "in.jpg", "out.jpg", vm.PhotoOptions, 1, "c.png", (0.5, 0.5)).ToList();
+        check(gargs[1] == rt.GenerateScript && gargs[gargs.IndexOf("--runner") + 1] == rt.GenerateRunner && gargs[gargs.IndexOf("--vram") + 1] == "12"
+              && gargs[gargs.IndexOf("--gpu") + 1] == "1" && gargs.Contains("--compare"), "photo: Generative's script, runner, card and memory passed");
+        check(Photo.OutputPath(@"C:\p\Kid.jpg", vm.PhotoOptions with { Scale = 2 }, dir).EndsWith("Kid (NOVA Enhance 2x generative).jpg"), "photo: a generative result is named so");
+        var gen = Estimate.Photo(3000, 4000, vm.PhotoOptions with { Scale = 1 }, "");
+        check(gen > TimeSpan.FromSeconds(60) && gen < TimeSpan.FromMinutes(5), $"photo: Generative estimated by the megapixels it makes ({gen})");
+        vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "max"));
         vm.SelectPhotoScaleCommand.Execute(vm.PhotoScales.Single(m => m.Value == "4"));
         vm.SelectPhotoPresetCommand.Execute(vm.PhotoPresets.Single(m => m.Value == "anime"));
         vm.PhotoFixCompression = true;

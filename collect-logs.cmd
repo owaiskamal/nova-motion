@@ -10,7 +10,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ex = Join-Path $app 'exports'; if (Test-Path $ex) { Get-ChildItem $ex -Filter 'export-*.log' | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | Copy-Item -Destination $tmp };" ^
   "if (Test-Path 'runtime\trt-engines\background-build.log') { Copy-Item 'runtime\trt-engines\background-build.log' $tmp };" ^
   "if (Test-Path 'runtime\prepare-models.log') { Copy-Item 'runtime\prepare-models.log' $tmp };" ^
-  "if (Test-Path 'runtime\photo.log') { Copy-Item 'runtime\photo.log' $tmp };" ^
+  "foreach ($f in 'photo.log','generate-runner.log','setup-generate.log') { $p = Join-Path 'runtime' $f; if (Test-Path $p) { Copy-Item $p $tmp } };" ^
   "Get-ChildItem $env:TEMP -Filter 'trtexec_*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 3 | Copy-Item -Destination $tmp;" ^
   "if (Test-Path 'runtime\mpv\vs-plugins\models') { Get-ChildItem 'runtime\mpv\vs-plugins\models' -Recurse -Filter '*.engine' | Select-Object Directory, Name, Length, LastWriteTime | Format-Table -AutoSize | Out-String -Width 400 | Out-File (Join-Path $tmp 'enhance-engines.txt') };" ^
   "if (Test-Path 'runtime\trt-engines') { Get-ChildItem 'runtime\trt-engines' | Select-Object Name, Length, LastWriteTime | Out-File (Join-Path $tmp 'trt-engines.txt') };" ^

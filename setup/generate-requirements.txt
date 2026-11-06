@@ -1,0 +1,16 @@
+# Packages for Generate's generative detail (SeedVR2's runner), pinned; installed by Get-Generate.ps1
+# into runtime\generate\.venv next to PyTorch for CUDA. Versions from the runner's own time (late 2025).
+safetensors==0.5.3
+numpy==2.2.6
+tqdm==4.67.1
+psutil==7.0.0
+einops==0.8.1
+omegaconf==2.3.0
+diffusers==0.34.0
+peft==0.17.0
+transformers==4.53.0
+rotary-embedding-torch==0.8.6
+opencv-python-headless==4.11.0.86
+gguf==0.17.1
+matplotlib==3.10.3
+pillow==11.3.0

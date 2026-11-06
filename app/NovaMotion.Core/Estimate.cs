@@ -21,16 +21,17 @@ public static class Estimate
     public const int FixCompressionMaxHeight = 1440;
 
     /// <summary>Model families, by how heavy one tile is.</summary>
-    public const string Compact = "compact", Cugan = "cugan", Rrdb = "rrdb", Rrdb6 = "rrdb6", Dpir = "dpir", Restore = "restore", Rife = "rife", Encode = "encode";
+    public const string Compact = "compact", Cugan = "cugan", Rrdb = "rrdb", Rrdb6 = "rrdb6", Dpir = "dpir", Restore = "restore", Generative = "generative", Rife = "rife", Encode = "encode";
 
-    /// <summary>Seconds a tile (RIFE and encoding: a 1080p frame), first guesses by graphics class: from GTX
+    /// <summary>Seconds a tile (RIFE and encoding: a 1080p frame; Generative: a megapixel of the result, a first
+    /// guess for SeedVR2 3B on an RTX 4070, to be calibrated), first guesses by graphics class: from GTX
     /// 1650 runs (a 1500 x 2000 photo through x4plus in 30 s; a 22-minute episode with Real-CUGAN and Fix
     /// compression estimated at 40 h), and about 5x faster on RTX cards. Calibrate replaces them.</summary>
     private static readonly Dictionary<string, Dictionary<string, double>> FirstGuess = new()
     {
-        ["entry"] = new() { [Compact] = 0.07, [Cugan] = 0.30, [Rrdb6] = 0.45, [Rrdb] = 1.5, [Dpir] = 0.07, [Restore] = 0.12, [Rife] = 0.025, [Encode] = 0.006 },
-        ["integrated"] = new() { [Compact] = 0.25, [Cugan] = 1.2, [Rrdb6] = 1.8, [Rrdb] = 6.0, [Dpir] = 0.5, [Restore] = 0.6, [Rife] = 0.08, [Encode] = 0.01 },
-        [""] = new() { [Compact] = 0.014, [Cugan] = 0.06, [Rrdb6] = 0.09, [Rrdb] = 0.3, [Dpir] = 0.025, [Restore] = 0.03, [Rife] = 0.006, [Encode] = 0.004 },
+        ["entry"] = new() { [Compact] = 0.07, [Cugan] = 0.30, [Rrdb6] = 0.45, [Rrdb] = 1.5, [Dpir] = 0.07, [Restore] = 0.12, [Generative] = 30, [Rife] = 0.025, [Encode] = 0.006 },
+        ["integrated"] = new() { [Compact] = 0.25, [Cugan] = 1.2, [Rrdb6] = 1.8, [Rrdb] = 6.0, [Dpir] = 0.5, [Restore] = 0.6, [Generative] = 120, [Rife] = 0.08, [Encode] = 0.01 },
+        [""] = new() { [Compact] = 0.014, [Cugan] = 0.06, [Rrdb6] = 0.09, [Rrdb] = 0.3, [Dpir] = 0.025, [Restore] = 0.03, [Generative] = 5, [Rife] = 0.006, [Encode] = 0.004 },
     };
 
     public static double SecondsPerTile(string family, string? gpuClass, IReadOnlyDictionary<string, double>? calibration = null)
@@ -107,6 +108,10 @@ public static class Estimate
     public static TimeSpan Photo(int w, int h, PhotoOptions o, string? gpuClass, IReadOnlyDictionary<string, double>? calibration = null)
     {
         var scale = Math.Max(1.0, Math.Min(o.Scale, 8192.0 / Math.Max(w, h)));
+        // Generative: SeedVR2 by the megapixels it makes (its "tile" is a megapixel of the result), plus
+        // loading a 3-billion-weight model
+        if (o.Generative)
+            return TimeSpan.FromSeconds(w * scale * h * scale / 1e6 * SecondsPerTile(Generative, gpuClass, calibration) + 25);
         var (iw, ih) = Math.Max(w, h) * 4 <= 16384 ? (w, h) : AiInputSize(w, h, (int)(w * scale), (int)(h * scale));
         // At the same size, Remove noise and blur is the result: no enlarging (photo.py's enlarge)
         var enlarges = o.Restore <= 0 || scale > 1;

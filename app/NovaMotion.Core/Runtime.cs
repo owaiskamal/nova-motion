@@ -22,6 +22,15 @@ public sealed class RuntimeLayout
     public string DepthModel => Path.Combine(StudioDir, "depth-anything-v2-small.onnx");
     public string StudioPackages => Path.Combine(StudioDir, "packages");
     public string PythonExe => OperatingSystem.IsWindows() ? Path.Combine(MpvDir, "python.exe") : "python3";
+    /// <summary>Generative detail (setup-generate.cmd): its own Python with PyTorch, SeedVR2's runner and model.</summary>
+    public string GenerateDir => Path.Combine(Root, "generate");
+    public string GenerateScript => Path.Combine(Root, "generate.py");
+    public string GeneratePython => OperatingSystem.IsWindows() ? Path.Combine(GenerateDir, ".venv", "Scripts", "python.exe")
+                                                                : Path.Combine(GenerateDir, ".venv", "bin", "python");
+    public string GenerateRunner => Path.Combine(GenerateDir, "runner");
+    public string GenerateModels => Path.Combine(GenerateDir, "models");
+    /// <summary>Written last by setup-generate.cmd: "runner …", "model …", "vram_mb …".</summary>
+    public string GenerateReady => Path.Combine(GenerateDir, "ready.txt");
 
     private RuntimeLayout(string root) => Root = root;
 

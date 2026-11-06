@@ -6,9 +6,14 @@ using System.Text.Json;
 
 namespace NovaMotion.Core;
 
-/// <summary>One "Enhance a photo" job. Restore: Remove noise and blur, how much of NAFNet's result is kept (0: off).</summary>
+/// <summary>One "Enhance a photo" job. Restore: Remove noise and blur, how much of NAFNet's result is kept (0: off).
+/// Generative: SeedVR2 makes new detail instead (engine/generate.py); the other choices then don't apply.</summary>
 public sealed record PhotoOptions(string Preset = "film", int Scale = 2, string Clean = "light", bool MaxDetail = false,
-                                  bool FixCompression = false, double Detail = 0.2, double Restore = 0);
+                                  bool FixCompression = false, double Detail = 0.2, double Restore = 0, bool Generative = false)
+{
+    /// <summary>"standard", "max" or "generative": the Model choice.</summary>
+    public string Model => Generative ? "generative" : MaxDetail ? "max" : "standard";
+}
 
 /// <summary>
 /// Enhance's photo mode: one picture through the same models as videos (engine/photo.py), plus the heavy
@@ -34,7 +39,22 @@ public static class Photo
     {
         new Choice("standard", "Standard", "The video models: quick, natural."),
         new Choice("max", "Max detail", "Real-ESRGAN x4plus: adds much more texture and crisper edges. About 10 times slower, still seconds to a minute a photo."),
+        new Choice("generative", "Generative", "SeedVR2, generative AI: looks at the whole picture and makes new detail that fits it (skin, hair, fabric, leaves). Needs an NVIDIA card with 8 GB or more."),
     };
+
+    /// <summary>setup-generate.cmd finished: the runner, the model and the Python that runs them.</summary>
+    public static bool HasGenerative(RuntimeLayout? rt) =>
+        rt is not null && File.Exists(rt.GenerateReady) && File.Exists(rt.GenerateScript) && File.Exists(rt.GeneratePython);
+
+    /// <summary>The graphics card's memory setup-generate.cmd found, in GB (0: unknown).</summary>
+    public static double GenerateVramGb(RuntimeLayout? rt)
+    {
+        if (rt is null || !File.Exists(rt.GenerateReady)) return 0;
+        foreach (var line in File.ReadAllLines(rt.GenerateReady))
+            if (line.StartsWith("vram_mb ", StringComparison.Ordinal)
+                && double.TryParse(line[8..], NumberStyles.Float, CultureInfo.InvariantCulture, out var mb)) return Math.Round(mb / 1024, 1);
+        return 0;
+    }
 
     /// <summary>The script, Pillow (setup-enhance.cmd adds it) and the Enhance models are there.</summary>
     public static bool IsReady(RuntimeLayout? rt) =>
@@ -58,7 +78,8 @@ public static class Photo
         var name = Path.GetFileNameWithoutExtension(image);
         var ext = Path.GetExtension(image).ToLowerInvariant() is ".jpg" or ".jpeg" ? ".jpg" : ".png";
         var label = o.Scale <= 1 ? "NOVA Enhance" : $"NOVA Enhance {o.Scale}x";
-        if (o.MaxDetail) label += " max";
+        if (o.Generative) label += " generative";
+        else if (o.MaxDetail) label += " max";
         var path = Path.Combine(folder, $"{name} ({label}){ext}");
         for (var i = 2; File.Exists(path); i++) path = Path.Combine(folder, $"{name} ({label}) ({i}){ext}");
         return path;
@@ -78,6 +99,20 @@ public static class Photo
         {
             "-I", rt.PhotoScript, "--image", image, "--out", output, "--settings", SettingsJson(o),
             "--packages", rt.StudioPackages, "--gpu", gpu.ToString(CultureInfo.InvariantCulture), "--gpu-class", gpuClass ?? "",
+        };
+        if (compare is not null) args.AddRange(new[] { "--compare", compare, "--spot", Spot(spot) });
+        return args;
+    }
+
+    /// <summary>Generative detail: engine/generate.py on setup-generate.cmd's Python, SeedVR2's runner and model.</summary>
+    public static IReadOnlyList<string> GenerateArguments(RuntimeLayout rt, string image, string output, PhotoOptions o, int gpu = 0,
+                                                          string? compare = null, (double X, double Y)? spot = null)
+    {
+        var args = new List<string>
+        {
+            "-I", rt.GenerateScript, "--image", image, "--out", output, "--settings", SettingsJson(o),
+            "--runner", rt.GenerateRunner, "--models", rt.GenerateModels, "--gpu", gpu.ToString(CultureInfo.InvariantCulture),
+            "--vram", GenerateVramGb(rt).ToString(CultureInfo.InvariantCulture),
         };
         if (compare is not null) args.AddRange(new[] { "--compare", compare, "--spot", Spot(spot) });
         return args;
@@ -108,6 +143,7 @@ public static class Photo
         "picture" => "Reading the picture…",
         "clean" => "Fixing compression…",
         "restore" => "Removing noise and blur…",
+        "generate" => "Generating detail…",
         "enhance" => "Enhancing…",
         "save" => "Saving…",
         _ => "Working…",
@@ -133,6 +169,9 @@ public sealed class PhotoRunner(RuntimeLayout runtime, Func<(int Gpu, string? Gp
     {
         var (index, gpuClass) = gpu?.Invoke() ?? (0, null);
         if (compare is not null) Directory.CreateDirectory(Path.GetDirectoryName(compare)!);
+        if (options.Generative)
+            return RunScriptAsync(Photo.GenerateArguments(runtime, image, output, options, index, compare, spot), output, "photo.log", stage, ct, done,
+                                  runtime.GeneratePython);
         return RunScriptAsync(Photo.Arguments(runtime, image, output, options, index, gpuClass, compare, spot), output, "photo.log", stage, ct, done);
     }
 
@@ -143,9 +182,9 @@ public sealed class PhotoRunner(RuntimeLayout runtime, Func<(int Gpu, string? Gp
     }
 
     private async Task RunScriptAsync(IReadOnlyList<string> args, string output, string logName, IProgress<string> stage, CancellationToken ct,
-                                      IProgress<double>? done = null)
+                                      IProgress<double>? done = null, string? python = null)
     {
-        var psi = new ProcessStartInfo(runtime.PythonExe)
+        var psi = new ProcessStartInfo(python ?? runtime.PythonExe)
         {
             RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
             WorkingDirectory = runtime.MpvDir,

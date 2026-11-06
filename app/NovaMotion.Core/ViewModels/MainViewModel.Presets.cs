@@ -236,11 +236,13 @@ public sealed partial class MainViewModel
 
     public string PhotoKindRow => Photo.Presets.FirstOrDefault(c => c.Value == _photoOptions.Preset)?.Label ?? "";
     public string PhotoSizeRow => Photo.Scales.FirstOrDefault(c => c.Value == _photoOptions.Scale.ToString(System.Globalization.CultureInfo.InvariantCulture))?.Label ?? "";
-    public string PhotoModelRow => _photoOptions.MaxDetail ? "Max detail" : "Standard";
-    public string PhotoCleanupRow => _photoOptions.MaxDetail ? "Built in" : EnhanceCatalog.Cleanups.FirstOrDefault(c => c.Value == _photoOptions.Clean)?.Label ?? "";
+    public string PhotoModelRow => _photoOptions.Generative ? "Generative" : _photoOptions.MaxDetail ? "Max detail" : "Standard";
+    public string PhotoCleanupRow => _photoOptions.MaxDetail || _photoOptions.Generative ? "Built in" : EnhanceCatalog.Cleanups.FirstOrDefault(c => c.Value == _photoOptions.Clean)?.Label ?? "";
     public string PhotoFixRow => _photoOptions.FixCompression ? "On" : "Off";
-    public string PhotoRestoreRow => _photoOptions.Restore > 0 ? "On" : "Off";
-    public string PhotoSummary => _photoOptions.Restore > 0 && _photoOptions.Scale <= 1
+    public string PhotoRestoreRow => _photoOptions.Generative ? "Built in" : _photoOptions.Restore > 0 ? "On" : "Off";
+    public string PhotoSummary => _photoOptions.Generative
+        ? $"{PhotoKindRow} · {PhotoSizeRow} · Generative"
+        : _photoOptions.Restore > 0 && _photoOptions.Scale <= 1
         ? $"{PhotoKindRow} · {PhotoSizeRow} · Noise and blur removed"
         : $"{PhotoKindRow} · {PhotoSizeRow} · {PhotoModelRow}" + (_photoOptions.Restore > 0 ? " · Noise and blur removed" : "");
 
