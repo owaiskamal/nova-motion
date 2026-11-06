@@ -522,6 +522,7 @@ def demo_split(original, smooth, src, dst, mode="side", labels=False):
 
     side:  the middle half of the picture, twice: the same motion side by side, which makes the
            difference obvious (default)
+    whole: both whole frames side by side
     split: the left half from the original, the right half smoothed (the classic wipe)
     """
     before = repeat_to_fps(original, src, dst)
@@ -530,6 +531,13 @@ def demo_split(original, smooth, src, dst, mode="side", labels=False):
     w = original.width
     half = (w // 2) & ~3
     bar_w = 4
+    if mode == "whole":                              # both whole frames, side by side
+        left, right = before, smooth
+        if labels:
+            left = label(left, f"Original  {fps_words(src)} fps")
+            right = label(right, f"NOVA Motion  {fps_words(dst)} fps")
+        both = core.std.StackHorizontal([left, divider(left, bar_w), right])
+        return core.std.SetFrameProps(both, _DurationNum=dst.denominator, _DurationDen=dst.numerator)
     if mode == "split":
         left = core.std.Crop(before, right=w - half)
         right = core.std.Crop(smooth, left=half + bar_w)
@@ -588,7 +596,7 @@ def build_engine(clip):
             dbg("enhance: fixing compression (DPIR)")
             if cfg.get("demo"):
                 # A before/after shows only the middle: only that part (with room for motion) is cleaned
-                fb = enhance.preview_plan(clip.width, clip.height, boost)["fix_box"]
+                fb = enhance.preview_plan(clip.width, clip.height, boost, enhance.COMPARE_VIEWS[enhance.compare_mode(cfg)])["fix_box"]
                 clip = enhance.paste_box(clip, enhance.fix_compression(enhance.crop_box(clip, fb), cfg, matrix_for(clip)), fb)
             else:
                 clip = enhance.fix_compression(clip, cfg, matrix_for(clip))
@@ -599,17 +607,23 @@ def build_engine(clip):
         if cfg.get("demo"):
             # Previews (before/after clips and frames) show only the middle of the finished frame:
             # only that part is enhanced, about an eighth of the AI work for the same picture
-            out_h = enhance.output_size(original.width, original.height, boost["height"])[1]
-            plan = enhance.preview_plan(original.width, original.height, boost)
-            dbg(f"enhance: preview of part {plan['box']} of the frame")
+            out_w, out_h = enhance.output_size(original.width, original.height, boost["height"])
+            mode = enhance.compare_mode(cfg)
+            plan = enhance.preview_plan(original.width, original.height, boost, enhance.COMPARE_VIEWS[mode])
+            dbg(f"enhance: before/after ({mode}) of part {plan['box']} of the frame")
             after = enhance.finish(enhance.upscale(enhance.crop_box(smooth, plan["box"]), cfg, boost, matrix_for(original),
                                                    full=(original.width, original.height)), boost)
-            before = enhance.crop_box(repeat_to_fps(original, src, dst) if dst != src else original, plan["box"])
+            whole_before = repeat_to_fps(original, src, dst) if dst != src else original
             words = (f"BEFORE: original  {fps_words(src)} fps",
                      f"AFTER: {enhance.label_text(boost, out_h)}  {fps_words(dst)} fps")
-            smooth = enhance.demo(before, after, labeller=label if cfg.get("demo_labels") else None, words=words,
-                                  bar=lambda like: divider(like, max(8, (like.width // 60) & ~1), amber=True),
-                                  view=plan["view"])
+            labeller = label if cfg.get("demo_labels") else None
+            bar = lambda like: divider(like, max(8, (like.width // 240) & ~1), amber=True)
+            if mode in ("split", "whole"):
+                smooth = enhance.compare(whole_before, after, mode, (out_w, out_h), plan["view"], labeller=labeller, words=words, bar=bar)
+            else:
+                smooth = enhance.demo(enhance.crop_box(whole_before, plan["box"]), after, labeller=labeller, words=words,
+                                      bar=lambda like: divider(like, max(8, (like.width // 60) & ~1), amber=True),
+                                      view=plan["view"])
         else:
             smooth = enhance.finish(enhance.upscale(smooth, cfg, boost, matrix_for(original)), boost)
     elif cfg.get("demo") and dst != src:

@@ -62,6 +62,12 @@ internal static class ExportTests
         var e = ExportPlan.Engine(playing, o, trt, models);
         check(e.Engine == "rife_trt" && e.TrtModel == "rife-v4.26" && !e.Demo && !e.RtxVsr && e.QualityStep == 0 && e.Dedup && e.SceneDetect && e.TargetText == "60",
               "export: best quality uses the newest TensorRT model, no demo/VSR/step-down");
+        var enh = new EnhanceSettings { Preset = "film", Height = 2160 };
+        check(ExportPlan.Engine(playing, o with { Comparison = true, Enhance = enh }, trt, models).DemoMode == "split"
+              && ExportPlan.Engine(playing, o with { Comparison = true, Enhance = enh, Compare = "whole" }, trt, models).DemoMode == "whole"
+              && ExportPlan.Engine(playing, o with { Comparison = true, Enhance = enh, Compare = "zoom" }, trt, models).DemoMode == "zoom"
+              && ExportPlan.Engine(playing, o with { Comparison = true, Compare = "zoom" }, trt, models).DemoMode == "side",
+              "export: the before/after shows the picture as chosen (split by default, side by side, 100% detail)");
         e = ExportPlan.Engine(playing, o, vulkan, models);
         check(e.Engine == "rife" && e.RifeModel == "rife-v4.26_ensembleFalse", $"export: without TensorRT, the newest full Vulkan model ({e.RifeModel})");
         e = ExportPlan.Engine(playing, o with { Quality = ExportQuality.Faster }, trt, models);

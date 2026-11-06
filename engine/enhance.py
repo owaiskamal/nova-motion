@@ -328,10 +328,34 @@ def label_text(e, out_h):
 
 
 def demo_view(w, h):
-    """The part of a finished w x h frame a before/after shows: the middle, a quarter of the width
-    and half the height, as (x, y, width, height)."""
+    """The part of a finished w x h frame a "100% detail" before/after shows: the middle, a quarter
+    of the width and half the height, as (x, y, width, height)."""
     cw, ch = (w // 4) & ~1, (h // 2) & ~1
     return ((w - cw) // 2) & ~1, ((h - ch) // 2) & ~1, cw, ch
+
+
+def split_view(w, h):
+    """Split: the right half of the finished frame is enhanced (the left half is the original)."""
+    half = (w // 2) & ~3
+    return half, 0, w - half, h
+
+
+def whole_view(w, h):
+    """Side by side: the whole finished frame."""
+    return 0, 0, w & ~1, h & ~1
+
+
+# How a before/after shows the picture (the app's Compare choice). "side" was the 100% detail view
+# before the choice existed; old settings keep meaning that.
+COMPARE_VIEWS = {"split": split_view, "whole": whole_view, "zoom": demo_view, "side": demo_view}
+# A side-by-side of two whole frames is twice as wide: kept within 7680 px, which encoders and
+# players take (two 4K frames fit; two 8K frames are shown at 4K each)
+COMPARE_MAX_WIDTH = 7680
+
+
+def compare_mode(cfg):
+    m = (cfg or {}).get("demo_mode") or "split"
+    return m if m in COMPARE_VIEWS else "split"
 
 
 # Longest side of a model's output for a photo seen whole: 16384 px (a 12 MP phone photo at 4x) is
@@ -347,15 +371,16 @@ PREVIEW_MARGIN = 32
 PREVIEW_FIX_MARGIN = 96
 
 
-def preview_plan(width, height, e):
-    """Previews show only demo_view of the finished frame, so only that part (and a margin) is
-    cleaned and enlarged, about an eighth of the work for the same picture.
+def preview_plan(width, height, e, view=None):
+    """Previews show only part of the finished frame (view: demo_view, split_view or whole_view), so
+    only that part (and a margin) is cleaned and enlarged: an eighth of the work for 100% detail,
+    half for a split.
 
     {"box": the part of the video frame to enhance (x0, y0, x1, y1), "view": (x, y, w, h) to cut
     from the enlarged part, "fix_box": the part Fix compression cleans}."""
     out_w, out_h = output_size(width, height, e["height"])
     kx, ky = out_w / width, out_h / height
-    x, y, cw, ch = demo_view(out_w, out_h)
+    x, y, cw, ch = (view or demo_view)(out_w, out_h)
 
     def box(margin):
         x0 = max(0, int(x / kx) - margin) & ~3
@@ -411,3 +436,35 @@ def demo(before, after, labeller=None, words=("Original", "NOVA Enhance"), bar=N
         left, right = labeller(left, words[0]), labeller(right, words[1])
     parts = [left, bar(left)] if bar else [left]
     return core.std.StackHorizontal(parts + [right])
+
+
+def compare(before, after, mode, out_size, view, labeller=None, words=("Original", "NOVA Enhance"), bar=None):
+    """A before/after of the whole picture at the finished size.
+
+    before: the original, whole, at the video's own size. after: the enhanced part (preview_plan's
+    box, enlarged); view = (x, y, w, h) cuts the shown part out of it. mode "split": the left half
+    is the original enlarged plainly, the right half NOVA, with a bar between (the classic wipe);
+    "whole": both whole frames side by side."""
+    out_w, out_h = out_size
+    x, y, cw, ch = view
+    after = core.std.Crop(after, left=x, right=after.width - x - cw, top=y, bottom=after.height - y - ch)
+    before = core.resize.Bicubic(before, out_w & ~1, out_h & ~1, format=after.format.id)
+    if mode == "whole":
+        bw = bar(before).width if bar else 0
+        k = min(1.0, (COMPARE_MAX_WIDTH - bw) / (2 * before.width))
+        if k < 1:
+            w2, h2 = int(before.width * k) & ~1, int(before.height * k) & ~1
+            before, after = core.resize.Bicubic(before, w2, h2), core.resize.Bicubic(after, w2, h2)
+        left, right = before, after
+        if labeller:
+            left, right = labeller(left, words[0]), labeller(right, words[1])
+        return core.std.StackHorizontal([left, bar(left), right] if bar else [left, right])
+    # split: the bar takes its width from the right side, so the picture keeps its size and place
+    half = before.width - after.width
+    left = core.std.Crop(before, right=before.width - half)
+    b = bar(left) if bar else None
+    if b is not None:
+        after = core.std.Crop(after, left=b.width)
+    if labeller:
+        left, after = labeller(left, words[0]), labeller(after, words[1])
+    return core.std.StackHorizontal([left, b, after] if b is not None else [left, after])

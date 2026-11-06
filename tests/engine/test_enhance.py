@@ -243,7 +243,7 @@ check((o.width, o.height) == (2560, 1440) and fed and fed[0][3] == (640, 384), f
 # Previews enhance only the part they show, and it comes out as in the whole frame
 calls.clear()
 e = {"preset": "film", "height": 2160, "detail": 0.7, "grain": 0, "fix_compression": True}
-prev = run({"engine": "mvtools", "target": 60, "source_frames": 12, "demo": True, "enhance": e}, w=1920, h=1080, frames=12)
+prev = run({"engine": "mvtools", "target": 60, "source_frames": 12, "demo": True, "demo_mode": "zoom", "enhance": e}, w=1920, h=1080, frames=12)
 fed = [c for c in calls if c[0] == "inference"]
 fixed = [c for c in calls if c[0] == "dpir"]
 check(fed and fed[0][5] < 1920 // 2 and fed[0][6] < 1080 * 2 // 3 and fixed and fixed[0][1] < 1920,
@@ -256,9 +256,24 @@ diff = core.std.PlaneStats(a[5], b[5]).get_frame(0).props["PlaneStatsDiff"]
 check((a.width, a.height) == (b.width, b.height) and diff < 0.002,
       f"preview: the enhanced part matches the same part of a full export (difference {diff:.5f})")
 
+# Compare: split (the app's default) shows the whole frame at the finished size, the right half enhanced
+calls.clear()
+split = run({"engine": "mvtools", "target": 60, "source_frames": 12, "demo": True, "demo_mode": "split", "enhance": e}, w=1920, h=1080, frames=12)
+fed = [c for c in calls if c[0] == "inference"]
+check((split.width, split.height) == (whole.width, whole.height) and fed and fed[0][5] < 1920 * 2 // 3,
+      f"split: the whole frame at its finished size, only the right half (and a margin) enhanced ({split.width}x{split.height}, {fed[:1]})")
+q = whole.width * 3 // 4
+a = core.std.Crop(whole, left=q, right=0)
+b = core.std.Crop(split, left=q, right=0)
+diff = core.std.PlaneStats(a[5], b[5]).get_frame(0).props["PlaneStatsDiff"]
+check(diff < 0.002, f"split: its right side is the full export's (difference {diff:.5f})")
+side = run({"engine": "mvtools", "target": 60, "source_frames": 12, "demo": True, "demo_mode": "whole", "enhance": e}, w=1920, h=1080, frames=12)
+check(side.width <= 7680 and side.width >= 7600 and side.height >= 2100,
+      f"side by side: both whole frames, within 7680 px ({side.width}x{side.height})")
+
 # Frame preview: one source frame, enhanced, as the before/after crop
 o = run({"engine": "mvtools", "target": 60, "source_frames": 1, "enabled": False, "demo": True, "demo_labels": True,
-         "enhance": {"preset": "film", "height": 2160}}, w=1920, h=1080)
+         "demo_mode": "zoom", "enhance": {"preset": "film", "height": 2160}}, w=1920, h=1080)
 check(o.num_frames >= 1 and (o.width, o.height) == (1936, 1080) and o.fps.numerator == 24,
       f"frame preview: the before/after crop of an unsmoothed frame ({o.width}x{o.height}, {o.fps})")
 

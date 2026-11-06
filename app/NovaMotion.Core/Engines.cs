@@ -12,6 +12,14 @@ public sealed record Choice(string Value, string Label, string Description = "",
 /// <summary>Names and options of the interpolation engines and frame-rate targets.</summary>
 public static class EngineCatalog
 {
+    /// <summary>How Enhance's previews and before/after videos show the picture.</summary>
+    public static readonly IReadOnlyList<Choice> CompareModes = new[]
+    {
+        new Choice("split", "Split", "The whole picture: the original on the left, NOVA on the right"),
+        new Choice("whole", "Side by side", "The whole picture twice, the original next to NOVA"),
+        new Choice("zoom", "100% detail", "The middle of the picture at full size, to see fine detail"),
+    };
+
     public static string EngineName(string engine)
     {
         var parts = engine.Split('@', 2);

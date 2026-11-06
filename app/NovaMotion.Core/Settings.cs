@@ -94,6 +94,8 @@ public sealed class AppSettings
     public string ActiveProfile { get; set; } = "Balanced";
     /// <summary>Maximum height requested from YouTube & co (yt-dlp format).</summary>
     public int OnlineMaxHeight { get; set; } = 1080;
+    /// <summary>Enhance's before/afters: "split", "whole" (side by side) or "zoom" (100% detail).</summary>
+    public string CompareMode { get; set; } = "split";
     public bool StartMinimizedToTray { get; set; }
     /// <summary>Closing the window keeps NOVA Motion in the tray (for browser links).</summary>
     public bool CloseToTray { get; set; } = true;

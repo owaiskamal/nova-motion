@@ -219,7 +219,7 @@
                                         <MouseBinding MouseAction="LeftClick" Command="{Binding OpenFramePreviewCommand}"/>
                                     </Grid.InputBindings>
                                     <TextBlock Style="{StaticResource Text.Small}" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="24"
-                                               TextWrapping="Wrap" Text="Preview a frame: one before/after frame with these settings, at full size, in seconds."
+                                               TextWrapping="Wrap" Text="Preview a frame: one before/after frame with these settings, in seconds."
                                                Visibility="{Binding HasFramePreview, Converter={StaticResource InvBoolToVis}}"/>
                                     <Image Source="{Binding FramePreview}" Stretch="Uniform" MaxHeight="300" RenderOptions.BitmapScalingMode="HighQuality"/>
                                 </Grid>
@@ -232,6 +232,11 @@
                                     <Button Style="{StaticResource Btn.Secondary}" Background="#2C2C33" Padding="8,0" Margin="0,0,5,0" Content="Preview a frame" Command="{Binding PreviewFrameCommand}" IsEnabled="{Binding CanExport}"/>
                                     <Button Style="{StaticResource Btn.Secondary}" Background="#2C2C33" Padding="8,0" Margin="5,0,0,0" Content="Preview 4 s" Command="{Binding PreviewEnhanceCommand}" IsEnabled="{Binding CanExport}"/>
                                 </UniformGrid>
+                                <!-- How previews and before/after videos show the picture -->
+                                <Border Style="{StaticResource SegmentGroup}" Background="#2C2C33" Margin="12,0,12,6" HorizontalAlignment="Stretch">
+                                    <ItemsControl Style="{StaticResource Segments}" ItemsSource="{Binding CompareModes}" Tag="{Binding SelectCompareModeCommand}"/>
+                                </Border>
+                                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="14,0,14,12" Text="{Binding CompareModeNote}"/>
                             </StackPanel>
                         </Border>
 
@@ -479,7 +484,7 @@
                                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ExportComparison}">
                                                 <StackPanel>
                                                     <TextBlock Text="Before/after video"/>
-                                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="The original and NOVA side by side, labelled: for sharing a short part."/>
+                                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="The original and NOVA, labelled, shown as chosen under the preview (split, side by side or 100% detail): for sharing a short part."/>
                                                 </StackPanel>
                                             </CheckBox>
                                         </Border>

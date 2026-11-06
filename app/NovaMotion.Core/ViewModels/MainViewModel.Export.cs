@@ -78,6 +78,24 @@ public sealed partial class MainViewModel
     private bool _exportGpuEncoder = true;
     public bool ExportGpuEncoder { get => _exportGpuEncoder; set { if (Set(ref _exportGpuEncoder, value)) SyncPresets(); } }
 
+    public ObservableCollection<OptionItem> CompareModes { get; } = new(EngineCatalog.CompareModes.Select(c => new OptionItem(c)));
+    private Command? _selectCompareModeCommand;
+    public Command SelectCompareModeCommand => _selectCompareModeCommand ??= new Command(p =>
+    {
+        if (p is not OptionItem o || _settings.CompareMode == o.Value) return;
+        _settings.CompareMode = o.Value;
+        _store.Save(_settings);
+        SyncCompareModes();
+    });
+    public string CompareModeNote => EngineCatalog.CompareModes.FirstOrDefault(c => c.Value == CompareMode)?.Description ?? "";
+    private string CompareMode => EngineCatalog.CompareModes.Any(c => c.Value == _settings.CompareMode) ? _settings.CompareMode : "split";
+
+    private void SyncCompareModes()
+    {
+        foreach (var o in CompareModes) o.IsSelected = o.Value == CompareMode;
+        Raise(nameof(CompareModeNote));
+    }
+
     private bool _exportComparison;
     /// <summary>Export a before/after video: the original and NOVA Motion side by side, labelled.</summary>
     public bool ExportComparison { get => _exportComparison; set => Set(ref _exportComparison, value); }
@@ -110,6 +128,7 @@ public sealed partial class MainViewModel
 
     private void InitExport()
     {
+        SyncCompareModes();
         foreach (var t in ExportPlan.Targets)
             ExportTargets.Add(new OptionItem(new Choice(t, EngineCatalog.TargetName(t))) { IsSelected = t == "60" });
         OpenExportCommand = new Command(() => SelectModule(StudioModule.Enhance));
@@ -160,6 +179,7 @@ public sealed partial class MainViewModel
             Quality = _exportQuality,
             HardwareEncoder = _exportGpuEncoder && _gpu?.IsNvidia != false,
             Comparison = _exportComparison || preview,
+            Compare = CompareMode,
             StartSeconds = ExportOptions.ParseTime(ExportStartText),
             LengthSeconds = preview ? PreviewSeconds : ExportOptions.ParseTime(ExportLengthText),
         };

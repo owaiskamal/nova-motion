@@ -25,6 +25,9 @@ public sealed record ExportOptions
     public bool HardwareEncoder { get; init; } = true;
     /// <summary>A before/after video: the original and NOVA Motion side by side, labelled.</summary>
     public bool Comparison { get; init; }
+    /// <summary>How a before/after shows the picture: "split" (left original, right NOVA), "whole" (both
+    /// whole frames side by side) or "zoom" (the middle at 100%, to see detail).</summary>
+    public string Compare { get; init; } = "split";
     /// <summary>Only part of the video: from this second…</summary>
     public double? StartSeconds { get; init; }
     /// <summary>…for this many seconds (null: to the end).</summary>
@@ -130,7 +133,8 @@ public static class ExportPlan
         var e = playing.Clone();
         e.Enabled = !o.Still;               // a frame shows the picture: nothing to interpolate
         e.Demo = o.Comparison || o.Still;
-        e.DemoMode = "side";
+        // The engine's names: for Motion-only clips "side" is the middle of the picture twice
+        e.DemoMode = o.Compare switch { "whole" => "whole", "zoom" => o.Enhancing ? "zoom" : "side", _ => "split" };
         e.DemoLabels = o.Comparison || o.Still;
         e.RtxVsr = false;
         e.QualityStep = 0;
