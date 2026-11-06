@@ -111,6 +111,7 @@ def main(argv=None):
     if a.size % 64:
         p.error("--size must be a multiple of 64")
     net = Clamped(build(a.kind, a.code, a.weights))
+    torch.manual_seed(0)
     # A picture-like input (smooth shapes and a little noise): pure noise drives the deep NAFNets to
     # extremes where float rounding alone differs by a few thousandths
     x = torch.nn.functional.interpolate(torch.rand(1, 3, a.size // 32, a.size // 32), size=(a.size, a.size), mode="bicubic")
@@ -119,7 +120,11 @@ def main(argv=None):
         want = net(x).numpy()
         torch.onnx.export(net, (x,), a.out, input_names=["input"], output_names=["output"], opset_version=17, dynamo=False)
     import onnxruntime as ort
-    got = ort.InferenceSession(a.out, providers=["CPUExecutionProvider"]).run(None, {"input": x.numpy()})[0]
+    # Without ONNX Runtime's fused kernels: they reorder float maths, and the 36 blocks of the deblur
+    # networks magnify that to a few hundredths here and there; the check is of the conversion itself
+    opts = ort.SessionOptions()
+    opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL
+    got = ort.InferenceSession(a.out, opts, providers=["CPUExecutionProvider"]).run(None, {"input": x.numpy()})[0]
     diff, mean = float(abs(got - want).max()), float(abs(got - want).mean())
     print(f"{a.out}: {a.kind} {a.size}x{a.size}, difference from PyTorch: largest {diff:.2e}, average {mean:.2e}")
     if diff > 1e-2 or mean > 1e-4:
