@@ -1,0 +1,17 @@
+22:15:16 +  0.0s  --- start: 1920x1080 YUV420P8 container_fps=25.0 display_fps=64.0 engine=rife target=60 host=mpv
+22:15:16 +  0.0s  trying interpolate_rife 25 -> 60
+22:15:16 +  0.0s  interpolate_rife unavailable: Error: NovaMotion: built-in graphics, not tuned yet; playing MVTools instead
+22:15:16 +  0.1s  filter built, handing frames to the player
+22:15:20 +  0.0s  --- start: 1920x1080 YUV420P8 container_fps=25.0 display_fps=64.0 engine=rife target=60 host=mpv
+22:15:20 +  0.0s  trying interpolate_rife 25 -> 60
+22:15:20 +  0.0s  interpolate_rife unavailable: Error: NovaMotion: built-in graphics, not tuned yet; playing MVTools instead
+22:15:20 +  0.1s  filter built, handing frames to the player
+22:15:24 +  0.0s  --- start: 1920x1080 YUV420P8 container_fps=25.0 display_fps=64.0 engine=rife target=60 host=mpv
+22:15:24 +  0.0s  trying interpolate_rife 25 -> 60
+22:15:24 +  0.0s  interpolate_rife unavailable: Error: NovaMotion: built-in graphics, not tuned yet; playing MVTools instead
+22:15:24 +  0.1s  filter built, handing frames to the player
+22:15:33 +  0.0s  --- start: 640x360 YUV420P8 container_fps=25.510204081632654 display_fps=0.0 engine=rife target=60 host=mpv
+22:15:33 +  0.0s  export: source is 50 frames
+22:15:33 +  0.0s  trying interpolate_rife 25 -> 60
+22:15:33 +  0.0s  interpolate_rife unavailable: Error: NovaMotion: built-in graphics, not tuned yet; playing MVTools instead
+22:15:33 +  0.0s  filter built, handing frames to the player

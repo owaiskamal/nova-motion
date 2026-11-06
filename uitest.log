@@ -1,0 +1,31 @@
+22:15:07.816 screen 1024x768, window 1024x720
+22:15:10.897 shot 01-home 1024x720
+22:15:11.851 shot 02-settings-smoothing 1024x720
+22:15:12.406 shot 03-settings-playback 1024x720
+22:15:13.110 generate: 'Generate needs an NVIDIA graphics card for now. AMD and Intel support depends on the models' tools.' gpu='Microsoft Hyper-V Video' vram=Unknown ram=16 GB
+22:15:13.136 shot 03b-generate 1024x720
+22:15:13.668 shot 03c-enhance 1024x720
+22:15:14.216 shot 03c2-enhance-mini-sidebar 1024x720
+22:15:14.746 shot 03d-enhance-customize 1024x720
+22:15:15.286 shot 03e-enhance-photos 1024x720
+22:15:15.842 shot 03f-ai-models 1024x720
+22:15:19.714 state: media=True engine=Active badge='25 → 60 fps' src=25 out=60 display=64 Hz video=1920 × 1080 decoder=Software title='lavfi:testsrc2=size=1920x1080:rate=25' toast=''
+22:15:19.785 shot 04-player 1024x720
+22:15:23.855 state: media=True engine=Preparing badge='Preparing' src=25 out=12 display=64 Hz video=1920 × 1080 decoder=Software title='lavfi:testsrc2=size=1920x1080:rate=25' toast=''
+22:15:23.944 shot 04b-before-after 1024x720
+22:15:26.564 shot 05-motion-panel 1024x720
+22:15:27.356 shot 06-tracks-panel 1024x720
+22:15:28.156 shot 06b-picture-panel 1024x720
+22:15:28.836 shot 06c-shortcuts 1024x720
+22:15:30.517 shot 07-fullscreen 1024x768
+22:15:32.928 shot 08-home-after-playing 1024x720
+22:15:32.929 state: media=False engine=Idle badge='' src=– out=– display=64 Hz video=– decoder=Software title='lavfi:testsrc2=size=1920x1080:rate=25' toast=''
+22:15:33.441 staged: export-test.mp4 360p · 25.51 fps · 0:01 under a minute; eta 'Under a minute on this PC'
+22:15:33.482 shot 09a-enhance-ready 1024x720
+22:15:35.060 shot 09-export-running 1024x720
+22:15:35.608 shot 09b-activity 1024x720
+22:15:35.611 export: Done 'Saved as export-test (NOVA Motion 60 fps).mp4' -> D:\a\_temp\export-test (NOVA Motion 60 fps).mp4
+22:15:35.658 shot 10-export-done 1024x720
+22:15:35.659 done
+exported: export-test (NOVA Motion 60 fps).mp4 fps=60.5 frames=121 size=640x360
+decoded frames: 120
