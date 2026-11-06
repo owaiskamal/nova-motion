@@ -5,6 +5,8 @@
 #     tools/realesrgan_to_onnx.py, plus the half-and-half blend Real-ESRGAN uses by default
 #   - Real-ESRGAN x4plus and x4plus anime 6B (BSD-3-Clause), the full RRDB networks behind "Max
 #     detail" for photos, converted the same way and checked against a PyTorch run of the original
+#   - NAFNet REDS width 64 (MIT): "Remove noise and blur" for photos, converted to ONNX here by
+#     tools/restore_to_onnx.py with NAFNet's own network code at a pinned commit
 #   - Real-CUGAN up2x (MIT), Real-ESRGAN AnimeVideo v3 (BSD-3-Clause), DPIR deblocking (MIT), as ONNX
 #     from vs-mlrt's model releases
 name: Enhance models
@@ -65,41 +67,21 @@ jobs:
           python tools/check_rrdb_onnx.py pth/x4plus.pth out/RealESRGAN_x4plus.onnx
           python tools/check_rrdb_onnx.py pth/x4plus_anime_6B.pth out/RealESRGAN_x4plus_anime_6B.onnx
 
-      - name: Photo restoration models (SCUNet, NAFNet), converted to ONNX with their own code
+      - name: Photo restoration model (NAFNet REDS), converted to ONNX with its own code
+        # NAFNet's deblurring network trained on REDS (blurred, compressed frames): it removes noise, blur
+        # and JPEG damage together. Chosen over SCUNet (plastic skin, shifted colour), NAFNet SIDD (soft)
+        # and NAFNet GoPro (left phone noise) on a real phone photo
         run: |
           set -e
           pip install -q torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
-          pip install -q einops==0.8.1 gdown==5.2.0
+          pip install -q gdown==5.2.0
           mkdir -p arch
-          scunet=https://raw.githubusercontent.com/cszn/SCUNet/52e440a80a655b01e0b41e9dd9bfe599bc11625e/models/network_scunet.py
-          nafnet=https://raw.githubusercontent.com/megvii-research/NAFNet/2b4af71ebe098a92a75910c233a3965a3e93ede4/basicsr/models/archs/NAFNet_arch.py
-          curl -sSLf -o arch/network_scunet.py $scunet
-          curl -sSLf -o arch/NAFNet_arch.py $nafnet
-          echo "77aeefd31e37080db7f0bf46bca5efcecc800fcfddb502081340a10b2b949c60  arch/network_scunet.py" | sha256sum -c
+          curl -sSLf -o arch/NAFNet_arch.py https://raw.githubusercontent.com/megvii-research/NAFNet/2b4af71ebe098a92a75910c233a3965a3e93ede4/basicsr/models/archs/NAFNet_arch.py
           echo "01b22270cc93f1bb90c0e3e4490e98b023fcf73f8552860b4a9ee880ce5c6967  arch/NAFNet_arch.py" | sha256sum -c
-          curl -sSLf -o pth/scunet_psnr.pth https://github.com/cszn/KAIR/releases/download/v1.0/scunet_color_real_psnr.pth
-          curl -sSLf -o pth/scunet_gan.pth https://github.com/cszn/KAIR/releases/download/v1.0/scunet_color_real_gan.pth
-          echo "fa78899ba2caec9d235a900e91d96c689da71c42029230c2028b00f09f809c2e  pth/scunet_psnr.pth" | sha256sum -c
-          echo "892c83f812c59173273b74f4f34a14ecaf57a2fdb68df056664589beb55c966e  pth/scunet_gan.pth" | sha256sum -c
-          # NAFNet's weights are on its authors' Google Drive (links in its README)
-          gdown -q -O pth/nafnet_sidd32.pth 1lsByk21Xw-6aW7epCwOQxvm6HYCQZPHZ
-          gdown -q -O pth/nafnet_sidd64.pth 14Fht1QQJ2gMlk4N1ERCRuElg8JfjrWWR
-          gdown -q -O pth/nafnet_gopro32.pth 1Fr2QadtDCEXg6iwWX8OzeZLbHOx2t5Bj
-          gdown -q -O pth/nafnet_gopro64.pth 1S0PVRbyTakYY9a82kujgZLbMihfNBLfC
+          # The weights are on NAFNet's authors' Google Drive (linked from its README)
           gdown -q -O pth/nafnet_reds64.pth 14D4V4raNYIOhETfcuuLI3bGLB-OYIv6X
-          sha256sum -c <<'SUMS'
-          89c70e808d1783b6c07911306e106aaf0d4f7f3da8c61078b99ff7f8929a26f4  pth/nafnet_sidd32.pth
-          cd685efaae01f7c4e9951f2deab05780079c8eb1e49ed664b72f6db04dabb445  pth/nafnet_sidd64.pth
-          19394e6155d12ef6371d1d57496f87f0ec88f92bdffa27c0792690722d5d1a5c  pth/nafnet_gopro32.pth
-          329d3ab4077b8d6b7ff61de376e483714667960bf85be027bf4335cda701196f  pth/nafnet_gopro64.pth
-          175fe8b3cdf3abedfbc87769779c3d9f491e05bb2e73ea9d627883f90a4b2df3  pth/nafnet_reds64.pth
-          SUMS
-          python tools/restore_to_onnx.py scunet arch/network_scunet.py pth/scunet_psnr.pth out/scunet_color_real_psnr.onnx
-          python tools/restore_to_onnx.py scunet arch/network_scunet.py pth/scunet_gan.pth out/scunet_color_real_gan.onnx
-          for n in sidd32 sidd64 gopro32 gopro64 reds64; do
-            kind=nafnet-${n%??}-${n: -2}
-            python tools/restore_to_onnx.py $kind arch/NAFNet_arch.py pth/nafnet_$n.pth out/nafnet_$n.onnx
-          done
+          echo "175fe8b3cdf3abedfbc87769779c3d9f491e05bb2e73ea9d627883f90a4b2df3  pth/nafnet_reds64.pth" | sha256sum -c
+          python tools/restore_to_onnx.py nafnet-reds-64 arch/NAFNet_arch.py pth/nafnet_reds64.pth out/nafnet_reds64.onnx
 
       - name: Anime and clean-up models from vs-mlrt's model releases
         run: |
@@ -152,7 +134,7 @@ jobs:
           cd out
           sha256sum *.onnx | tee SHA256SUMS
           while read -r sum name; do echo "::notice title=$name::$sum"; done < SHA256SUMS
-          notes="AI models for NOVA Studio's Enhance, gathered and pinned for setup/Get-EnhanceModels.ps1. Real-ESRGAN general, x4plus and x4plus anime 6B (BSD-3-Clause, https://github.com/xinntao/Real-ESRGAN), Real-CUGAN (MIT, https://github.com/bilibili/ailab), DPIR (MIT, https://github.com/cszn/DPIR); ONNX files from vs-mlrt (https://github.com/AmusementClub/vs-mlrt) and converted by tools/realesrgan_to_onnx.py."
+          notes="AI models for NOVA Studio's Enhance, gathered and pinned for setup/Get-EnhanceModels.ps1. Real-ESRGAN general, x4plus and x4plus anime 6B (BSD-3-Clause, https://github.com/xinntao/Real-ESRGAN), Real-CUGAN (MIT, https://github.com/bilibili/ailab), DPIR (MIT, https://github.com/cszn/DPIR), NAFNet (MIT, https://github.com/megvii-research/NAFNet); ONNX files from vs-mlrt (https://github.com/AmusementClub/vs-mlrt) and converted by tools/realesrgan_to_onnx.py and tools/restore_to_onnx.py."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" *.onnx SHA256SUMS --clobber
           else

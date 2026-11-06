@@ -9,11 +9,11 @@
         and deblurring (GoPro: camera shake and soft focus; REDS: blur with JPEG damage)
 
     python tools/restore_to_onnx.py scunet  network_scunet.py         scunet_color_real_psnr.pth out.onnx
-    python tools/restore_to_onnx.py nafnet-sidd-64  NAFNet_arch.py    NAFNet-SIDD-width64.pth    out.onnx
+    python tools/restore_to_onnx.py nafnet-reds-64  NAFNet_arch.py    NAFNet-REDS-width64.pth    out.onnx
 
-The ONNX takes "input" as 1 x 3 x S x S float RGB in 0..1 (S = --size, 512 by default) and gives the
-restored picture at the same size: a fixed shape, which both networks' internal padding needs and
-TensorRT builds fastest. The result is checked against PyTorch on a random picture.
+The ONNX takes "input" as 1 x 3 x H x W float RGB in 0..1 and gives the restored picture at the same
+size; NAFNet takes any size, SCUNet only --size square (384 by default). The result is checked against
+PyTorch on picture-like inputs of two sizes.
 """
 import argparse
 import importlib.util
@@ -100,35 +100,48 @@ class Clamped(nn.Module):
         return self.net(x).clamp(0, 1)
 
 
+def picture(h, w):
+    """A picture-like input (smooth shapes and a little noise): pure noise drives the deep NAFNets to
+    extremes where float rounding alone differs by a few thousandths."""
+    x = torch.nn.functional.interpolate(torch.rand(1, 3, h // 32, w // 32), size=(h, w), mode="bicubic")
+    return (x + 0.03 * torch.randn_like(x)).clamp(0, 1)
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("kind", choices=["scunet", *NAFNETS])
     p.add_argument("code", help="the network's .py file at the pinned commit")
     p.add_argument("weights")
     p.add_argument("out")
-    p.add_argument("--size", type=int, default=512)
+    p.add_argument("--size", type=int, default=384)
     a = p.parse_args(argv)
     if a.size % 64:
         p.error("--size must be a multiple of 64")
     net = Clamped(build(a.kind, a.code, a.weights))
     torch.manual_seed(0)
-    # A picture-like input (smooth shapes and a little noise): pure noise drives the deep NAFNets to
-    # extremes where float rounding alone differs by a few thousandths
-    x = torch.nn.functional.interpolate(torch.rand(1, 3, a.size // 32, a.size // 32), size=(a.size, a.size), mode="bicubic")
-    x = (x + 0.03 * torch.randn_like(x)).clamp(0, 1)
+    x = picture(a.size, a.size)
+    # NAFNet pads to its own multiple of 16 inside the graph, so it takes any size, like the other
+    # models; SCUNet's shifted windows are fixed to the size it was exported at
+    dynamic = a.kind != "scunet"
+    axes = {"input": {2: "H", 3: "W"}, "output": {2: "H", 3: "W"}} if dynamic else None
     with torch.no_grad():
-        want = net(x).numpy()
-        torch.onnx.export(net, (x,), a.out, input_names=["input"], output_names=["output"], opset_version=17, dynamo=False)
+        torch.onnx.export(net, (x,), a.out, input_names=["input"], output_names=["output"], opset_version=17,
+                          dynamic_axes=axes, dynamo=False)
     import onnxruntime as ort
     # Without ONNX Runtime's fused kernels: they reorder float maths, and the 36 blocks of the deblur
     # networks magnify that to a few hundredths here and there; the check is of the conversion itself
     opts = ort.SessionOptions()
     opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL
-    got = ort.InferenceSession(a.out, opts, providers=["CPUExecutionProvider"]).run(None, {"input": x.numpy()})[0]
-    diff, mean = float(abs(got - want).max()), float(abs(got - want).mean())
-    print(f"{a.out}: {a.kind} {a.size}x{a.size}, difference from PyTorch: largest {diff:.2e}, average {mean:.2e}")
-    if diff > 1e-2 or mean > 1e-4:
-        sys.exit(f"{a.out} doesn't match PyTorch")
+    session = ort.InferenceSession(a.out, opts, providers=["CPUExecutionProvider"])
+    for h, w in [(a.size, a.size)] + ([(a.size - 64, a.size + 72)] if dynamic else []):
+        x = picture(h, w)
+        with torch.no_grad():
+            want = net(x).numpy()
+        got = session.run(None, {"input": x.numpy()})[0]
+        diff, mean = float(abs(got - want).max()), float(abs(got - want).mean())
+        print(f"{a.out}: {a.kind} at {w}x{h}, difference from PyTorch: largest {diff:.2e}, average {mean:.2e}")
+        if got.shape != want.shape or diff > 1e-2 or mean > 1e-4:
+            sys.exit(f"{a.out} doesn't match PyTorch")
 
 
 if __name__ == "__main__":
