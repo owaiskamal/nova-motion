@@ -74,6 +74,9 @@ check("--resolution 400" in args and "--max_resolution 602" in args and "--batch
 # ---------------------------------------------------------------- memory
 check("--blocks_to_swap" in " ".join(generate.memory_args(3000, 4000, 12)), "12 MP on a 12 GB card: the model's blocks swapped")
 check("--blocks_to_swap" not in " ".join(generate.memory_args(3000, 4000, 24)), "12 MP on a 24 GB card: all on the card")
+small = generate.memory_args(1024, 1024, 4)
+check("--blocks_to_swap 32" in " ".join(small) and "--vae_decode_tile_size 256" in " ".join(small),
+      "a 4 GB card: the model swapped and the picture decoded in small tiles (it ran out of memory in 1024s on a GTX 1650)")
 os.environ["FAKE_SEEDVR2_OOM"] = "1"
 code, text = run(src, os.path.join(d, "oom.png"), '{"scale": 2}', "--vram", "12")
 os.environ.pop("FAKE_SEEDVR2_OOM")

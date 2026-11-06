@@ -61,6 +61,13 @@ def memory_args(out_w, out_h, vram, cautious=False):
     (they cost little); the model's blocks swapped to the PC's memory on cards under 16 GB with a big
     picture, or after it ran out of memory once (cautious)."""
     args = ["--vae_encode_tiled", "--vae_decode_tiled"]
+    if vram and vram < 6:
+        # A 4 GB card (GTX 1650): the model itself fits once swapped, but the picture's decoding in the
+        # runner's 1024-pixel tiles ran out of memory; small tiles fit
+        args += ["--vae_encode_tile_size", "512", "--vae_encode_tile_overlap", "64",
+                 "--vae_decode_tile_size", "256", "--vae_decode_tile_overlap", "32"]
+    elif vram and vram < 12:
+        args += ["--vae_decode_tile_size", "512", "--vae_decode_tile_overlap", "64"]
     big = out_w * out_h / 1e6 > SWAP_ABOVE_MP
     cautious = cautious or bool(vram and vram < 6)        # 4 GB cards: everything that can wait in the PC's memory
     if cautious or (vram and vram < SWAP_BELOW_GB and big):
