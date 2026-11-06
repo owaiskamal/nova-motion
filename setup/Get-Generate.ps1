@@ -15,13 +15,13 @@
     powershell -ExecutionPolicy Bypass -File setup\Get-Generate.ps1 [-Force]
 #>
 [CmdletBinding()]
-param([switch]$Force)
+param([switch]$Force, [ValidateSet("fp8", "q4")] [string]$Model = "fp8", [string]$Root = "")
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference    = "SilentlyContinue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$Root     = Split-Path -Parent $PSScriptRoot
+if (-not $Root) { $Root = Split-Path -Parent $PSScriptRoot }
 $Runtime  = Join-Path $Root "runtime"
 $Gen      = Join-Path $Runtime "generate"
 $Cache    = Join-Path $Runtime ".cache\generate"
@@ -37,11 +37,17 @@ $RunnerCommit = "4490bd1f482e026674543386bb2a4d176da245b9"
 $TorchIndex   = "https://download.pytorch.org/whl/cu128"
 $Torch        = @("torch==2.8.0", "torchvision==0.23.0")
 # From the runner's src\utils\model_registry.py at that commit
+# -Model q4: the 4-bit GGUF version (about 2 GB) for cards with little memory, from the runner's other
+# model repository
+$Dit = if ($Model -eq "q4") {
+    @{ Name = "seedvr2_ema_3b-Q4_K_M.gguf"; Sha = "e665e3909de1a8c88a69c609bca9d43ff5a134647face2ce4497640cc3597f0e"; Repo = "AInVFX/SeedVR2_comfyUI" }
+} else {
+    @{ Name = "seedvr2_ema_3b_fp8_e4m3fn.safetensors"; Sha = "3bf1e43ebedd570e7e7a0b1b60d6a02e105978f505c8128a241cde99a8240cff"; Repo = "numz/SeedVR2_comfyUI" }
+}
 $ModelFiles = @(
-    @{ Name = "seedvr2_ema_3b_fp8_e4m3fn.safetensors"; Sha = "3bf1e43ebedd570e7e7a0b1b60d6a02e105978f505c8128a241cde99a8240cff" },
-    @{ Name = "ema_vae_fp16.safetensors";              Sha = "20678548f420d98d26f11442d3528f8b8c94e57ee046ef93dbb7633da8612ca1" }
+    $Dit,
+    @{ Name = "ema_vae_fp16.safetensors"; Sha = "20678548f420d98d26f11442d3528f8b8c94e57ee046ef93dbb7633da8612ca1"; Repo = "numz/SeedVR2_comfyUI" }
 )
-$ModelRepo = "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main"
 
 New-Item -ItemType Directory -Force $Gen, $Cache, $Models | Out-Null
 $LogFile = Join-Path $Runtime "setup-generate.log"
@@ -96,7 +102,7 @@ if (-not (Test-Path $Python) -or $Force) {
 }
 & $uv pip install --python $Python --index-url $TorchIndex @Torch
 if ($LASTEXITCODE -ne 0) { throw "PyTorch couldn't be installed" }
-& $uv pip install --python $Python -r (Join-Path $PSScriptRoot "generate-requirements.txt")
+& $uv pip install --python $Python -r (Join-Path $Root "setup\generate-requirements.txt")
 if ($LASTEXITCODE -ne 0) { throw "The packages couldn't be installed" }
 & $Python -c "import torch; assert torch.cuda.is_available(), 'CUDA is not available to PyTorch'; print('    PyTorch', torch.__version__, 'on', torch.cuda.get_device_name(0))"
 if ($LASTEXITCODE -ne 0) { throw "PyTorch can't use the graphics card: update the NVIDIA driver and run this again" }
@@ -122,7 +128,7 @@ foreach ($m in $ModelFiles) {
     Info "download $($m.Name)"
     $part = "$dest.part"
     # curl.exe (in Windows 10 and 11) resumes a broken download of a big file
-    & curl.exe -L --fail --retry 5 -C - -o $part "$ModelRepo/$($m.Name)"
+    & curl.exe -L --fail --retry 5 -C - -o $part "https://huggingface.co/$($m.Repo)/resolve/main/$($m.Name)"
     if ($LASTEXITCODE -ne 0) { throw "$($m.Name) couldn't be downloaded" }
     if ((Get-FileHash $part -Algorithm SHA256).Hash -ne $m.Sha.ToUpper()) { Remove-Item $part -Force; throw "$($m.Name) doesn't match its checksum" }
     Move-Item $part $dest -Force

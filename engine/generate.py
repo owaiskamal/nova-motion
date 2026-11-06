@@ -50,6 +50,7 @@ def parse_args(argv=None):
     p.add_argument("--python", default=sys.executable, help="the Python with PyTorch that runs it")
     p.add_argument("--gpu", type=int, default=0)
     p.add_argument("--vram", type=float, default=0, help="the card's memory in GB (0: unknown)")
+    p.add_argument("--dit-model", default=DIT_MODEL, help="the SeedVR2 model file (a GGUF one for small cards)")
     p.add_argument("--compare", default="")
     p.add_argument("--spot", default="0.5,0.5")
     return p.parse_args(argv)
@@ -61,6 +62,7 @@ def memory_args(out_w, out_h, vram, cautious=False):
     picture, or after it ran out of memory once (cautious)."""
     args = ["--vae_encode_tiled", "--vae_decode_tiled"]
     big = out_w * out_h / 1e6 > SWAP_ABOVE_MP
+    cautious = cautious or bool(vram and vram < 6)        # 4 GB cards: everything that can wait in the PC's memory
     if cautious or (vram and vram < SWAP_BELOW_GB and big):
         args += ["--dit_offload_device", "cpu", "--blocks_to_swap", "32" if cautious else "16"]
         if cautious:
@@ -71,7 +73,7 @@ def memory_args(out_w, out_h, vram, cautious=False):
 def runner_args(a, src, dst, out_w, out_h, cautious=False):
     """The runner's command line for one picture at out_w x out_h."""
     return [a.python, os.path.join(a.runner, "inference_cli.py"), src, "--output", dst,
-            "--output_format", "png", "--model_dir", a.models, "--dit_model", DIT_MODEL,
+            "--output_format", "png", "--model_dir", a.models, "--dit_model", getattr(a, "dit_model", DIT_MODEL),
             "--resolution", str(min(out_w, out_h)), "--max_resolution", str(max(out_w, out_h)),
             "--batch_size", "1", "--seed", "42", "--color_correction", "lab",
             "--cuda_device", str(a.gpu)] + memory_args(out_w, out_h, a.vram, cautious)
@@ -112,7 +114,7 @@ def main(argv=None):
     else:
         out_w = max(2, int(round(img.width * out_h / img.height / 2)) * 2)
         out_h = out_h // 2 * 2
-    say(f"model {DIT_MODEL}")
+    say(f"model {a.dit_model}")
 
     work = tempfile.mkdtemp(prefix="nova-generate-")
     src = os.path.join(work, "in.png")
