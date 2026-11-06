@@ -14,7 +14,11 @@ on:
     inputs:
       tag:
         description: Release to create or update
-        default: enhance-models-v2
+        default: enhance-models-v3
+      publish:
+        description: Publish the release (off = only keep the models as a workflow artifact, to try them)
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -61,6 +65,36 @@ jobs:
           python tools/check_rrdb_onnx.py pth/x4plus.pth out/RealESRGAN_x4plus.onnx
           python tools/check_rrdb_onnx.py pth/x4plus_anime_6B.pth out/RealESRGAN_x4plus_anime_6B.onnx
 
+      - name: Photo restoration models (SCUNet, NAFNet), converted to ONNX with their own code
+        run: |
+          set -e
+          pip install -q torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -q einops==0.8.1 gdown==5.2.0
+          mkdir -p arch
+          scunet=https://raw.githubusercontent.com/cszn/SCUNet/52e440a80a655b01e0b41e9dd9bfe599bc11625e/models/network_scunet.py
+          nafnet=https://raw.githubusercontent.com/megvii-research/NAFNet/2b4af71ebe098a92a75910c233a3965a3e93ede4/basicsr/models/archs/NAFNet_arch.py
+          curl -sSLf -o arch/network_scunet.py $scunet
+          curl -sSLf -o arch/NAFNet_arch.py $nafnet
+          echo "77aeefd31e37080db7f0bf46bca5efcecc800fcfddb502081340a10b2b949c60  arch/network_scunet.py" | sha256sum -c
+          echo "01b22270cc93f1bb90c0e3e4490e98b023fcf73f8552860b4a9ee880ce5c6967  arch/NAFNet_arch.py" | sha256sum -c
+          curl -sSLf -o pth/scunet_psnr.pth https://github.com/cszn/KAIR/releases/download/v1.0/scunet_color_real_psnr.pth
+          curl -sSLf -o pth/scunet_gan.pth https://github.com/cszn/KAIR/releases/download/v1.0/scunet_color_real_gan.pth
+          echo "fa78899ba2caec9d235a900e91d96c689da71c42029230c2028b00f09f809c2e  pth/scunet_psnr.pth" | sha256sum -c
+          echo "892c83f812c59173273b74f4f34a14ecaf57a2fdb68df056664589beb55c966e  pth/scunet_gan.pth" | sha256sum -c
+          # NAFNet's weights are on its authors' Google Drive (links in its README)
+          gdown -q -O pth/nafnet_sidd32.pth 1lsByk21Xw-6aW7epCwOQxvm6HYCQZPHZ
+          gdown -q -O pth/nafnet_sidd64.pth 14Fht1QQJ2gMlk4N1ERCRuElg8JfjrWWR
+          gdown -q -O pth/nafnet_gopro32.pth 1Fr2QadtDCEXg6iwWX8OzeZLbHOx2t5Bj
+          gdown -q -O pth/nafnet_gopro64.pth 1S0PVRbyTakYY9a82kujgZLbMihfNBLfC
+          gdown -q -O pth/nafnet_reds64.pth 14D4V4raNYIOhETfcuuLI3bGLB-OYIv6X
+          sha256sum pth/nafnet_*.pth
+          python tools/restore_to_onnx.py scunet arch/network_scunet.py pth/scunet_psnr.pth out/scunet_color_real_psnr.onnx
+          python tools/restore_to_onnx.py scunet arch/network_scunet.py pth/scunet_gan.pth out/scunet_color_real_gan.onnx
+          for n in sidd32 sidd64 gopro32 gopro64 reds64; do
+            kind=nafnet-${n%??}-${n: -2}
+            python tools/restore_to_onnx.py $kind arch/NAFNet_arch.py pth/nafnet_$n.pth out/nafnet_$n.onnx
+          done
+
       - name: Anime and clean-up models from vs-mlrt's model releases
         run: |
           set -e
@@ -98,7 +132,17 @@ jobs:
               print(f, [(i.name, i.shape) for i in s.get_inputs()], y.shape)
           EOF
 
+      - name: Keep the models to try them
+        if: ${{ !inputs.publish }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: enhance-models
+          path: out/*.onnx
+          retention-days: 3
+          compression-level: 0
+
       - name: Publish
+        if: ${{ inputs.publish }}
         run: |
           set -e
           cd out
