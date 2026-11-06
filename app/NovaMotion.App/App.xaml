@@ -21,7 +21,7 @@
                                 <Button Style="{StaticResource Btn.Primary}" Padding="18,0" Content="{Binding ButtonText}"
                                         Command="{Binding DataContext.PartActionCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
                                         Visibility="{Binding HasButton, Converter={StaticResource BoolToVis}}"/>
-                                <Button Style="{StaticResource Btn.Secondary}" Padding="16,0" Content="Cancel"
+                                <Button Style="{StaticResource Btn.Secondary}" Padding="16,0" Content="{Binding CancelText}"
                                         Command="{Binding DataContext.CancelPartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
                                         Visibility="{Binding CanCancel, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>

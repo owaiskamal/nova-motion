@@ -23,8 +23,17 @@ public sealed record AiPart(
     Func<RuntimeLayout?, bool>? NeedsUpdate = null,
     Func<PcGraphics, string?>? WhyNot = null,
     string? Requires = null,
-    string UpdateNote = "")
+    string UpdateNote = "",
+    Func<PcGraphics, string>? SizeFor = null,
+    Func<PcGraphics, double>? NeedGbFor = null,
+    IReadOnlyList<string>? PartialDirs = null)
 {
+    /// <summary>The download size for this PC's card (Generative's model depends on its memory).</summary>
+    public string SizeOn(PcGraphics g) => SizeFor?.Invoke(g) ?? Size;
+
+    /// <summary>Free disk space it needs while installing, in GB (downloads and unpacked files at once).</summary>
+    public double NeedGb(PcGraphics g) => NeedGbFor?.Invoke(g) ?? 1;
+
     /// <summary>Has a one-time "prepare for this graphics card" step (TensorRT engines).</summary>
     public bool Preparable => Id == AiParts.Enhance;
 }
@@ -38,33 +47,78 @@ public static class AiParts
         new AiPart(Player, "Player engine", "Motion",
             "mpv, VapourSynth, RIFE on Vulkan and MVTools: watching and smoothing on any graphics card.",
             "about 150 MB", "Get-Runtime.ps1", Array.Empty<string>(),
-            rt => rt is not null && File.Exists(Path.Combine(rt.MpvDir, "vapoursynth.dll"))),
+            rt => rt is not null && File.Exists(Path.Combine(rt.MpvDir, "vapoursynth.dll")),
+            NeedGbFor: _ => 0.6, PartialDirs: new[] { ".cache" }),
         new AiPart(TensorRt, "TensorRT for NVIDIA", "Motion · Enhance",
             "NVIDIA's engine: RIFE smoothing and Enhance run several times faster on GTX 16 and RTX cards.",
             "about 3 GB", "Get-TensorRT.ps1", new[] { "-NoTune" },
             rt => EngineAvailability.Of(rt).TensorRt,
             WhyNot: g => g.Nvidia ? null : "Needs an NVIDIA graphics card (GTX 16 or RTX). The other engines work without it.",
-            Requires: Player),
+            Requires: Player,
+            NeedGbFor: _ => 8, PartialDirs: new[] { Path.Combine(".cache", "trt") }),
         new AiPart(Enhance, "Enhance models", "Enhance",
             "Clean-up and upscaling for videos and photos, Remove noise and blur, and Max detail for photos.",
-            "about 550 MB", "Get-EnhanceModels.ps1", new[] { "-NoPrepare" },
+            "about 500 MB", "Get-EnhanceModels.ps1", new[] { "-NoPrepare" },
             rt => Photo.IsReady(rt),
             NeedsUpdate: rt => !Photo.HasRestore(rt) || !Photo.HasMaxDetail(rt),
             Requires: Player,
-            UpdateNote: "Adds Remove noise and blur and Max detail for photos"),
+            UpdateNote: "Adds Remove noise and blur and Max detail for photos",
+            NeedGbFor: _ => 1.2, PartialDirs: new[] { Path.Combine("mpv", "vs-plugins", "models"), Path.Combine(".cache", "enhance") }),
         new AiPart(Animate, "Animate a picture", "Generate",
             "A depth model that turns a still picture into a short 3D camera move. Runs on any graphics card.",
             "about 150 MB", "Get-StudioParts.ps1", Array.Empty<string>(),
             rt => Core.Animate.IsReady(rt),
-            Requires: Player),
+            Requires: Player,
+            NeedGbFor: _ => 0.6, PartialDirs: new[] { "studio", ".cache" }),
         new AiPart(Generative, "Generative detail", "Enhance · Photos",
             "SeedVR2 makes new detail that fits the picture: eyelashes, hair, fur, skin texture. Its own Python with PyTorch for CUDA.",
             "about 5 GB (7 GB on cards with 8 GB or more)", "Get-Generate.ps1", Array.Empty<string>(),
             rt => Photo.HasGenerative(rt),
             WhyNot: g => !g.Nvidia ? "Needs an NVIDIA graphics card with 4 GB or more."
                        : g.MemoryGb is { } m && m < 3.5 ? $"Needs an NVIDIA card with 4 GB or more; this one has {m:0.#} GB." : null,
-            Requires: Enhance),
+            Requires: Enhance,
+            // Cards under 8 GB get the 4-bit model (2 GB) instead of the 8-bit one (3.4 GB); PyTorch for CUDA is about 3 GB of it
+            SizeFor: g => g.MemoryGb is { } m && m < 7.5 ? "about 5.5 GB (the 4-bit model, for this card)" : "about 7 GB",
+            NeedGbFor: g => g.MemoryGb is { } m && m < 7.5 ? 10 : 12,
+            PartialDirs: new[] { Path.Combine("generate", "models"), Path.Combine(".cache", "generate") }),
     };
+
+    /// <summary>What a stopped download of the part left behind (resumed when it starts again), in bytes.</summary>
+    public static long PartialBytes(AiPart part, RuntimeLayout? rt)
+    {
+        if (rt is null || part.PartialDirs is null) return 0;
+        long total = 0;
+        foreach (var d in part.PartialDirs)
+        {
+            var dir = Path.Combine(rt.Root, d);
+            if (!Directory.Exists(dir)) continue;
+            // .cache itself holds the player's and Animate's downloads; its folders belong to the other parts
+            var depth = d == ".cache" ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories;
+            try { total += new DirectoryInfo(dir).GetFiles("*.part", depth).Sum(f => f.Length); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+        return total;
+    }
+
+    /// <summary>Why it can't install for lack of disk space, or null when there's room.</summary>
+    public static string? DiskProblem(AiPart part, RuntimeLayout? rt, PcGraphics g, Func<string, long?>? freeBytes = null)
+    {
+        if (rt is null) return null;
+        freeBytes ??= FreeBytes;
+        if (freeBytes(rt.Root) is not { } free) return null;
+        var need = part.NeedGb(g) * (1L << 30) - PartialBytes(part, rt);
+        if (free >= need) return null;
+        var drive = Path.GetPathRoot(Path.GetFullPath(rt.Root))?.TrimEnd('\\', '/') is { Length: > 0 } r ? r : "the drive";
+        return $"{part.Name} needs about {part.NeedGb(g):0.#} GB free on {drive} while it installs; there's {free / (double)(1L << 30):0.#} GB. "
+               + "Free some space (or empty the Recycle Bin) and try again.";
+    }
+
+    private static long? FreeBytes(string path)
+    {
+        try { return new DriveInfo(Path.GetPathRoot(Path.GetFullPath(path))!).AvailableFreeSpace; }
+        catch (Exception e) when (e is IOException or ArgumentException or UnauthorizedAccessException) { return null; }
+    }
 
     public static AiPart Get(string id) => All.First(p => p.Id == id);
 

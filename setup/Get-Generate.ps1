@@ -152,6 +152,18 @@ foreach ($m in $ModelFiles) {
     $offset += $share[$m.Name]
 }
 
+# uv keeps a copy of every package it downloaded (about 3 GB, mostly PyTorch). The packages were copied into
+# the environment (UV_LINK_MODE=copy), so the cache isn't needed any more: give the space back
+$uvCache = Join-Path $Cache "uv"
+if (Test-Path $uvCache) {
+    Send-NovaProgress 1 "Cleaning up the download cache"
+    # uv writes what it did to stderr, which Windows PowerShell can treat as an error: it's only tidying
+    try { & $uv cache clean --force 2>&1 | Out-Null } catch { }
+    if (Test-Path $uvCache) { Remove-Item $uvCache -Recurse -Force -ErrorAction SilentlyContinue }
+}
+$x = Join-Path $Cache "runner-x"
+if (Test-Path $x) { Remove-Item $x -Recurse -Force -ErrorAction SilentlyContinue }
+
 Copy-Item (Join-Path $Root "engine\generate.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\photo.py") $Runtime -Force
 Set-Content $Ready "runner $RunnerCommit`r`nmodel $($ModelFiles[0].Name)`r`nvram_mb $best"

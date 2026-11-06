@@ -109,7 +109,9 @@ public sealed partial class MainViewModel
     public bool EnhanceOn => Boost.IsOn;
     /// <summary>The models and vs-mlrt are installed (setup-enhance.cmd).</summary>
     public bool EnhanceReady => EnhanceCatalog.IsReady(Runtime);
-    public bool EnhanceNeedsSetup => EnhanceOn && !EnhanceReady;
+    /// <summary>The Enhance models are missing, or not prepared for this card yet (the first export would wait for it).</summary>
+    public bool EnhanceNeedsSetup => EnhanceOn && (!EnhanceReady || EnhancePartPending);
+    private bool EnhancePartPending => EnhancePart is { } p && (p.State is PartState.NeedsPreparing or PartState.Preparing || p.IsBusy);
     public bool ShowEnhanceOptions => EnhanceOn && EnhanceReady;
     public string EnhancePresetNote => EnhanceCatalog.Presets.FirstOrDefault(c => c.Value == Boost.Preset)?.Description ?? "";
     public string EnhanceSummary => EnhanceOn ? EnhanceCatalog.Describe(Boost) : "";

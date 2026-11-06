@@ -21,7 +21,18 @@ public sealed class AiPartItem : Observable
     public string Name => Part.Name;
     public string Feature => Part.Feature;
     public string Description => Part.Description;
-    public string Size => Part.Size;
+    private string _size = "";
+    /// <summary>The download for this PC's card ("about 5.5 GB (the 4-bit model, for this card)").</summary>
+    public string Size { get => _size.Length > 0 ? _size : Part.Size; set => Set(ref _size, value); }
+
+    private long _pausedBytes;
+    /// <summary>What a stopped download already has; downloading again carries on from there.</summary>
+    public long PausedBytes
+    {
+        get => _pausedBytes;
+        set { if (Set(ref _pausedBytes, value)) Raise(nameof(StatusText), nameof(ButtonText), nameof(IsPaused)); }
+    }
+    public bool IsPaused => _pausedBytes > 0 && _state is PartState.NotInstalled or PartState.UpdateAvailable;
 
     private PartState _state;
     public PartState State
@@ -31,7 +42,7 @@ public sealed class AiPartItem : Observable
         {
             if (Set(ref _state, value))
                 Raise(nameof(StatusText), nameof(ButtonText), nameof(HasButton), nameof(IsBusy), nameof(IsReady), nameof(IsBlocked),
-                      nameof(HasProgress), nameof(IsFailed), nameof(CanCancel));
+                      nameof(HasProgress), nameof(IsFailed), nameof(CanCancel), nameof(CancelText), nameof(IsPaused));
         }
     }
 
@@ -59,7 +70,7 @@ public sealed class AiPartItem : Observable
     private string _error = "";
     public string Error { get => _error; set => Set(ref _error, value); }
 
-    public string StatusText => _state switch
+    public string StatusText => IsPaused ? $"Paused, {Bytes(_pausedBytes)} downloaded" : _state switch
     {
         PartState.NotInstalled => "Not installed",
         PartState.NotForThisPc => "Not for this PC",
@@ -73,7 +84,7 @@ public sealed class AiPartItem : Observable
         _ => "",
     };
 
-    public string ButtonText => _state switch
+    public string ButtonText => IsPaused ? "Resume" : _state switch
     {
         PartState.NotInstalled => "Download",
         PartState.NeedsPreparing => "Prepare",
@@ -86,6 +97,10 @@ public sealed class AiPartItem : Observable
     public bool IsBusy => _state is PartState.Installing or PartState.Preparing or PartState.Waiting;
     public bool HasProgress => _state is PartState.Installing or PartState.Preparing;
     public bool CanCancel => IsBusy;
+    /// <summary>A download pauses (it resumes later); preparing stops between models; a waiting one leaves the queue.</summary>
+    public string CancelText => _state switch { PartState.Installing => "Pause", PartState.Preparing => "Stop", _ => "Cancel" };
+
+    internal static string Bytes(long b) => b >= 1L << 30 ? $"{b / (double)(1L << 30):0.0} GB" : $"{Math.Max(1, b >> 20)} MB";
     public bool IsReady => _state == PartState.Ready;
     public bool IsBlocked => _state == PartState.NotForThisPc;
     public bool IsFailed => _state == PartState.Failed;
@@ -105,6 +120,14 @@ public sealed partial class MainViewModel
     public Command PartActionCommand { get; private set; } = null!;
     public Command CancelPartCommand { get; private set; } = null!;
     public Command ShowPartLogCommand { get; private set; } = null!;
+    public Command SaveDiagnosticsCommand { get; private set; } = null!;
+
+    /// <summary>Where "Save diagnostics" puts its zip (the Desktop, easy to attach); a test puts in its own.</summary>
+    public string DiagnosticsFolder { get; set; } =
+        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory) is { Length: > 0 } d ? d : Path.GetTempPath();
+
+    private bool _savingDiagnostics;
+    public bool IsSavingDiagnostics { get => _savingDiagnostics; private set => Set(ref _savingDiagnostics, value); }
 
     private readonly Queue<(AiPartItem Item, bool Prepare)> _partQueue = new();
     private CancellationTokenSource? _partCancel;
@@ -138,6 +161,7 @@ public sealed partial class MainViewModel
         PartActionCommand = new Command(p => { if (p is AiPartItem i) Act(i); });
         CancelPartCommand = new Command(p => { if (p is AiPartItem i) CancelPart(i); });
         ShowPartLogCommand = new Command(() => { if (Runtime is not null) _host.OpenExternal(Path.Combine(Runtime.Root, "logs")); });
+        SaveDiagnosticsCommand = new Command(() => _ = SaveDiagnosticsAsync());
         RefreshParts();
     }
 
@@ -158,6 +182,9 @@ public sealed partial class MainViewModel
 
     private PcGraphics Graphics => new(_gpu?.IsNvidia == true, _graphicsGb, _gpu?.Primary ?? "");
 
+    /// <summary>Free space on a drive in bytes (null when unknown); a test puts in its own.</summary>
+    public Func<string, long?>? FreeSpace { get; set; }
+
     /// <summary>Reads every part's state from disk again (not the ones running or waiting).</summary>
     public void RefreshParts()
     {
@@ -166,11 +193,14 @@ public sealed partial class MainViewModel
             if (i.IsBusy) continue;
             if (i.State == PartState.Failed && i.Error.Length > 0) continue;
             i.State = AiParts.StateOf(i.Part, Runtime, Graphics);
+            i.Size = i.Part.SizeOn(Graphics);
+            i.PausedBytes = i.State is PartState.NotInstalled or PartState.UpdateAvailable ? AiParts.PartialBytes(i.Part, Runtime) : 0;
             i.Detail = i.State switch
             {
                 PartState.NotForThisPc => i.Part.WhyNot?.Invoke(Graphics) ?? "",
                 PartState.UpdateAvailable => i.Part.UpdateNote,
                 PartState.NeedsPreparing => $"{AiParts.UnpreparedModels(Runtime).Count} models, once: about 3 to 6 minutes each on a GTX 16 card, seconds on an RTX card. Without it, the first export with each model waits for it.",
+                _ when i.IsPaused && i.Note.Length == 0 => "Resume carries on from what's already downloaded.",
                 _ => i.Note,
             };
             i.Progress = null;
@@ -203,9 +233,19 @@ public sealed partial class MainViewModel
         item.Note = "";
         if (item.State == PartState.NeedsPreparing) { Enqueue(item, prepare: true); return; }
         // What it needs first (Generative needs the Enhance models)
-        if (item.Part.Requires is { } need && AiPartItems.FirstOrDefault(i => i.Id == need) is { } first
-            && first.State is PartState.NotInstalled or PartState.Failed)
-            Enqueue(first, prepare: false);
+        var first = item.Part.Requires is { } need && AiPartItems.FirstOrDefault(i => i.Id == need) is { } f
+                    && f.State is PartState.NotInstalled or PartState.Failed ? f : null;
+        // Not enough room: say so now, not after a long download fails half way
+        foreach (var p in new[] { first, item })
+            if (p is not null && AiParts.DiskProblem(p.Part, Runtime, Graphics, FreeSpace) is { } why)
+            {
+                item.State = PartState.Failed;
+                item.Error = why;
+                item.Detail = "";
+                RaiseParts();
+                return;
+            }
+        if (first is not null) Enqueue(first, prepare: false);
         Enqueue(item, prepare: false);
     }
 
@@ -260,7 +300,7 @@ public sealed partial class MainViewModel
             catch (OperationCanceledException)
             {
                 item.State = AiParts.StateOf(item.Part, Runtime, Graphics);
-                item.Note = prepare ? "Stopped. Models already prepared stay prepared." : "Stopped. Downloading again picks up where it left off.";
+                item.Note = prepare ? "Stopped. Models already prepared stay prepared." : "Paused. Resume carries on from what's already downloaded.";
             }
             catch (Exception ex) when (ex is InvalidOperationException or IOException or System.ComponentModel.Win32Exception)
             {
@@ -319,9 +359,44 @@ public sealed partial class MainViewModel
         ShowToast(prepared ? $"{item.Name}: prepared for this graphics card." : $"{item.Name} is ready.");
     }
 
+    /// <summary>Every log, setting and installed-model list in one zip on the Desktop, to send with a problem report.</summary>
+    public async Task SaveDiagnosticsAsync()
+    {
+        if (IsSavingDiagnostics) return;
+        IsSavingDiagnostics = true;
+        var zip = Path.Combine(DiagnosticsFolder, "NOVA Studio diagnostics.zip");
+        var system = SystemText();
+        try
+        {
+            await Task.Run(() => Diagnostics.Save(zip, _store.Directory, Runtime, system));
+            _host.OpenExternal(DiagnosticsFolder);
+            ShowToast("Saved \"NOVA Studio diagnostics.zip\" on your Desktop. Attach it to your message.");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            ShowToast($"Couldn't save the diagnostics: {ex.Message}");
+        }
+        finally { IsSavingDiagnostics = false; }
+    }
+
+    private string SystemText()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"NOVA Studio {Version}");
+        sb.AppendLine($"Windows: {Environment.OSVersion.VersionString}, {(Environment.Is64BitOperatingSystem ? "64-bit" : "32-bit")}");
+        sb.AppendLine($"Processors: {Environment.ProcessorCount}");
+        sb.AppendLine($"Graphics: {string.Join("; ", _gpu?.Names ?? Array.Empty<string>())}");
+        sb.AppendLine($"Graphics memory: {(_graphicsGb is { } g ? $"{g:0.#} GB" : "unknown")}; system memory: {(_systemGb is { } m ? $"{m:0.#} GB" : "unknown")}");
+        sb.AppendLine($"Runtime: {Runtime?.Root ?? "(missing)"}");
+        sb.AppendLine();
+        foreach (var i in AiPartItems)
+            sb.AppendLine($"{i.Name}: {i.StatusText}{(i.Error.Length > 0 ? " - " + i.Error : "")}");
+        return sb.ToString();
+    }
+
     private void RaiseParts()
     {
         LockPhotoModels();
-        Raise(nameof(PartsNeedingAction), nameof(HasPartsNeedingAction), nameof(PartsSummary), nameof(TensorRtOffered), nameof(PhotoMissingPart));
+        Raise(nameof(PartsNeedingAction), nameof(HasPartsNeedingAction), nameof(PartsSummary), nameof(TensorRtOffered), nameof(PhotoMissingPart), nameof(EnhanceNeedsSetup));
     }
 }

@@ -109,11 +109,21 @@ internal static class ModelsTests
         check(vm.EnhanceReady && vm.PhotoReady, "install: Enhance unlocks without a restart");
         check(!vm.PhotoModels.Single(m => m.Value == "max").Locked && vm.PhotoModels.Single(m => m.Value == "generative").Locked,
               "in place: Max detail unlocks with the Enhance models; Generative is still locked");
-        // Cancel, then a failure with the script's reason, then success
+        check(Item(AiParts.Generative).Size.Contains("5.5 GB") && Item(AiParts.Generative).CancelText == "Pause",
+              $"install: the size is for this card's model, and a download pauses ({Item(AiParts.Generative).Size})");
+        // Pause, then a failure with the script's reason, then success
         vm.CancelPartCommand.Execute(Item(AiParts.Generative));
         await Task.Delay(30);
-        check(Item(AiParts.Generative).State == PartState.NotInstalled && Item(AiParts.Generative).Detail.Contains("picks up where it left off"),
-              "install: cancelling stops it; downloading again resumes");
+        check(Item(AiParts.Generative).State == PartState.NotInstalled && Item(AiParts.Generative).Detail.Contains("Resume carries on"),
+              "install: pausing stops it; downloading again resumes");
+        // What it had downloaded is still there: the card says so and offers Resume
+        var partial = Path.Combine(rt.Root, "generate", "models", "seedvr2_ema_3b-Q4_K_M.gguf.part");
+        Directory.CreateDirectory(Path.GetDirectoryName(partial)!);
+        using (var f = File.Create(partial)) f.SetLength(300L << 20);
+        vm.RefreshParts();
+        check(Item(AiParts.Generative).IsPaused && Item(AiParts.Generative).StatusText == "Paused, 300 MB downloaded" && Item(AiParts.Generative).ButtonText == "Resume",
+              $"install: a paused download shows what it has and offers Resume ({Item(AiParts.Generative).StatusText})");
+        File.Delete(partial);
         runner.Fail = true;
         runner.Gate = new TaskCompletionSource();
         vm.PartActionCommand.Execute(Item(AiParts.Generative));
@@ -142,6 +152,36 @@ internal static class ModelsTests
         await Task.Delay(30);
         check(runner.Ran.SequenceEqual(new[] { "prepare" }) && Item(AiParts.Enhance).IsReady, "prepare: runs, and afterwards the models are ready");
         check(vm.PartsNeedingAction == 1 && Item(AiParts.Animate).State == PartState.NotInstalled, "models page: only Animate is left");
+
+        // ---- not enough disk space: it says so before downloading anything
+        runner.Ran.Clear();
+        vm.FreeSpace = _ => 200L << 20;
+        vm.PartActionCommand.Execute(Item(AiParts.Animate));
+        await Task.Delay(30);
+        check(runner.Ran.Count == 0 && Item(AiParts.Animate).IsFailed && Item(AiParts.Animate).Error.Contains("needs about 0.6 GB free")
+              && Item(AiParts.Animate).Error.Contains("0.2 GB"), $"disk: too little room says how much is needed and free ({Item(AiParts.Animate).Error})");
+        vm.FreeSpace = _ => 50L << 30;
+        runner.OnInstall = _ => Task.CompletedTask;
+        vm.PartActionCommand.Execute(Item(AiParts.Animate));
+        await Task.Delay(30);
+        check(runner.Ran.SequenceEqual(new[] { AiParts.Animate }), "disk: with room it downloads");
+
+        // ---- Save diagnostics: one zip with the logs, the model list and the PC
+        File.WriteAllText(Path.Combine(rt.Root, "setup-enhance.log"), "setup log");
+        Directory.CreateDirectory(Path.Combine(rt.Root, "logs"));
+        File.WriteAllText(Path.Combine(rt.Root, "logs", "setup-generate.log"), "generate log");
+        vm.DiagnosticsFolder = Path.Combine(dir, "desktop");
+        await vm.SaveDiagnosticsAsync();
+        var zipPath = Path.Combine(vm.DiagnosticsFolder, "NOVA Studio diagnostics.zip");
+        using (var zip = System.IO.Compression.ZipFile.OpenRead(zipPath))
+        {
+            var names = zip.Entries.Select(x => x.FullName).ToList();
+            string Read(string n) { using var sr = new StreamReader(zip.GetEntry(n)!.Open()); return sr.ReadToEnd(); }
+            check(names.Contains("runtime/setup-enhance.log") && names.Contains("runtime/logs/setup-generate.log") && names.Contains("models.txt")
+                  && Read("models.txt").Contains("nafnet_reds64.onnx") && Read("system.txt").Contains("GTX 1650") && Read("system.txt").Contains("Generative detail: Ready"),
+                  $"diagnostics: the zip holds the logs, the models and the PC ({string.Join(", ", names)})");
+        }
+        check(host.Opened.LastOrDefault() == vm.DiagnosticsFolder, "diagnostics: opens the folder it saved to");
     }
 
     private static void EnhanceFiles(RuntimeLayout rt)

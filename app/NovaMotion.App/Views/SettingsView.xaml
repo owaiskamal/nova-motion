@@ -263,11 +263,16 @@
                         <Run Text=" by Novabit"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource Text.Body}" Margin="0,20,0,0" MaxWidth="560" HorizontalAlignment="Left"
-                               Text="Motion, Enhance and Generate in one app. Free and open source under the GNU GPL v3. Built on mpv, VapourSynth, RIFE, vs-mlrt, MVTools and yt-dlp. NVIDIA TensorRT is downloaded on your PC by the setup script and is not part of NOVA Studio."/>
+                               Text="Motion, Enhance and Generate in one app. Free and open source under the GNU GPL v3. Built on mpv, VapourSynth, RIFE, vs-mlrt, MVTools and yt-dlp. NVIDIA TensorRT is downloaded on your PC from the AI Models page and is not part of NOVA Studio."/>
                     <StackPanel Orientation="Horizontal" Margin="0,24,0,0">
                         <Button Style="{StaticResource Btn.Secondary}" Height="36" Command="{Binding OpenProjectPageCommand}" Content="Project page"/>
                         <Button Style="{StaticResource Btn.Secondary}" Height="36" Margin="10,0,0,0" Command="{Binding OpenLogFolderCommand}" Content="Open logs folder"/>
+                        <Button Style="{StaticResource Btn.Secondary}" Height="36" Margin="10,0,0,0" Command="{Binding SaveDiagnosticsCommand}" Content="Save diagnostics"
+                                IsEnabled="{Binding IsSavingDiagnostics, Converter={StaticResource InvertBool}}"
+                                ToolTip="Puts every log, setting and the list of installed models in one zip on your Desktop, to attach when you report a problem."/>
                     </StackPanel>
+                    <TextBlock Style="{StaticResource Text.Muted}" FontSize="12.5" Margin="0,8,0,0" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"
+                               Text="Something not working? Save diagnostics makes one zip on your Desktop with the logs that explain it. Attach it to your report."/>
                     <Border Style="{StaticResource Divider}"/>
                     <TextBlock Style="{StaticResource Text.Strong}" Text="Graphics"/>
                     <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,0" Text="{Binding GpuName}"/>
