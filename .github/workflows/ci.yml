@@ -146,7 +146,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { Get-Content runtime\setup-studio.log -Tail 40; exit 1 }
           New-Item -ItemType Directory -Force uitest | Out-Null
           foreach ($move in "push", "sway") {
-            & runtime\mpv\python.exe -I runtime\parallax.py --image docs\img\enhance.png --out "uitest\animate-$move.mp4" `
+            & runtime\mpv\python.exe -I runtime\parallax.py --image site\img\compare\parrots-after.jpg --out "uitest\animate-$move.mp4" `
                 --move $move --seconds 2 --fps 30 --model runtime\studio\depth-anything-v2-small.onnx `
                 --mpv runtime\mpv\mpv.exe --packages runtime\studio\packages
             if ($LASTEXITCODE -ne 0) { exit 1 }
