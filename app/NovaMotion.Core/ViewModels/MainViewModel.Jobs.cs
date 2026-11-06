@@ -52,22 +52,5 @@ public sealed partial class MainViewModel
 
     /// <summary>Prepares every Enhance model for this graphics card, in the background, with progress
     /// on every page (engine/enhance_build.py).</summary>
-    private void PrepareModels()
-    {
-        if (Runtime is null) return;
-        var script = Path.Combine(Runtime.Root, "enhance_build.py");
-        if (!File.Exists(script)) { ShowToast("Run setup-enhance.cmd once first: the AI models aren't set up."); return; }
-        var psi = new ProcessStartInfo(Runtime.PythonExe)
-        {
-            UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Runtime.MpvDir,
-            RedirectStandardOutput = false, RedirectStandardError = false,
-        };
-        psi.ArgumentList.Add(script);
-        psi.ArgumentList.Add("all");
-        if (StartProcess(psi))
-            ShowToast("Preparing every model for this graphics card. Progress shows at the bottom of the window; you can keep using NOVA Studio.");
-        else
-            ShowToast("Couldn't start preparing the models. Run setup-enhance.cmd instead.");
-        _jobsReadAt = default;
-    }
+    private void PrepareModels() => OpenModelsCommand.Execute(AiParts.Enhance);
 }

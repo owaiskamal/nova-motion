@@ -118,6 +118,7 @@ await StuckTests.RunAsync(Check);
 await AnimateTests.RunAsync(Check);
 await EnhanceTests.RunAsync(Check);
 await PhotoTests.RunAsync(Check);
+await ModelsTests.RunAsync(Check);
 PresetTests.Run(Check);
 await PresetTests.RunPageAsync(Check);
 await PlayerTests.RunAsync(Check);

@@ -1,0 +1,88 @@
+<UserControl x:Class="NovaMotion.App.Views.ModelsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource Base}">
+    <!-- AI Models: every part NOVA Studio can install, installed and prepared here with real progress -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+        <Grid Margin="56,28,56,48" MaxWidth="980" HorizontalAlignment="Left">
+            <StackPanel>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Link}" Content="Done" FontWeight="SemiBold" VerticalAlignment="Center"
+                            Command="{Binding CloseModelsCommand}"/>
+                    <TextBlock Style="{StaticResource Text.Display}" FontSize="28" LineHeight="36" Text="AI Models"/>
+                </DockPanel>
+                <TextBlock Style="{StaticResource Text.Muted}" FontSize="15" LineHeight="23" MaxWidth="680" HorizontalAlignment="Left" Margin="0,10,0,6" TextWrapping="Wrap"
+                           Text="Each feature's AI model, installed here with no console windows. Downloads resume if they're interrupted, and every file is checked before it's used."/>
+                <TextBlock Style="{StaticResource Text.Small}" Margin="0,0,0,24" Text="{Binding PartsSummary}"/>
+
+                <ItemsControl ItemsSource="{Binding AiPartItems}" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Group}" Padding="20,16" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <!-- the one action, or a Cancel while it runs -->
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                            <Button Style="{StaticResource Btn.Primary}" Padding="18,0" Content="{Binding ButtonText}"
+                                                    Command="{Binding DataContext.PartActionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                                    Visibility="{Binding HasButton, Converter={StaticResource BoolToVis}}"/>
+                                            <Button Style="{StaticResource Btn.Secondary}" Padding="16,0" Content="Cancel"
+                                                    Command="{Binding DataContext.CancelPartCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                                    Visibility="{Binding CanCancel, Converter={StaticResource BoolToVis}}"/>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Visibility="{Binding IsReady, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" FontSize="14" Foreground="{StaticResource Nova}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="Ready" FontWeight="SemiBold" Foreground="{StaticResource Text}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Text}"/>
+                                                <Border Background="{StaticResource NovaSoft}" CornerRadius="7" Padding="8,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Feature}" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource Nova}"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Margin="0,6,0,0" Text="{Binding Description}"/>
+                                            <TextBlock FontSize="12.5" Foreground="{StaticResource Muted}" Margin="0,6,0,0">
+                                                <Run Text="{Binding StatusText, Mode=OneWay}" FontWeight="SemiBold"/><Run Text="  ·  "/><Run Text="{Binding Size, Mode=OneWay}"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </DockPanel>
+
+                                    <!-- what it's doing now, with a real bar and the time left -->
+                                    <StackPanel Margin="0,14,0,0" Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}">
+                                        <ProgressBar Style="{StaticResource ThinProgress}" Height="6" Maximum="1" Value="{Binding ProgressValue, Mode=OneWay}"
+                                                     IsIndeterminate="{Binding IsIndeterminate, Mode=OneWay}"/>
+                                        <DockPanel Margin="0,8,0,0">
+                                            <TextBlock DockPanel.Dock="Right" FontSize="12.5" Foreground="{StaticResource Muted}" Margin="12,0,0,0">
+                                                <Run Text="{Binding PercentText, Mode=OneWay}" FontWeight="SemiBold" Foreground="{StaticResource Text}"/><Run Text="  "/><Run Text="{Binding TimeLeft, Mode=OneWay}"/>
+                                            </TextBlock>
+                                            <TextBlock FontSize="12.5" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" Text="{Binding Detail}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                    <!-- a note when nothing runs: why it isn't for this PC, what an update adds, how long preparing takes -->
+                                    <TextBlock FontSize="12.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,10,0,0" Text="{Binding Detail}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasProgress}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                                    <DataTrigger Binding="{Binding Detail}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <!-- why it stopped, in plain words -->
+                                    <DockPanel Margin="0,12,0,0" Visibility="{Binding IsFailed, Converter={StaticResource BoolToVis}}">
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Link}" Content="Show details" Margin="12,0,0,0" VerticalAlignment="Top"
+                                                Command="{Binding DataContext.ShowPartLogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                        <TextBlock FontSize="12.5" Foreground="{StaticResource Danger}" TextWrapping="Wrap" Text="{Binding Error}"/>
+                                    </DockPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

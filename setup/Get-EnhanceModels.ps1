@@ -48,6 +48,7 @@ $LogFile = Join-Path $Runtime "setup-enhance.log"
 Start-Transcript -Path $LogFile -Force | Out-Null
 trap {
     Write-Host ""
+    Send-NovaError "$_"
     Write-Host "ENHANCE SETUP FAILED: $_" -ForegroundColor Red
     Write-Host "Full log: $LogFile  (smoothing and exports without AI enhance keep working)"
     Stop-Transcript | Out-Null
@@ -56,6 +57,7 @@ trap {
 
 function Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 function Info($msg) { Write-Host "    $msg" }
+. (Join-Path $PSScriptRoot "Progress.ps1")
 
 if (-not (Test-Path (Join-Path $MpvDir "vapoursynth.dll"))) { throw "The player runtime isn't set up: run build.cmd first" }
 $SevenZip = @((Join-Path $MpvDir "7z.exe"), (Join-Path $Runtime ".cache\7zr.exe")) | Where-Object { Test-Path $_ } | Select-Object -First 1
@@ -82,6 +84,16 @@ foreach ($line in (Get-Content $sumsFile)) {
     if ($line.Trim() -match '^([0-9a-fA-F]{64})\s+\*?(\S+)$') { $sums[$Matches[2]] = $Matches[1].ToUpper() }
 }
 if ($sums.Count -eq 0) { throw "SHA256SUMS of $Tag couldn't be read" }
+# The steps for the app's progress bar, weighed by size: each model still to download, then the rest
+$todo = @($rel.assets | Where-Object { $_.name -like "*.onnx" -and (Folder-For $_.name) } | Where-Object {
+    $d = Join-Path (Join-Path $Models (Folder-For $_.name)) $_.name
+    $Force -or -not (Test-Path $d) -or (Get-FileHash $d -Algorithm SHA256).Hash -ne $sums[$_.name] })
+$needRuntime = -not (Test-Path (Join-Path $MpvDir "vsmlrt.py")) -or
+               (-not (Test-Path (Join-Path $Plugins "vstrt.dll")) -and -not (Get-ChildItem $Plugins -Filter "vsncnn*.dll" -ErrorAction SilentlyContinue))
+$weights = @($todo | ForEach-Object { [math]::Max(1, $_.size / 1MB) })
+if ($needRuntime) { $weights += 60 }
+$weights += 20
+Set-NovaSteps $weights
 foreach ($a in $rel.assets | Where-Object { $_.name -like "*.onnx" }) {
     $folder = Folder-For $a.name
     if (-not $folder) { Info "skip    $($a.name)"; continue }
@@ -90,10 +102,12 @@ foreach ($a in $rel.assets | Where-Object { $_.name -like "*.onnx" }) {
     New-Item -ItemType Directory -Force (Split-Path $dest) | Out-Null
     if ((Test-Path $dest) -and -not $Force -and (Get-FileHash $dest -Algorithm SHA256).Hash -eq $sums[$a.name]) { Info "have    $folder\$($a.name)"; continue }
     Info ("download {0} ({1:N1} MB)" -f $a.name, ($a.size / 1MB))
-    $part = "$dest.part"
-    Invoke-WebRequest -Uri $a.browser_download_url -OutFile $part -UseBasicParsing -Headers $Headers
-    if ((Get-FileHash $part -Algorithm SHA256).Hash -ne $sums[$a.name]) { Remove-Item $part -Force; throw "$($a.name) doesn't match its checksum" }
-    Move-Item $part $dest -Force
+    Send-NovaStep "Downloading $($a.name)"
+    $got = "$dest.download"
+    Save-NovaDownload -Url $a.browser_download_url -OutFile $got -Label $a.name -Headers $Headers
+    Send-NovaProgress 1 "Checking $($a.name)"
+    if ((Get-FileHash $got -Algorithm SHA256).Hash -ne $sums[$a.name]) { Remove-Item $got -Force; throw "$($a.name) didn't download correctly (its checksum doesn't match); try again" }
+    Move-Item $got $dest -Force
     # A changed model needs its TensorRT engine built again
     Get-ChildItem (Split-Path $dest) -Filter "$($a.name)*.engine" -ErrorAction SilentlyContinue | Remove-Item -Force
 }
@@ -103,6 +117,7 @@ $hasNcnn = [bool](Get-ChildItem $Plugins -Filter "vsncnn*.dll" -ErrorAction Sile
 $hasScript = Test-Path (Join-Path $MpvDir "vsmlrt.py")
 if (-not $hasScript -or (-not $hasTrt -and -not $hasNcnn)) {
     Step "vs-mlrt on Vulkan (runs the models on any modern graphics card)"
+    Send-NovaStep "Downloading what runs the models (vs-mlrt)"
     if (-not $SevenZip) { throw "7-Zip not found in the runtime: run build.cmd again" }
     $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/AmusementClub/vs-mlrt/releases?per_page=15" -Headers $Headers
     # A stable release with both the Vulkan plugin and the scripts; test builds only if there's none
@@ -114,7 +129,7 @@ if (-not $hasScript -or (-not $hasTrt -and -not $hasNcnn)) {
     if (-not $hasTrt -and -not $hasNcnn) {
         $a = $rel.assets | Where-Object { $_.name -match '^VSNCNN-Windows-x64.*\.7z$' } | Select-Object -First 1
         $file = Join-Path $Cache $a.name
-        Invoke-WebRequest -Uri $a.browser_download_url -OutFile $file -UseBasicParsing -Headers $Headers
+        Save-NovaDownload -Url $a.browser_download_url -OutFile $file -Label "vs-mlrt (Vulkan)" -Headers $Headers
         $x = Join-Path $Cache "ncnn-x"
         & $SevenZip x $file "-o$x" -y | Out-Null
         $dll = Get-ChildItem $x -Recurse -Filter "vsncnn*.dll" | Select-Object -First 1
@@ -126,7 +141,7 @@ if (-not $hasScript -or (-not $hasTrt -and -not $hasNcnn)) {
         $a = $rel.assets | Where-Object { $_.name -match '^scripts\..+\.7z$' } | Select-Object -First 1
         if (-not $a) { throw "vsmlrt.py not found in vs-mlrt $($rel.tag_name)" }
         $file = Join-Path $Cache $a.name
-        Invoke-WebRequest -Uri $a.browser_download_url -OutFile $file -UseBasicParsing -Headers $Headers
+        Save-NovaDownload -Url $a.browser_download_url -OutFile $file -Label "vs-mlrt scripts" -Headers $Headers
         $x = Join-Path $Cache "scripts-x"
         & $SevenZip x $file "-o$x" -y | Out-Null
         $py = Get-ChildItem $x -Recurse -Filter "vsmlrt.py" | Select-Object -First 1
@@ -145,7 +160,8 @@ Copy-Item (Join-Path $Root "engine\generate.py") $Runtime -Force
 
 # Enhance a photo reads and writes pictures with numpy and Pillow (shared with Animate a picture)
 Step "Picture support for Enhance a photo (numpy, Pillow)"
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "Get-StudioParts.ps1") -PackagesOnly
+Send-NovaStep "Adding picture support (numpy, Pillow)"
+Invoke-NovaNested { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "Get-StudioParts.ps1") -PackagesOnly }
 if ($LASTEXITCODE -ne 0) { Write-Warning "numpy and Pillow couldn't be added; Enhance a photo needs them (videos don't)." }
 
 # TensorRT prepares each model for this graphics card once. Done here, so the first export doesn't wait

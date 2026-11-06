@@ -77,12 +77,8 @@ public sealed partial class MainViewModel
         });
         OpenFramePreviewCommand = new Command(() => { if (_framePreview is { } p && File.Exists(p)) _host.OpenExternal(p); },
                                               () => _framePreview is not null);
-        SetupEnhanceCommand = new Command(() =>
-        {
-            if (Runtime is null) return;
-            _host.RunInConsole(Path.Combine(Path.GetDirectoryName(Runtime.Root) ?? Runtime.Root, "setup-enhance.cmd"), "");
-            ShowToast("Adding the Enhance models in a separate window. Come back here when it says it's ready.");
-        });
+        // Installs in the app, with its progress on the AI Models page
+        SetupEnhanceCommand = new Command(() => OpenModelsCommand.Execute(AiParts.Enhance));
         SyncEnhance();
     }
 

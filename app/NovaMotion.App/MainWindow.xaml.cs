@@ -150,6 +150,7 @@ public partial class MainWindow : Window, IUiHost
         {
             case nameof(MainViewModel.HasMedia):
             case nameof(MainViewModel.IsSettingsOpen):
+            case nameof(MainViewModel.IsModelsOpen):
             case nameof(MainViewModel.IsExportOpen):
             case nameof(MainViewModel.IsGenerateOpen):
                 UpdatePlayerSurface();
@@ -171,7 +172,7 @@ public partial class MainWindow : Window, IUiHost
                 });
                 break;
             case nameof(MainViewModel.ToastVisible):
-                HomeToast.Visibility = _vm.ToastVisible && (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsExportOpen || _vm.IsGenerateOpen) ? Visibility.Visible : Visibility.Collapsed;
+                HomeToast.Visibility = _vm.ToastVisible && (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsModelsOpen || _vm.IsExportOpen || _vm.IsGenerateOpen) ? Visibility.Visible : Visibility.Collapsed;
                 break;
         }
     }
@@ -179,7 +180,7 @@ public partial class MainWindow : Window, IUiHost
     /// <summary>The video window and its overlay show only while a video plays and no page covers it.</summary>
     private void UpdatePlayerSurface()
     {
-        var show = _vm.HasMedia && !_vm.IsSettingsOpen && !_vm.IsExportOpen && !_vm.IsGenerateOpen;
+        var show = _vm.HasMedia && !_vm.IsSettingsOpen && !_vm.IsModelsOpen && !_vm.IsExportOpen && !_vm.IsGenerateOpen;
         Video.Visibility = show ? Visibility.Visible : Visibility.Hidden;
         // The player has the whole window; the sidebar is for the pages
         Sidebar.Visibility = show || _vm.IsFullscreen ? Visibility.Collapsed : Visibility.Visible;
@@ -310,7 +311,7 @@ public partial class MainWindow : Window, IUiHost
             e.Handled = true;
             return;
         }
-        if (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsExportOpen || _vm.IsGenerateOpen) return;
+        if (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsModelsOpen || _vm.IsExportOpen || _vm.IsGenerateOpen) return;
         if (Keyboard.FocusedElement is TextBox) return;
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         var mods = Keyboard.Modifiers;

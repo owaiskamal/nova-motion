@@ -95,7 +95,7 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         RemoveQueueItemCommand = new Command(p => { if (p is QueueItem q && !q.IsCurrent) _queue.RemoveAt(q.Index); });
         ToggleDrawerCommand = new Command(p => ToggleDrawer(p as string));
         CloseDrawerCommand = new Command(() => ActiveDrawer = Drawer.None);
-        OpenSettingsCommand = new Command(() => { RefreshSystem(); IsSettingsOpen = true; });
+        OpenSettingsCommand = new Command(() => { RefreshSystem(); IsModelsOpen = false; IsSettingsOpen = true; });
         CloseSettingsCommand = new Command(() => IsSettingsOpen = false);
         ScreenshotCommand = new Command(() => _ = ScreenshotAsync());
         ToastActionCommand = new Command(() => { var a = _toastAction; HideToast(); a?.Invoke(); });

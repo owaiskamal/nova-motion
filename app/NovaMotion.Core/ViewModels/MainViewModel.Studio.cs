@@ -26,6 +26,7 @@ public sealed partial class MainViewModel
         InitAnimate();
         InitEnhance();
         InitPhoto();
+        InitModels();
         InitPresets();
         SyncLiveEnhance();
     }
@@ -50,6 +51,7 @@ public sealed partial class MainViewModel
     public void SelectModule(StudioModule module)
     {
         IsSettingsOpen = false;
+        IsModelsOpen = false;
         IsExportOpen = module == StudioModule.Enhance;
         IsGenerateOpen = module == StudioModule.Generate;
         if (module == StudioModule.Generate) RefreshAnimate();
@@ -83,5 +85,7 @@ public sealed partial class MainViewModel
         foreach (var v in verdicts) GenerateModels.Add(v);
         GenerateSummary = _gpu is null ? "Checking this PC…" : GenerateCatalog.Summary(verdicts, _systemGb);
         Raise(nameof(GenerateSummary), nameof(GraphicsMemoryText), nameof(SystemMemoryText));
+        // The graphics card decides which parts are for this PC
+        if (AiPartItems.Count > 0) RefreshParts();
     }
 }

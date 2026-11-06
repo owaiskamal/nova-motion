@@ -230,19 +230,16 @@ internal static class EnhanceTests
         jvm.Tick();
         check(!jvm.HasJob && jvm.ToastText.Contains("finished"), "progress: says when it's finished");
         File.WriteAllText(Path.Combine(rt.Root, "enhance_build.py"), "");
-        System.Diagnostics.ProcessStartInfo? started = null;
-        jvm.StartProcess = psi => { started = psi; return true; };
         jvm.PrepareModelsCommand.Execute(null);
-        check(started is not null && started.CreateNoWindow && started.ArgumentList.Last() == "all"
-              && started.ArgumentList[0].EndsWith("enhance_build.py"), "Prepare all models: runs inside the app, no console");
+        check(jvm.IsModelsOpen, "Prepare all models: opens the AI Models page, where preparing shows its progress");
 
         // ---- not set up: offers setup, exports go ahead without AI enhance
         var bare = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "s2")), RuntimeLayout.Find(Path.GetTempPath()) ?? null, () => backend, () => DateTime.UtcNow, exporter);
         bare.SelectEnhancePresetCommand.Execute(bare.EnhancePresets.Single(p => p.Value == "film"));
         check(bare.EnhanceNeedsSetup && !bare.ShowEnhanceOptions, "enhance: without the models it offers to add them");
         bare.SetupEnhanceCommand.Execute(null);
-        check(bare.Runtime is null || host.Ran.LastOrDefault()?.StartsWith("setup-enhance.cmd") == true, "enhance: setup runs setup-enhance.cmd");
+        var ran = host.Ran.Count;
         vm.SetupEnhanceCommand.Execute(null);
-        check(host.Ran.LastOrDefault()?.StartsWith("setup-enhance.cmd") == true, "enhance: setup-enhance.cmd from the app");
+        check(host.Ran.Count == ran && vm.IsModelsOpen, "enhance: adding the models happens on the AI Models page, no console window");
     }
 }

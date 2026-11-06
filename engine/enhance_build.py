@@ -30,6 +30,19 @@ ALL = ["enhance/realesr-general-mid-x4v3", "cugan/up2x-latest-conservative",
 
 
 LOG = os.path.join(HERE, "prepare-models.log")
+# The models prepared for this card, one file name a line: the app's AI Models page reads it to know
+# whether Enhance still needs preparing
+PREPARED = os.path.join(HERE, "enhance-prepared.txt")
+
+
+def remember(name):
+    try:
+        have = set(open(PREPARED, encoding="utf-8").read().split()) if os.path.exists(PREPARED) else set()
+        have.add(name)
+        with open(PREPARED, "w", encoding="utf-8") as f:
+            f.write("\n".join(sorted(have)) + "\n")
+    except OSError:
+        pass
 
 
 def say(line):
@@ -67,6 +80,8 @@ def main(argv):
         path = path_of(name)
         t0 = time.time()
         say(f"    [{i}/{len(names)}] preparing {os.path.basename(path)} ...")
+        # For the app's progress bar (AI Models page)
+        print(f"@@step {(i - 1) / len(names):.4f} {i / len(names):.4f} Preparing {os.path.basename(path)[:-5]} for this graphics card ({i} of {len(names)})", flush=True)
         # Shows progress only while it really builds; waits its turn if a preview or export is building
         job = jobs.preparing("Preparing AI models for this graphics card", os.path.basename(path)[:-5], step=i, steps=len(names),
                              key=f"enhance:{os.path.basename(path)}", gpu_class="entry", say=say)
@@ -87,6 +102,7 @@ def main(argv):
                   out = vsmlrt.inference(frame, path, overlap=(0, 0), tilesize=enhance.TILE, backend=backend)
               out.get_frame(0)
             say(f"    ready  {os.path.basename(path)} ({time.time() - t0:.0f} s)")
+            remember(os.path.basename(path))
         except Exception as e:          # noqa: BLE001 - the export prepares it later instead
             failed += 1
             say(f"    failed {os.path.basename(path)}: {type(e).__name__}: {e}")

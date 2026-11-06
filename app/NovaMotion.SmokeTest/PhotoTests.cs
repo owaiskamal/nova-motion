@@ -91,7 +91,7 @@ internal static class PhotoTests
         vm.ChoosePhotoCommand.Execute(null);
         check(vm.HasPhoto && vm.CanEnhancePhoto && vm.PhotoShown == picture && vm.PhotoShownLabel == "Original", "photo: chosen and shown");
 
-        check(vm.PhotoRestore && vm.PhotoModelNote.Contains("Remove noise and blur needs its model") && vm.PhotoSummary.EndsWith("Noise and blur removed"),
+        check(vm.PhotoRestore && vm.PhotoModelNote.Contains("Remove noise and blur needs an update") && vm.PhotoModelMissing && vm.PhotoSummary.EndsWith("Noise and blur removed"),
               $"photo: Phone photo removes noise and blur, and says when its model is missing ({vm.PhotoSummary})");
         check(JsonDocument.Parse(Photo.SettingsJson(vm.PhotoOptions)).RootElement.GetProperty("restore").GetDouble() == Photo.RestoreAmount,
               "photo: Remove noise and blur reaches the script");
@@ -103,11 +103,11 @@ internal static class PhotoTests
         check(at1 < enlarging && at1 > TimeSpan.FromSeconds(5), $"photo: at the same size only NAFNet's work is counted ({at1} against {enlarging})");
 
         vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "max"));
-        check(!vm.PhotoCleanupEnabled && vm.PhotoModelNote.Contains("setup-enhance"), "photo: Max detail says when its models are missing");
+        check(!vm.PhotoCleanupEnabled && vm.PhotoModelNote.Contains("AI Models page") && vm.PhotoModelMissingPart == AiParts.Enhance, "photo: Max detail says when its models are missing, and where to get them");
 
         // ---- Generative (SeedVR2)
         vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "generative"));
-        check(vm.PhotoOptions.Generative && !vm.PhotoOptions.MaxDetail && !vm.CanEnhancePhoto && vm.PhotoModelNote.Contains("setup-generate.cmd")
+        check(vm.PhotoOptions.Generative && !vm.PhotoOptions.MaxDetail && !vm.CanEnhancePhoto && vm.PhotoModelNote.Contains("AI Models page") && vm.PhotoModelMissingPart == AiParts.Generative
               && !vm.PhotoRestoreEnabled && vm.PhotoSummary.EndsWith("Generative"),
               $"photo: Generative before its setup says what to run, and can't start ({vm.PhotoModelNote})");
         Directory.CreateDirectory(Path.GetDirectoryName(rt.GeneratePython)!);

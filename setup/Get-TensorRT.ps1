@@ -42,6 +42,7 @@ New-Item -ItemType Directory -Force -Path $Cache, $OnnxDir | Out-Null
 Start-Transcript -Path $LogFile -Force | Out-Null
 trap {
     Write-Host ""
+    Send-NovaError "$_"
     Write-Host "TENSORRT SETUP FAILED: $_" -ForegroundColor Red
     Write-Host $_.InvocationInfo.PositionMessage
     Write-Host "Full log: $LogFile  (NOVA Motion keeps working with the Vulkan RIFE engine meanwhile)"
@@ -51,35 +52,20 @@ trap {
 
 function Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 function Info($msg) { Write-Host "    $msg" }
+. (Join-Path $PSScriptRoot "Progress.ps1")
 
 if (-not (Test-Path (Join-Path $MpvDir "vapoursynth.dll"))) { throw "Run setup\Get-Runtime.ps1 first" }
 if (-not (Test-Path $SevenZip)) { throw "7z.exe not found in $MpvDir" }
 
-function Get-File([string]$Url, [string]$Name, [long]$Size = 0) {
+function Get-File([string]$Url, [string]$Name, [long]$Size = 0, [double]$Offset = 0, [double]$Share = 1) {
     $dest = Join-Path $Cache $Name
     $have = if (Test-Path $dest) { (Get-Item $dest).Length } else { -1 }
     if ($have -ge 0 -and -not $Force -and ($Size -le 0 -or $have -eq $Size)) { Info "cached  $Name"; return $dest }
     if ($have -ge 0) { Info "incomplete $Name ($have of $Size bytes), downloading again"; Remove-Item $dest -Force }
     $mb = if ($Size -gt 0) { " ({0:N0} MB)" -f ($Size / 1MB) } else { "" }
     Info "download $Name$mb"
-    # BITS handles multi-GB files and survives hiccups; poll it so the window shows progress
-    try {
-        $job = Start-BitsTransfer -Source $Url -Destination $dest -Asynchronous -ErrorAction Stop
-        while ($job.JobState -in "Connecting", "Transferring", "Queued", "TransientError") {
-            if ($job.BytesTotal -gt 0 -and $job.BytesTotal -ne [uint64]::MaxValue) {
-                $pct = [math]::Floor(100 * $job.BytesTransferred / $job.BytesTotal)
-                Write-Host ("`r    {0,3}%  {1:N0} / {2:N0} MB   " -f $pct, ($job.BytesTransferred / 1MB), ($job.BytesTotal / 1MB)) -NoNewline
-            }
-            Start-Sleep -Seconds 2
-        }
-        Write-Host ""
-        if ($job.JobState -ne "Transferred") { $state = $job.JobState; Remove-BitsTransfer $job; throw "BITS ended in state $state" }
-        Complete-BitsTransfer $job
-    }
-    catch {
-        Info "background download unavailable ($_); using direct download"
-        Invoke-WebRequest -Uri $Url -OutFile $dest -UseBasicParsing -Headers $Headers
-    }
+    # Resumes a broken download where it stopped (run setup again), with progress for the app
+    Save-NovaDownload -Url $Url -OutFile $dest -Label $Name -Headers $Headers -Offset $Offset -Share $Share
     if ($Size -gt 0 -and (Get-Item $dest).Length -ne $Size) { throw "$Name is incomplete ($((Get-Item $dest).Length) of $Size bytes); run setup again to resume" }
     return $dest
 }
@@ -110,8 +96,18 @@ if (-not $pkg) { throw "No Windows TensorRT package in vs-mlrt $($rel.tag_name)"
 $pkg = $pkg | Sort-Object name
 $sizeGB = [math]::Round((($pkg | Measure-Object size -Sum).Sum) / 1GB, 1)
 
+# For the app's progress bar, weighed by size in MB: the download, unpacking, the rest
+Set-NovaSteps @(($sizeGB * 1024), 400, 60, 10)
 Step "TensorRT runtime ($sizeGB GB, one-time download)"
-$parts = foreach ($p in $pkg) { Get-File $p.browser_download_url $p.name $p.size }
+Send-NovaStep "Downloading TensorRT ($sizeGB GB)"
+$pkgBytes = [double](($pkg | Measure-Object size -Sum).Sum)
+$done = 0.0
+$parts = foreach ($p in $pkg) {
+    Get-File $p.browser_download_url $p.name $p.size ($done / $pkgBytes) ($p.size / $pkgBytes)
+    $done += $p.size
+}
+Send-NovaStep "Unpacking TensorRT (several minutes)"
+Send-NovaProgress -1 "Unpacking TensorRT (several minutes)"
 $pkgX = Join-Path $Cache "pkg-x"
 if ($Force -or -not (Get-ChildItem $pkgX -Recurse -Filter "vstrt.dll" -ErrorAction SilentlyContinue)) {
     Remove-Item $pkgX -Recurse -Force -ErrorAction SilentlyContinue
@@ -140,7 +136,9 @@ if (-not $py) { throw "vsmlrt.py not found" }
 Copy-Item $py.FullName $MpvDir -Force
 } else { Info "models only: TensorRT runtime left as installed" }
 
+if ($ModelsOnly) { Set-NovaSteps @(60, 10) }
 Step "RIFE ONNX models: $($Models -join ', ')"
+Send-NovaStep "Adding the RIFE models"
 $want = $Models | ForEach-Object { "rife_$_.onnx" }
 $missing = $want | Where-Object { -not (Test-Path (Join-Path $OnnxDir $_)) }
 if ($missing) {
@@ -177,6 +175,7 @@ if ($missing) { Write-Warning "Not found in vs-mlrt's releases: $($missing -join
 if (-not (Get-ChildItem $OnnxDir -Filter "rife_*.onnx")) { throw "No RIFE ONNX models could be installed" }
 
 Step "akarin plugin (exact 25->60 style frame rates without extra work)"
+Send-NovaStep "Adding the akarin plugin"
 try {
     # vs-mlrt needs akarin v0.96g or newer; those builds are not always the release marked "latest"
     $aks = Invoke-RestMethod -Uri "https://api.github.com/repos/AkarinVS/vapoursynth-plugin/releases?per_page=40" -Headers $Headers

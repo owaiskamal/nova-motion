@@ -25,7 +25,7 @@
                 <!-- Models not added yet -->
                 <Border Style="{StaticResource Group}" Padding="18,14" Margin="0,0,0,18" Visibility="{Binding EnhanceNeedsSetup, Converter={StaticResource BoolToVis}}">
                     <DockPanel>
-                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Padding="18,0" Content="Add the models (about 235 MB)" Command="{Binding SetupEnhanceCommand}"/>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Padding="18,0" Content="Get the Enhance models (about 550 MB)" Command="{Binding SetupEnhanceCommand}"/>
                         <TextBlock Style="{StaticResource Text.Body}" VerticalAlignment="Center" Margin="0,0,20,0"
                                    Text="AI enhance needs its models, downloaded once. Just smooth works without them."/>
                     </DockPanel>
@@ -298,6 +298,23 @@
                             </StackPanel>
                         </Border>
                         <TextBlock Style="{StaticResource Text.GroupFooter}" Text="{Binding PhotoModelNote}" Visibility="{Binding PhotoMode, Converter={StaticResource BoolToVis}}"/>
+                        <Button HorizontalAlignment="Left" Padding="16,0" Margin="16,8,0,0" Content="Get it on AI Models"
+                                Command="{Binding OpenModelsCommand}" CommandParameter="{Binding PhotoModelMissingPart}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource Btn.Primary}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding PhotoMode}" Value="True"/>
+                                                <Condition Binding="{Binding PhotoModelMissing}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
 
                         <!-- How long, then go -->
                         <StackPanel Orientation="Horizontal" Margin="6,18,0,10">
@@ -545,6 +562,9 @@
                                     </StackPanel>
                                 </Border>
                                 <TextBlock Style="{StaticResource Text.GroupFooter}" Text="{Binding PhotoModelNote}"/>
+                                <Button Style="{StaticResource Btn.Primary}" HorizontalAlignment="Left" Padding="16,0" Margin="16,8,0,0" Content="Get it on AI Models"
+                                        Command="{Binding OpenModelsCommand}" CommandParameter="{Binding PhotoModelMissingPart}"
+                                        Visibility="{Binding PhotoModelMissing, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
 
                             <!-- The preset itself -->

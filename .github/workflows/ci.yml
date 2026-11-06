@@ -174,8 +174,16 @@ jobs:
       - name: Enhance models setup
         shell: pwsh
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File setup\Get-EnhanceModels.ps1
-          if ($LASTEXITCODE -ne 0) { Get-Content runtime\setup-enhance.log -Tail 30; exit 1 }
+          # As the app's AI Models page runs it: hidden, its progress read from the @@ lines
+          $out = powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File setup\Get-EnhanceModels.ps1 -NoPrepare
+          $code = $LASTEXITCODE
+          $out | Select-Object -Last 15
+          if ($code -ne 0) { Get-Content runtime\setup-enhance.log -Tail 30; exit 1 }
+          $steps = @($out | Where-Object { $_ -match '^@@step \d' })
+          $bars = @($out | Where-Object { $_ -match '^@@progress \d.* MB of .* MB/s' })
+          Write-Host "::notice title=Setup progress::$($steps.Count) steps, $($bars.Count) download progress lines"
+          $downloads = @($steps | Where-Object { $_ -match 'Downloading' })
+          if ($steps.Count -lt 1 -or ($downloads.Count -gt 0 -and $bars.Count -lt 1)) { Write-Host "::error::the setup didn't report its progress for the app"; exit 1 }
           $models = Get-ChildItem runtime\mpv\vs-plugins\models -Recurse -Filter *.onnx | Where-Object { $_.FullName -notmatch '\\rife\\' }
           Write-Host "::notice title=Enhance models::$($models.Count) models, $([math]::Round(($models | Measure-Object Length -Sum).Sum / 1MB)) MB"
           if ($models.Count -lt 8) { Write-Host "::error::only $($models.Count) Enhance models installed"; exit 1 }

@@ -120,6 +120,18 @@
                                 </ControlTemplate>
                             </Button.Template>
                         </Button>
+                        <!-- AI Models: install and prepare each feature's model, with a count of what's left -->
+                        <Button x:Name="ModelsTab" Style="{StaticResource NavButton}" Tag="&#xE896;" Command="{Binding OpenModelsCommand}"
+                                ToolTip="AI Models: install and prepare each feature's model">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="AI Models" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource Nova}" CornerRadius="9" MinWidth="18" Height="18" Padding="5,0" Margin="10,0,0,0" VerticalAlignment="Center"
+                                        Visibility="{Binding HasPartsNeedingAction, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{Binding PartsNeedingAction}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource NovaInk}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+                        </Button>
                         <Button x:Name="SettingsTab" Style="{StaticResource NavButton}" Tag="&#xE713;" Content="Settings"
                                 Command="{Binding OpenSettingsCommand}" ToolTip="Settings"/>
                     </StackPanel>
@@ -225,6 +237,7 @@
                     <v:GenerateView x:Name="GeneratePage" Visibility="{Binding IsGenerateOpen, Converter={StaticResource BoolToVis}}"/>
                     <!-- Settings opens over whichever module is showing -->
                     <v:SettingsView x:Name="SettingsPage" Visibility="{Binding IsSettingsOpen, Converter={StaticResource BoolToVis}}"/>
+                    <v:ModelsView x:Name="ModelsPage" Visibility="{Binding IsModelsOpen, Converter={StaticResource BoolToVis}}"/>
 
                     <!-- Activity: what's working in the background, opened from the sidebar -->
                     <Border x:Name="ActivityPanel" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="14,0,0,14" Width="420" MaxHeight="620"

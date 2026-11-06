@@ -42,6 +42,7 @@ $LogFile = Join-Path $Runtime "setup-studio.log"
 Start-Transcript -Path $LogFile -Force | Out-Null
 trap {
     Write-Host ""
+    Send-NovaError "$_"
     Write-Host "SETUP FAILED: $_" -ForegroundColor Red
     Write-Host "Full log: $LogFile"
     Stop-Transcript | Out-Null
@@ -50,14 +51,18 @@ trap {
 
 function Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 function Info($msg) { Write-Host "    $msg" }
+. (Join-Path $PSScriptRoot "Progress.ps1")
 
 if (-not (Test-Path $Python)) { throw "The player runtime isn't set up: run build.cmd first" }
 
 Step "Python packages (numpy, Pillow, onnxruntime with DirectML)"
 # -PackagesOnly (Enhance a photo): just numpy and Pillow, no depth model or DirectML runtime
 $Wanted = if ($PackagesOnly) { @($Wheels | Where-Object { $_.Name -in "numpy", "pillow" }) } else { $Wheels }
+# For the app's progress bar: numpy ~13 MB, Pillow ~7, onnxruntime-directml ~25, the depth model ~100, the check
+Set-NovaSteps $(if ($PackagesOnly) { @(13, 7, 2) } else { @(13, 7, 25, 100, 3) })
 foreach ($w in $Wanted) {
     $marker = Join-Path $Packages ("{0}-{1}.installed" -f $w.Name, $w.Version)
+    Send-NovaStep "Adding $($w.Name) $($w.Version)"
     if ((Test-Path $marker) -and -not $Force) { Info "have    $($w.Name) $($w.Version)"; continue }
     $meta = Invoke-RestMethod -Uri "https://pypi.org/pypi/$($w.Name)/$($w.Version)/json" -UseBasicParsing
     $file = $meta.urls | Where-Object { $_.filename -match 'cp312-cp312-win_amd64\.whl$' } | Select-Object -First 1
@@ -65,7 +70,7 @@ foreach ($w in $Wanted) {
     $dest = Join-Path $Cache $file.filename
     if (-not (Test-Path $dest) -or (Get-FileHash $dest -Algorithm SHA256).Hash -ne $w.Sha.ToUpper()) {
         Info ("download {0} ({1:N0} MB)" -f $file.filename, ($file.size / 1MB))
-        Invoke-WebRequest -Uri $file.url -OutFile $dest -UseBasicParsing
+        Save-NovaDownload -Url $file.url -OutFile $dest -Label $w.Name
     }
     $hash = (Get-FileHash $dest -Algorithm SHA256).Hash
     if ($hash -ne $w.Sha.ToUpper()) { Remove-Item $dest -Force; throw "$($file.filename) doesn't match its pinned checksum" }
@@ -81,6 +86,7 @@ foreach ($w in $Wanted) {
 }
 
 if ($PackagesOnly) {
+    Send-NovaStep "Checking"
     & $Python -c "import sys; sys.path.insert(0, r'$Packages'); import numpy, PIL; print('numpy', numpy.__version__, 'Pillow', PIL.__version__)"
     if ($LASTEXITCODE -ne 0) { throw "numpy or Pillow doesn't load" }
     Stop-Transcript | Out-Null
@@ -88,19 +94,20 @@ if ($PackagesOnly) {
 }
 
 Step "Depth Anything V2 Small (depth model, Apache-2.0)"
+Send-NovaStep "Downloading the depth model (Depth Anything V2 Small)"
 if ((Test-Path $ModelFile) -and (Get-Item $ModelFile).Length -gt 50MB -and -not $Force) {
     Info "have    $(Split-Path $ModelFile -Leaf)"
 } else {
     $part = "$ModelFile.part"
     Info "download model.onnx (about 100 MB) from huggingface.co/onnx-community/depth-anything-v2-small"
-    try { Start-BitsTransfer -Source $ModelUrl -Destination $part -ErrorAction Stop }
-    catch { Info "background download unavailable; using direct download"; Invoke-WebRequest -Uri $ModelUrl -OutFile $part -UseBasicParsing }
-    if ((Get-Item $part).Length -lt 50MB) { Remove-Item $part -Force; throw "The depth model download is incomplete; run this again" }
+    Save-NovaDownload -Url $ModelUrl -OutFile $part -Label "Depth model"
+    if ((Get-Item $part).Length -lt 50MB) { Remove-Item $part -Force; throw "The depth model download is incomplete; try again" }
     Move-Item $part $ModelFile -Force
     Info "added   $(Split-Path $ModelFile -Leaf)"
 }
 
 Step "Check"
+Send-NovaStep "Checking"
 $check = "import sys; sys.path.insert(0, r'$Packages'); import numpy, PIL, onnxruntime as o; " +
          "s = o.InferenceSession(r'$ModelFile', providers=['CPUExecutionProvider']); " +
          "print('onnxruntime', o.__version__, ', '.join(o.get_available_providers()))"

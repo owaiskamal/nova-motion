@@ -55,6 +55,7 @@ $LogFile = Join-Path $Runtime "setup-generate.log"
 Start-Transcript -Path $LogFile -Force | Out-Null
 trap {
     Write-Host ""
+    Send-NovaError "$_"
     Write-Host "GENERATE SETUP FAILED: $_" -ForegroundColor Red
     Write-Host "Full log: $LogFile  (everything else keeps working)"
     Stop-Transcript | Out-Null
@@ -63,10 +64,14 @@ trap {
 
 function Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 function Info($msg) { Write-Host "    $msg" }
+. (Join-Path $PSScriptRoot "Progress.ps1")
 
 if (-not (Test-Path (Join-Path $Runtime "photo.py"))) { throw "Enhance isn't set up: run setup-enhance.cmd first" }
 
+# For the app's progress bar, weighed by size in MB: card check, uv, PyTorch, packages, runner, the model and VAE
+Set-NovaSteps @(1, 30, 3000, 300, 5, 3000)
 Step "Graphics card"
+Send-NovaStep "Checking the graphics card"
 $smi = Get-Command nvidia-smi.exe -ErrorAction SilentlyContinue
 if (-not $smi) { throw "Generative detail needs an NVIDIA graphics card (nvidia-smi wasn't found)" }
 $cards = & $smi.Source --query-gpu=name,memory.total --format=csv,noheader,nounits
@@ -83,11 +88,12 @@ if (-not $Model) { $Model = if ($best -lt 7.5 * 1024) { "q4" } else { "fp8" } }
 Info "model: $(if ($Model -eq 'q4') { '4-bit, for this card''s memory' } else { '8-bit' })"
 
 Step "uv $UvVersion (installs Python and the packages)"
+Send-NovaStep "Downloading the installer for Python (uv)"
 $uv = Join-Path $Gen "uv\uv.exe"
 if (-not (Test-Path $uv) -or $Force) {
     $base = "https://github.com/astral-sh/uv/releases/download/$UvVersion"
     $zip = Join-Path $Cache "uv-$UvVersion.zip"
-    Invoke-WebRequest -Uri "$base/uv-x86_64-pc-windows-msvc.zip" -OutFile $zip -UseBasicParsing -Headers $Headers
+    Save-NovaDownload -Url "$base/uv-x86_64-pc-windows-msvc.zip" -OutFile $zip -Label "uv" -Headers $Headers
     $sumFile = Join-Path $Cache "uv-$UvVersion.zip.sha256"
     Invoke-WebRequest -Uri "$base/uv-x86_64-pc-windows-msvc.zip.sha256" -OutFile $sumFile -UseBasicParsing -Headers $Headers
     $want = ((Get-Content $sumFile -Raw).Trim() -split "\s+")[0].ToUpper()
@@ -99,22 +105,27 @@ $env:UV_PYTHON_INSTALL_DIR = Join-Path $Gen "python"
 $env:UV_LINK_MODE = "copy"
 
 Step "Python 3.12 and PyTorch for CUDA (about 3 GB, once)"
+Send-NovaStep "Installing Python and PyTorch for CUDA (about 3 GB)"
+Send-NovaProgress -1 "Installing Python and PyTorch for CUDA (about 3 GB, a few minutes)"
 if (-not (Test-Path $Python) -or $Force) {
     & $uv venv --python 3.12 --allow-existing $Venv
     if ($LASTEXITCODE -ne 0) { throw "uv couldn't make the Python environment" }
 }
 & $uv pip install --python $Python --index-url $TorchIndex @Torch
 if ($LASTEXITCODE -ne 0) { throw "PyTorch couldn't be installed" }
+Send-NovaStep "Installing the packages SeedVR2 needs"
+Send-NovaProgress -1 "Installing the packages SeedVR2 needs"
 & $uv pip install --python $Python -r (Join-Path $Root "setup\generate-requirements.txt")
 if ($LASTEXITCODE -ne 0) { throw "The packages couldn't be installed" }
 & $Python -c "import torch; assert torch.cuda.is_available(), 'CUDA is not available to PyTorch'; print('    PyTorch', torch.__version__, 'on', torch.cuda.get_device_name(0))"
 if ($LASTEXITCODE -ne 0) { throw "PyTorch can't use the graphics card: update the NVIDIA driver and run this again" }
 
 Step "SeedVR2's runner ($($RunnerCommit.Substring(0, 7)))"
+Send-NovaStep "Downloading SeedVR2's runner"
 $stamp = Join-Path $Runner ".commit"
 if (-not (Test-Path $stamp) -or (Get-Content $stamp -Raw).Trim() -ne $RunnerCommit -or $Force) {
     $zip = Join-Path $Cache "runner-$RunnerCommit.zip"
-    Invoke-WebRequest -Uri "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler/archive/$RunnerCommit.zip" -OutFile $zip -UseBasicParsing -Headers $Headers
+    Save-NovaDownload -Url "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler/archive/$RunnerCommit.zip" -OutFile $zip -Label "SeedVR2 runner" -Headers $Headers
     $x = Join-Path $Cache "runner-x"
     if (Test-Path $x) { Remove-Item $x -Recurse -Force }
     Expand-Archive $zip $x -Force
@@ -125,16 +136,20 @@ if (-not (Test-Path $stamp) -or (Get-Content $stamp -Raw).Trim() -ne $RunnerComm
 Info "runner in $Runner"
 
 Step "SeedVR2 3B model (2-4 GB, once)"
+Send-NovaStep "Downloading the SeedVR2 model"
+$share = @{ $ModelFiles[0].Name = 0.85; $ModelFiles[1].Name = 0.15 }
+$offset = 0.0
 foreach ($m in $ModelFiles) {
     $dest = Join-Path $Models $m.Name
-    if ((Test-Path $dest) -and -not $Force -and (Get-FileHash $dest -Algorithm SHA256).Hash -eq $m.Sha.ToUpper()) { Info "have    $($m.Name)"; continue }
+    if ((Test-Path $dest) -and -not $Force -and (Get-FileHash $dest -Algorithm SHA256).Hash -eq $m.Sha.ToUpper()) { Info "have    $($m.Name)"; $offset += $share[$m.Name]; continue }
     Info "download $($m.Name)"
     $part = "$dest.part"
-    # curl.exe (in Windows 10 and 11) resumes a broken download of a big file
-    & curl.exe -L --fail --retry 5 -C - -o $part "https://huggingface.co/$($m.Repo)/resolve/main/$($m.Name)"
-    if ($LASTEXITCODE -ne 0) { throw "$($m.Name) couldn't be downloaded" }
-    if ((Get-FileHash $part -Algorithm SHA256).Hash -ne $m.Sha.ToUpper()) { Remove-Item $part -Force; throw "$($m.Name) doesn't match its checksum" }
+    # Resumes a broken download where it stopped (run setup again)
+    Save-NovaDownload -Url "https://huggingface.co/$($m.Repo)/resolve/main/$($m.Name)" -OutFile $part -Label $m.Name -Offset $offset -Share $share[$m.Name]
+    Send-NovaProgress ($offset + $share[$m.Name]) "Checking $($m.Name)"
+    if ((Get-FileHash $part -Algorithm SHA256).Hash -ne $m.Sha.ToUpper()) { Remove-Item $part -Force; throw "$($m.Name) didn't download correctly (its checksum doesn't match); try again" }
     Move-Item $part $dest -Force
+    $offset += $share[$m.Name]
 }
 
 Copy-Item (Join-Path $Root "engine\generate.py") $Runtime -Force

@@ -412,7 +412,7 @@ public sealed partial class MainViewModel
         ? Availability.TensorRtSizes.Count > 0
             ? "Installed · engines ready for " + string.Join(", ", Availability.TensorRtSizes.Select(TensorRtEngines.Describe))
             : "Installed · engines build on first play"
-        : "Not installed · run setup-tensorrt.cmd (NVIDIA RTX)";
+        : "Not installed · add it on the AI Models page (NVIDIA GTX 16 or RTX)";
     public IReadOnlyList<ShortcutItem> Shortcuts { get; } = KeyMap.All.Select(s => new ShortcutItem(s.Keys, s.Description)).ToList();
 
     // ------------------------------------------------------------------ keeping playback smooth

@@ -51,12 +51,7 @@ public sealed partial class MainViewModel
             _ = OpenAsync(new[] { r });
         }, () => HasAnimateResult);
         ShowAnimateResultCommand = new Command(() => { if (_animateResult is { } r) _host.OpenExternal(Path.GetDirectoryName(r)!); }, () => HasAnimateResult);
-        SetupAnimateCommand = new Command(() =>
-        {
-            if (Runtime is null) return;
-            _host.RunInConsole(Path.Combine(Path.GetDirectoryName(Runtime.Root) ?? Runtime.Root, "setup-studio.cmd"), "");
-            ShowToast("Adding Animate a picture in a separate window. Come back here when it says it's ready.");
-        });
+        SetupAnimateCommand = new Command(() => OpenModelsCommand.Execute(AiParts.Animate));
         SelectAnimateMoveCommand = new Command(p => { if (p is OptionItem o) { _animateMove = Animate.ParseMove(o.Value); SyncAnimate(); } });
         SelectAnimateLengthCommand = new Command(p => { if (p is OptionItem o && TryNumber(o.Value, out var s)) { _animateSeconds = s; SyncAnimate(); } });
         SelectAnimateStrengthCommand = new Command(p => { if (p is OptionItem o && TryNumber(o.Value, out var s)) { _animateStrength = s; SyncAnimate(); } });

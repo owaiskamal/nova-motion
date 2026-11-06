@@ -66,6 +66,10 @@ internal static class UiTest
             await Task.Delay(500);
             Shot(w, "03e-enhance-photos");
             vm.PhotoMode = false;
+            vm.IsModelsOpen = true;
+            await Task.Delay(500);
+            Shot(w, "03f-ai-models");
+            vm.IsModelsOpen = false;
             vm.SelectModule(StudioModule.Motion);
 
             var video = Environment.GetEnvironmentVariable("NOVAMOTION_UITEST_VIDEO") is { Length: > 0 } v

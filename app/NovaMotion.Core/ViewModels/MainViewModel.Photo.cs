@@ -62,7 +62,8 @@ public sealed partial class MainViewModel
         foreach (var o in PhotoModels) o.IsSelected = o.Value == _photoOptions.Model;
         foreach (var o in PhotoCleanups) o.IsSelected = o.Value == _photoOptions.Clean;
         Raise(nameof(PhotoOptions), nameof(PhotoModelNote), nameof(PhotoCleanupEnabled), nameof(PhotoRestore), nameof(PhotoRestoreEnabled), nameof(CanEnhancePhoto),
-              nameof(PhotoGenerativeChosen), nameof(PhotoGenerativeAmount), nameof(PhotoGenerativeAmountText));
+              nameof(PhotoGenerativeChosen), nameof(PhotoGenerativeAmount), nameof(PhotoGenerativeAmountText),
+              nameof(PhotoModelMissing), nameof(PhotoModelMissingPart));
         SyncPresets();
     }
 
@@ -82,7 +83,7 @@ public sealed partial class MainViewModel
         {
             if (PhotoRestore == value) return;
             _photoOptions = _photoOptions with { Restore = value ? Photo.RestoreAmount : 0 };
-            Raise(nameof(PhotoRestore), nameof(PhotoModelNote));
+            Raise(nameof(PhotoRestore), nameof(PhotoModelNote), nameof(PhotoModelMissing), nameof(PhotoModelMissingPart));
             SyncPresets();
         }
     }
@@ -128,9 +129,15 @@ public sealed partial class MainViewModel
         : "Drag on the picture to generate only a part (much quicker)";
     public Command ClearPhotoPartCommand { get; private set; } = null!;
 
+    /// <summary>The chosen photo model needs a part that isn't installed: the page offers to get it.</summary>
+    public bool PhotoModelMissing => (_photoOptions.Generative && !Photo.HasGenerative(Runtime))
+                                     || (_photoOptions.MaxDetail && !Photo.HasMaxDetail(Runtime))
+                                     || (_photoOptions.Restore > 0 && !Photo.HasRestore(Runtime));
+    public string PhotoModelMissingPart => _photoOptions.Generative && !Photo.HasGenerative(Runtime) ? AiParts.Generative : AiParts.Enhance;
+
     public string PhotoModelNote =>
         _photoOptions.Generative && !Photo.HasGenerative(Runtime)
-            ? "Generative needs its own setup: run setup-generate.cmd (6-8 GB of downloads; an NVIDIA card with 4 GB or more)."
+            ? "Generative isn't installed yet: get it on the AI Models page (about 5 GB, once; an NVIDIA card with 4 GB or more)."
         : _photoOptions.Generative && !GenerativeUsable
             ? $"Generative needs an NVIDIA card with 4 GB or more; this one has {Photo.GenerateVramGb(Runtime):0.#} GB. Max detail works on it."
         : _photoOptions.Generative && Photo.GenerateVramGb(Runtime) is > 0 and < 7.5
@@ -138,9 +145,9 @@ public sealed partial class MainViewModel
         : _photoOptions.Generative
             ? "Generative: SeedVR2 looks at the whole picture and makes new detail that fits it. It cleans the picture itself, so the other choices don't apply."
         : _photoOptions.Restore > 0 && !Photo.HasRestore(Runtime)
-            ? "Remove noise and blur needs its model: run setup-enhance.cmd again once it's published. Until then the photo is enhanced without it."
+            ? "Remove noise and blur needs an update of the Enhance models: get it on the AI Models page. Until then the photo is enhanced without it."
         : _photoOptions.MaxDetail && !Photo.HasMaxDetail(Runtime)
-            ? "Max detail needs its models: run setup-enhance.cmd again once they're published. Until then the standard ones are used."
+            ? "Max detail needs an update of the Enhance models: get it on the AI Models page. Until then the standard ones are used."
         : _photoOptions.Restore > 0 && _photoOptions.Scale <= 1
             ? "At the same size the photo is cleaned and sharpened by Remove noise and blur; the model choice applies when enlarging."
         : Photo.Models.First(c => c.Value == (_photoOptions.MaxDetail ? "max" : "standard")).Description;
@@ -239,7 +246,7 @@ public sealed partial class MainViewModel
     private void RaisePhoto()
     {
         Raise(nameof(PhotoPath), nameof(PhotoName), nameof(HasPhoto), nameof(HasPhotoResult), nameof(PhotoResultName), nameof(CanEnhancePhoto),
-              nameof(PhotoReady), nameof(PhotoNeedsSetup), nameof(PhotoShown), nameof(PhotoShowBefore), nameof(PhotoShownLabel), nameof(PhotoModelNote),
+              nameof(PhotoReady), nameof(PhotoNeedsSetup), nameof(PhotoShown), nameof(PhotoShowBefore), nameof(PhotoShownLabel), nameof(PhotoModelNote), nameof(PhotoModelMissing), nameof(PhotoModelMissingPart),
               nameof(PhotoCompare), nameof(HasPhotoCompare));
         EnhancePhotoCommand?.Refresh(); CancelPhotoCommand?.Refresh(); ChoosePhotoCommand?.Refresh();
         OpenPhotoResultCommand?.Refresh(); ShowPhotoResultCommand?.Refresh();

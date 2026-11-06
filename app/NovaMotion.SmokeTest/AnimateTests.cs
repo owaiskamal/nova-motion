@@ -97,7 +97,8 @@ internal static class AnimateTests
 
         var setupVm = new MainViewModel(host, new SettingsStore(Path.Combine(dir, "s2")), null, () => new FakeBackend(), () => DateTime.UtcNow);
         check(setupVm.AnimateNeedsSetup && !setupVm.CanAnimate, "animate: without the runtime it offers setup");
+        var ran = host.Ran.Count;
         vm.SetupAnimateCommand.Execute(null);
-        check(host.Ran.LastOrDefault()?.StartsWith("setup-studio.cmd") == true, "animate: setup runs setup-studio.cmd");
+        check(host.Ran.Count == ran && vm.IsModelsOpen, "animate: setup opens the AI Models page, no console window");
     }
 }
