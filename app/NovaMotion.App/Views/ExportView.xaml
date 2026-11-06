@@ -280,6 +280,7 @@
                             <StackPanel>
                                 <Button Style="{StaticResource GroupRow.First}" Content="Kind of picture" Tag="{Binding PhotoKindRow}" Command="{Binding OpenCustomizeCommand}"/>
                                 <Button Style="{StaticResource GroupRow}" Content="Size" Tag="{Binding PhotoSizeRow}" Command="{Binding OpenCustomizeCommand}"/>
+                                <Button Style="{StaticResource GroupRow}" Content="Remove noise and blur" Tag="{Binding PhotoRestoreRow}" Command="{Binding OpenCustomizeCommand}"/>
                                 <Button Style="{StaticResource GroupRow}" Content="Model" Tag="{Binding PhotoModelRow}" Command="{Binding OpenCustomizeCommand}"/>
                                 <Button Style="{StaticResource GroupRow}" Content="Clean-up" Tag="{Binding PhotoCleanupRow}" Command="{Binding OpenCustomizeCommand}"/>
                                 <Button Style="{StaticResource GroupRow}" Content="Fix compression" Tag="{Binding PhotoFixRow}" Command="{Binding OpenCustomizeCommand}"/>
@@ -501,6 +502,14 @@
                                                 </Border>
                                                 <TextBlock Text="Clean-up" VerticalAlignment="Center"/>
                                             </DockPanel>
+                                        </Border>
+                                        <Border Style="{StaticResource GroupCell}">
+                                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding PhotoRestore}">
+                                                <StackPanel>
+                                                    <TextBlock Text="Remove noise and blur"/>
+                                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Cleans grain, softness and JPEG damage at the photo's own size, before enlarging. For photos, not drawings."/>
+                                                </StackPanel>
+                                            </CheckBox>
                                         </Border>
                                         <Border Style="{StaticResource GroupCell}">
                                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding PhotoFixCompression}">

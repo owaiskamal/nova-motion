@@ -71,13 +71,13 @@ public static class Presets
     public static readonly IReadOnlyList<PhotoPreset> Photo = new[]
     {
         new PhotoPreset { Id = "phone", Name = "Phone photo", Description = "Cleaner and crisper, same size", BuiltIn = true,
-                          Options = new PhotoOptions("film", 1, "light", MaxDetail: true) },
+                          Options = new PhotoOptions("film", 1, "light", MaxDetail: true, Restore: NovaMotion.Core.Photo.RestoreAmount) },
         new PhotoPreset { Id = "print", Name = "Enlarge to print", Description = "2×, Max detail", BuiltIn = true,
-                          Options = new PhotoOptions("film", 2, "light", MaxDetail: true) },
+                          Options = new PhotoOptions("film", 2, "light", MaxDetail: true, Restore: NovaMotion.Core.Photo.RestoreAmount) },
         new PhotoPreset { Id = "small", Name = "Small or old picture", Description = "4×, Max detail", BuiltIn = true,
-                          Options = new PhotoOptions("film", 4, "strong", MaxDetail: true) },
+                          Options = new PhotoOptions("film", 4, "strong", MaxDetail: true, Restore: NovaMotion.Core.Photo.RestoreAmount) },
         new PhotoPreset { Id = "chat", Name = "Saved from a chat", Description = "Fix JPEG blocks, 2×", BuiltIn = true,
-                          Options = new PhotoOptions("film", 2, "light", MaxDetail: false, FixCompression: true) },
+                          Options = new PhotoOptions("film", 2, "light", MaxDetail: false, FixCompression: true, Restore: NovaMotion.Core.Photo.RestoreAmount) },
         new PhotoPreset { Id = "art", Name = "Anime & art", Description = "Clean lines, 4×", BuiltIn = true,
                           Options = new PhotoOptions("anime", 4, "light", MaxDetail: true) },
     };

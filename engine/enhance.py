@@ -16,11 +16,12 @@ Models (all allow commercial use), in vs-plugins/models:
     dpir/drunet_deblocking_color.onnx  DPIR, MIT: compression blocks and ringing
     enhance/RealESRGAN_x4plus{,_anime_6B}.onnx  Real-ESRGAN x4plus, BSD-3: "Max detail" for photos, a full
         RRDB network that adds far more texture than the compact models, and is 10-15x heavier
+    restore/nafnet_reds64.onnx  NAFNet (REDS), MIT: "Remove noise and blur" for photos, at their own size
 
 The "enhance" setting:
     {"preset": "film" | "anime" | "off", "height": 2160 (0: the video's own), "clean": "off" | "light" | "strong",
      "strength": "natural" | "balanced" | "full", "fix_compression": false, "detail": 0..1, "grain": 0..1,
-     "model": "standard" | "max"}
+     "model": "standard" | "max", "restore": 0..1}
 """
 import os
 
@@ -53,13 +54,14 @@ def settings(cfg):
     out = {"preset": e["preset"], "height": int(e.get("height") or 0), "clean": e.get("clean", "light"),
            "fix_compression": bool(e.get("fix_compression")), "detail": float(e.get("detail") or 0),
            "grain": float(e.get("grain") or 0), "strength": e.get("strength", "balanced"),
-           "model": "max" if e.get("model") == "max" else "standard"}
+           "model": "max" if e.get("model") == "max" else "standard", "restore": float(e.get("restore") or 0)}
     if out["clean"] not in CLEAN:
         out["clean"] = "light"
     if out["strength"] not in STRENGTHS:
         out["strength"] = "balanced"
     out["detail"] = min(1.0, max(0.0, out["detail"]))
     out["grain"] = min(1.0, max(0.0, out["grain"]))
+    out["restore"] = min(1.0, max(0.0, out["restore"]))
     return out
 
 
@@ -140,17 +142,33 @@ DPIR_TILE = (384, 256)
 FIX_COMPRESSION_MAX_HEIGHT = 1440
 
 
-def tiles(width, height, multiple=8, tile=TILE):
+def tiles(width, height, multiple=8, tile=TILE, overlap=OVERLAP):
     """(tile size, overlap): always the fixed tile, overlapping where the picture is split. Pictures
     smaller than a tile in either direction are padded to it first (pad_to_tile): a 480 x 640
     portrait clip otherwise asked for a 480 x 384 engine, a build of minutes in the middle of a preview."""
-    return tile, (OVERLAP if width > tile[0] else 0, OVERLAP if height > tile[1] else 0)
+    return tile, (overlap if width > tile[0] else 0, overlap if height > tile[1] else 0)
 
 
 def pad_to_tile(clip, tile):
     """(clip at least the tile's size, padding right, padding bottom); the padding is cropped off after."""
     pw, ph = max(0, tile[0] - clip.width), max(0, tile[1] - clip.height)
     return (core.std.AddBorders(clip, right=pw, bottom=ph) if pw or ph else clip), pw, ph
+
+
+def mirror_pad(clip, right, bottom):
+    """clip with its right and bottom edges mirrored outwards: for a model that looks at the whole
+    tile, a black border would change the picture next to it."""
+    def extend(c, n, horizontal):
+        parts, flipped = [c], (core.std.FlipHorizontal(c) if horizontal else core.std.FlipVertical(c))
+        while n > 0:
+            take = min(n, c.width if horizontal else c.height)
+            parts.append(core.std.Crop(flipped, right=c.width - take) if horizontal
+                         else core.std.Crop(flipped, bottom=c.height - take))
+            n -= take
+        if len(parts) == 1:
+            return c
+        return core.std.StackHorizontal(parts) if horizontal else core.std.StackVertical(parts)
+    return extend(extend(clip, right, True), bottom, False)
 
 
 def _rgb(clip, sample_bits, matrix):
@@ -177,6 +195,55 @@ def fix_compression(clip, cfg, matrix, strength=20.0):
                           tilesize=size, overlap=overlap, backend=be)
     if pad_w or pad_h:
         out = core.std.Crop(out, right=pad_w, bottom=pad_h)
+    return core.resize.Bicubic(out, format=clip.format.id, matrix_s=matrix, dither_type="error_diffusion")
+
+
+# "Remove noise and blur" for photos: NAFNet trained on REDS (blurred, compressed video frames) takes out
+# camera noise, softness and JPEG damage together, at the picture's own size, before any enlarging. On
+# a phone photo it cleaned the skin and sharpened eyes and lashes where Real-ESRGAN at the same size
+# changed almost nothing. Mixed with the original by the "restore" amount so skin keeps some texture.
+RESTORE_MODEL = "nafnet_reds64"
+# 384 x 384 tiles: a 68-million-weight network, kept within a 4 GB card's TensorRT build (DPIR, half
+# the size, failed at 640 x 384 on a GTX 1650); NAFNet's channel attention looks at a whole tile, so
+# tiles overlap twice as much as the upscalers'
+RESTORE_TILE = (384, 384)
+RESTORE_OVERLAP = 32
+
+
+def restore_path(models=None):
+    return os.path.join(models or models_dir(), "restore", RESTORE_MODEL + ".onnx")
+
+
+def has_restore_model(models=None):
+    return os.path.exists(restore_path(models))
+
+
+def restore(clip, cfg, e, matrix):
+    """Noise, blur and compression damage removed at the clip's own size (NAFNet), mixed with the
+    original by e["restore"]."""
+    amount = e.get("restore") or 0
+    if amount <= 0:
+        return clip
+    import vsmlrt
+    path = restore_path()
+    if not os.path.exists(path):
+        raise vs.Error(f"Enhance model missing: {os.path.basename(path)} (run setup-enhance.cmd)")
+    be = backend(cfg, clip.width, clip.height)
+    bits = 16 if isinstance(be, vsmlrt.Backend.TRT) else 32
+    rgb = _rgb(clip, bits, matrix)
+    pw, ph = max(0, RESTORE_TILE[0] - rgb.width), max(0, RESTORE_TILE[1] - rgb.height)
+    # NAFNet works on multiples of 16 at heart; padding to them here keeps every tile the same
+    pw, ph = pw + (-(rgb.width + pw)) % 16, ph + (-(rgb.height + ph)) % 16
+    padded = mirror_pad(rgb, pw, ph)
+    size, overlap = tiles(padded.width, padded.height, tile=RESTORE_TILE, overlap=RESTORE_OVERLAP)
+    import jobs
+    with jobs.preparing(jobs.DEFAULT_TITLE, "Remove noise and blur (NAFNet)",
+                        key=f"enhance:{RESTORE_MODEL}.onnx", gpu_class=cfg.get("gpu_class")):
+        out = vsmlrt.inference(padded, path, overlap=overlap, tilesize=size, backend=be)
+    if pw or ph:
+        out = core.std.Crop(out, right=pw, bottom=ph)
+    if amount < 1.0:
+        out = core.std.Merge(core.resize.Point(rgb, format=vs.RGBS), core.resize.Point(out, format=vs.RGBS), weight=amount)
     return core.resize.Bicubic(out, format=clip.format.id, matrix_s=matrix, dither_type="error_diffusion")
 
 

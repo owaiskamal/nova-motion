@@ -58,8 +58,11 @@ m.DPIRModel = DPIRModel
 
 def inference(clip, path, overlap=(0, 0), tilesize=None, backend=None):
     name = os.path.basename(path)
+    calls.append(("inference", name, clip.width, clip.height, tuple(tilesize or ())))
+    if name.startswith("nafnet"):
+        # The restoration model keeps the size; here it darkens by a tenth, to see how much is kept
+        return core.std.Expr(clip, "x 0.9 *")
     scale = 4 if ("x4" in name or "animevideov3" in name) else 2
-    calls.append(("inference", name, clip.width, clip.height))
     return core.resize.Point(clip, clip.width * scale, clip.height * scale)
 
 
@@ -116,7 +119,7 @@ check(code == 0 and res is not None and res.size == (600, 400), f"2x: 300 x 200 
 check(res is not None and res.mode == "RGBA" and res.getpixel((599, 10))[3] > 240 and res.getpixel((0, 10))[3] < 10,
       "transparency kept, enlarged with the picture")
 fed = [c for c in calls if c[0] == "inference"]
-check(fed and fed[0][1] == "realesr-general-mid-x4v3.onnx" and fed[0][2:] == (640, 384),
+check(fed and fed[0][1] == "realesr-general-mid-x4v3.onnx" and fed[0][2:4] == (640, 384),
       f"the whole picture goes to the model (padded to its tile): {fed[:1]}")
 check("done " + out in text and "stage enhance" in text, "says its stages and where it saved")
 check(not os.path.exists(out + ".part"), "no half-written file left")
@@ -165,7 +168,7 @@ e = photo.photo_settings({"preset": "film", "scale": 1, "model": "max"})
 e["height"] = 4000
 enhance.upscale(core.std.BlankClip(width=3000, height=4000, format=vs.YUV444P16), {}, e, "709")
 fed = [c for c in calls if c[0] == "inference"]
-check(fed and fed[0][1] == "RealESRGAN_x4plus.onnx" and fed[0][2:] == (3000, 4000),
+check(fed and fed[0][1] == "RealESRGAN_x4plus.onnx" and fed[0][2:4] == (3000, 4000),
       f"3000 x 4000 at the same size: the model sees all of it, not a halved copy ({fed[:1]})")
 
 # ---------------------------------------------------------------- strips: progress, and the same picture
@@ -184,6 +187,36 @@ whole_out = np.asarray(Image.open(os.path.join(d, "tall-whole.png")).convert("RG
 check(strip_out.shape == whole_out.shape == (2200, 800, 3) and np.abs(strip_out - whole_out).max() <= 1,
       f"the strips join into exactly the whole-picture result (largest difference {np.abs(strip_out - whole_out).max()})")
 check(photo.strips(1000, 1500) is None and photo.strips(300, 600) is None, "no strips when they can't join exactly or the picture is small")
+
+# ---------------------------------------------------------------- Remove noise and blur (NAFNet)
+code, text = run(src, os.path.join(d, "r0.png"), '{"preset": "film", "scale": 1, "restore": 0.75}')
+check(code == 0 and "isn't installed" not in text and "needs its model" in text and [c for c in calls if c[0] == "inference"],
+      "Remove noise and blur without its model: says so and enhances without it")
+os.makedirs(os.path.join(MODELS, "restore"), exist_ok=True)
+open(os.path.join(MODELS, "restore", "nafnet_reds64.onnx"), "w").close()
+plain = os.path.join(d, "plain.png")
+run(src, plain, '{"preset": "film", "scale": 1, "detail": 0}')
+code, text = run(src, os.path.join(d, "r1.png"), '{"preset": "film", "scale": 1, "restore": 0.75, "detail": 0}')
+fed = [c for c in calls if c[0] == "inference"]
+res = Image.open(os.path.join(d, "r1.png")).convert("RGB")
+check(code == 0 and [c[1] for c in fed] == ["nafnet_reds64.onnx"] and res.size == (300, 200),
+      f"same size: only NAFNet runs, no 4x round trip ({[c[1] for c in fed]})")
+check(fed and fed[0][2:4] == (384, 384) and fed[0][4] == (384, 384) and "stage restore" in text and "model nafnet_reds64.onnx" in text,
+      f"NAFNet gets a whole tile (the photo mirrored out to it) and the page says what's happening ({fed[:1]})")
+o = np.asarray(Image.open(src).convert("RGB")).astype(float)
+r = np.asarray(res).astype(float)
+ratio = r[50:150, 100:200].mean() / o[50:150, 100:200].mean()
+check(abs(ratio - 0.925) < 0.01, f"three quarters of NAFNet's picture kept (brightness ratio {ratio:.3f}, 0.925 expected)")
+code, text = run(src, os.path.join(d, "r2.png"), '{"preset": "film", "scale": 2, "restore": 0.75}')
+fed = [c[1] for c in calls if c[0] == "inference"]
+check(code == 0 and fed == ["nafnet_reds64.onnx", "realesr-general-mid-x4v3.onnx"] and Image.open(os.path.join(d, "r2.png")).size == (600, 400),
+      f"enlarging: cleaned at its own size first, then enlarged ({fed})")
+code, text = run(tall, os.path.join(d, "tall-r.png"), '{"preset": "film", "scale": 1, "restore": 1}')
+steps = [l for l in text.splitlines() if l.startswith("progress ")]
+check(code == 0 and len(steps) >= 2 and Image.open(os.path.join(d, "tall-r.png")).size == (400, 1100),
+      f"a tall photo is cleaned in strips, with progress ({len(steps)} steps)")
+m = enhance.mirror_pad(core.std.BlankClip(width=10, height=6, format=vs.GRAY8, color=[7]), 25, 3)
+check((m.width, m.height) == (35, 9), "mirror padding reaches any size")
 
 print()
 print("ALL PASSED" if not fails else f"{fails} FAILED")

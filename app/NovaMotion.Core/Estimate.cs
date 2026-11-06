@@ -16,19 +16,21 @@ public static class Estimate
     public static readonly (int W, int H) Tile = (640, 384);
     public const int Overlap = 16;
     public static readonly (int W, int H) DpirTile = (384, 256);
+    public static readonly (int W, int H) RestoreTile = (384, 384);
+    public const int RestoreOverlap = 32;
     public const int FixCompressionMaxHeight = 1440;
 
     /// <summary>Model families, by how heavy one tile is.</summary>
-    public const string Compact = "compact", Cugan = "cugan", Rrdb = "rrdb", Rrdb6 = "rrdb6", Dpir = "dpir", Rife = "rife", Encode = "encode";
+    public const string Compact = "compact", Cugan = "cugan", Rrdb = "rrdb", Rrdb6 = "rrdb6", Dpir = "dpir", Restore = "restore", Rife = "rife", Encode = "encode";
 
     /// <summary>Seconds a tile (RIFE and encoding: a 1080p frame), first guesses by graphics class: from GTX
     /// 1650 runs (a 1500 x 2000 photo through x4plus in 30 s; a 22-minute episode with Real-CUGAN and Fix
     /// compression estimated at 40 h), and about 5x faster on RTX cards. Calibrate replaces them.</summary>
     private static readonly Dictionary<string, Dictionary<string, double>> FirstGuess = new()
     {
-        ["entry"] = new() { [Compact] = 0.07, [Cugan] = 0.30, [Rrdb6] = 0.45, [Rrdb] = 1.5, [Dpir] = 0.07, [Rife] = 0.025, [Encode] = 0.006 },
-        ["integrated"] = new() { [Compact] = 0.25, [Cugan] = 1.2, [Rrdb6] = 1.8, [Rrdb] = 6.0, [Dpir] = 0.5, [Rife] = 0.08, [Encode] = 0.01 },
-        [""] = new() { [Compact] = 0.014, [Cugan] = 0.06, [Rrdb6] = 0.09, [Rrdb] = 0.3, [Dpir] = 0.025, [Rife] = 0.006, [Encode] = 0.004 },
+        ["entry"] = new() { [Compact] = 0.07, [Cugan] = 0.30, [Rrdb6] = 0.45, [Rrdb] = 1.5, [Dpir] = 0.07, [Restore] = 0.12, [Rife] = 0.025, [Encode] = 0.006 },
+        ["integrated"] = new() { [Compact] = 0.25, [Cugan] = 1.2, [Rrdb6] = 1.8, [Rrdb] = 6.0, [Dpir] = 0.5, [Restore] = 0.6, [Rife] = 0.08, [Encode] = 0.01 },
+        [""] = new() { [Compact] = 0.014, [Cugan] = 0.06, [Rrdb6] = 0.09, [Rrdb] = 0.3, [Dpir] = 0.025, [Restore] = 0.03, [Rife] = 0.006, [Encode] = 0.004 },
     };
 
     public static double SecondsPerTile(string family, string? gpuClass, IReadOnlyDictionary<string, double>? calibration = null)
@@ -106,7 +108,10 @@ public static class Estimate
     {
         var scale = Math.Max(1.0, Math.Min(o.Scale, 8192.0 / Math.Max(w, h)));
         var (iw, ih) = Math.Max(w, h) * 4 <= 16384 ? (w, h) : AiInputSize(w, h, (int)(w * scale), (int)(h * scale));
-        var s = Tiles(iw, ih, Tile) * SecondsPerTile(ModelFamily(o.Preset, ih, (int)(h * scale), o.MaxDetail), gpuClass, calibration);
+        // At the same size, Remove noise and blur is the result: no enlarging (photo.py's enlarge)
+        var enlarges = o.Restore <= 0 || scale > 1;
+        var s = enlarges ? Tiles(iw, ih, Tile) * SecondsPerTile(ModelFamily(o.Preset, ih, (int)(h * scale), o.MaxDetail), gpuClass, calibration) : 0;
+        if (o.Restore > 0) s += Tiles(w, h, RestoreTile, RestoreOverlap) * SecondsPerTile(Restore, gpuClass, calibration);
         if (o.FixCompression) s += Tiles(w, h, DpirTile) * SecondsPerTile(Dpir, gpuClass, calibration);
         return TimeSpan.FromSeconds(s + 3);                 // reading, starting the models, saving
     }

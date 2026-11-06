@@ -60,7 +60,7 @@ public sealed partial class MainViewModel
         foreach (var o in PhotoScales) o.IsSelected = o.Value == _photoOptions.Scale.ToString(System.Globalization.CultureInfo.InvariantCulture);
         foreach (var o in PhotoModels) o.IsSelected = o.Value == (_photoOptions.MaxDetail ? "max" : "standard");
         foreach (var o in PhotoCleanups) o.IsSelected = o.Value == _photoOptions.Clean;
-        Raise(nameof(PhotoOptions), nameof(PhotoModelNote), nameof(PhotoCleanupEnabled));
+        Raise(nameof(PhotoOptions), nameof(PhotoModelNote), nameof(PhotoCleanupEnabled), nameof(PhotoRestore));
         SyncPresets();
     }
 
@@ -72,11 +72,29 @@ public sealed partial class MainViewModel
         set { if (_photoOptions.FixCompression != value) { _photoOptions = _photoOptions with { FixCompression = value }; Raise(nameof(PhotoFixCompression)); SyncPresets(); } }
     }
 
+    /// <summary>Remove noise and blur (NAFNet), at its usual amount.</summary>
+    public bool PhotoRestore
+    {
+        get => _photoOptions.Restore > 0;
+        set
+        {
+            if (PhotoRestore == value) return;
+            _photoOptions = _photoOptions with { Restore = value ? Photo.RestoreAmount : 0 };
+            Raise(nameof(PhotoRestore), nameof(PhotoModelNote));
+            SyncPresets();
+        }
+    }
+
     /// <summary>Max detail uses its own fixed clean-up, so the choice only applies to Standard.</summary>
     public bool PhotoCleanupEnabled => !_photoOptions.MaxDetail;
 
-    public string PhotoModelNote => _photoOptions.MaxDetail && !Photo.HasMaxDetail(Runtime)
-        ? "Max detail needs its models: run setup-enhance.cmd again once they're published. Until then the standard ones are used."
+    public string PhotoModelNote =>
+        _photoOptions.Restore > 0 && !Photo.HasRestore(Runtime)
+            ? "Remove noise and blur needs its model: run setup-enhance.cmd again once it's published. Until then the photo is enhanced without it."
+        : _photoOptions.MaxDetail && !Photo.HasMaxDetail(Runtime)
+            ? "Max detail needs its models: run setup-enhance.cmd again once they're published. Until then the standard ones are used."
+        : _photoOptions.Restore > 0 && _photoOptions.Scale <= 1
+            ? "At the same size the photo is cleaned and sharpened by Remove noise and blur; the model choice applies when enlarging."
         : Photo.Models.First(c => c.Value == (_photoOptions.MaxDetail ? "max" : "standard")).Description;
 
     public bool PhotoReady => Photo.IsReady(Runtime);

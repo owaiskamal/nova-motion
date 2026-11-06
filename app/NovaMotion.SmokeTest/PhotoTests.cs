@@ -91,6 +91,17 @@ internal static class PhotoTests
         vm.ChoosePhotoCommand.Execute(null);
         check(vm.HasPhoto && vm.CanEnhancePhoto && vm.PhotoShown == picture && vm.PhotoShownLabel == "Original", "photo: chosen and shown");
 
+        check(vm.PhotoRestore && vm.PhotoModelNote.Contains("Remove noise and blur needs its model") && vm.PhotoSummary.EndsWith("Noise and blur removed"),
+              $"photo: Phone photo removes noise and blur, and says when its model is missing ({vm.PhotoSummary})");
+        check(JsonDocument.Parse(Photo.SettingsJson(vm.PhotoOptions)).RootElement.GetProperty("restore").GetDouble() == Photo.RestoreAmount,
+              "photo: Remove noise and blur reaches the script");
+        vm.PhotoRestore = false;
+        check(!vm.PhotoRestore && vm.PhotoOptions.Restore == 0 && vm.PhotoSummary.EndsWith("Same size · Max detail"), $"photo: Remove noise and blur can be turned off ({vm.PhotoSummary})");
+        vm.PhotoRestore = true;
+        var at1 = Estimate.Photo(3000, 4000, vm.PhotoOptions, "entry");
+        var enlarging = Estimate.Photo(3000, 4000, vm.PhotoOptions with { Restore = 0 }, "entry");
+        check(at1 < enlarging && at1 > TimeSpan.FromSeconds(5), $"photo: at the same size only NAFNet's work is counted ({at1} against {enlarging})");
+
         vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "max"));
         check(!vm.PhotoCleanupEnabled && vm.PhotoModelNote.Contains("setup-enhance"), "photo: Max detail says when its models are missing");
         vm.SelectPhotoScaleCommand.Execute(vm.PhotoScales.Single(m => m.Value == "4"));
@@ -100,7 +111,7 @@ internal static class PhotoTests
         vm.EnhancePhotoCommand.Execute(null);
         await Task.Delay(50);
         check(vm.IsEnhancingPhoto && vm.PhotoStatus == "Enhancing…" && !vm.CanEnhancePhoto, $"photo: running ({vm.PhotoStatus})");
-        check(runner.Options == new PhotoOptions("anime", 4, "light", true, true), $"photo: the chosen options are used ({runner.Options})");
+        check(runner.Options == new PhotoOptions("anime", 4, "light", true, true, Restore: Photo.RestoreAmount), $"photo: the chosen options are used ({runner.Options})");
         check(vm.PhotoProgress is > 0.45 and < 0.5 && vm.PhotoProgressText.StartsWith("49%") && vm.ActivityProgress == vm.PhotoProgress,
               $"photo: a real progress bar, with the time left ({vm.PhotoProgress:P0}: {vm.PhotoProgressText})");
         check(Photo.ParseProgress("3/12") == 0.25 && Photo.ParseProgress("x") is null, "photo: progress lines read");

@@ -218,7 +218,7 @@ public sealed partial class MainViewModel
         UpdateEstimates();
         Raise(nameof(PresetName), nameof(PresetEdited), nameof(CanDeletePreset), nameof(VideoSummaryLine), nameof(SizeRow), nameof(FrameRateRow),
               nameof(CleanupRow), nameof(StrengthRow), nameof(FixCompressionRow), nameof(PhotoSummary), nameof(PhotoKindRow), nameof(PhotoSizeRow),
-              nameof(PhotoModelRow), nameof(PhotoCleanupRow), nameof(PhotoFixRow), nameof(EnhanceButtonText));
+              nameof(PhotoModelRow), nameof(PhotoCleanupRow), nameof(PhotoFixRow), nameof(PhotoRestoreRow), nameof(EnhanceButtonText));
         _deletePreset?.Refresh();
     }
 
@@ -239,7 +239,10 @@ public sealed partial class MainViewModel
     public string PhotoModelRow => _photoOptions.MaxDetail ? "Max detail" : "Standard";
     public string PhotoCleanupRow => _photoOptions.MaxDetail ? "Built in" : EnhanceCatalog.Cleanups.FirstOrDefault(c => c.Value == _photoOptions.Clean)?.Label ?? "";
     public string PhotoFixRow => _photoOptions.FixCompression ? "On" : "Off";
-    public string PhotoSummary => $"{PhotoKindRow} · {PhotoSizeRow} · {PhotoModelRow}";
+    public string PhotoRestoreRow => _photoOptions.Restore > 0 ? "On" : "Off";
+    public string PhotoSummary => _photoOptions.Restore > 0 && _photoOptions.Scale <= 1
+        ? $"{PhotoKindRow} · {PhotoSizeRow} · Noise and blur removed"
+        : $"{PhotoKindRow} · {PhotoSizeRow} · {PhotoModelRow}" + (_photoOptions.Restore > 0 ? " · Noise and blur removed" : "");
 
     // ------------------------------------------------------------------ videos waiting to start, and estimates
 

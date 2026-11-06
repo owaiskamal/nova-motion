@@ -23,6 +23,8 @@ ALL = ["enhance/realesr-general-mid-x4v3", "cugan/up2x-latest-conservative",
        "enhance/realesr-general-wdn-x4v3", "enhance/realesr-general-x4v3",
        "cugan/up2x-latest-no-denoise", "cugan/up2x-latest-denoise3x", "RealESRGANv2/realesr-animevideov3",
        "cugan/pro-conservative-up2x", "cugan/pro-no-denoise3x-up2x", "cugan/pro-denoise3x-up2x", "dpir",
+       # Remove noise and blur for photos (on by default for them)
+       "restore/nafnet_reds64",
        # Max detail for photos: the heaviest, last
        "enhance/RealESRGAN_x4plus_anime_6B", "enhance/RealESRGAN_x4plus"]
 
@@ -76,6 +78,10 @@ def main(argv):
                   frame = core.std.BlankClip(width=enhance.DPIR_TILE[0], height=enhance.DPIR_TILE[1], format=vs.RGBH, length=1)
                   out = vsmlrt.DPIR(frame, strength=20.0, model=vsmlrt.DPIRModel.drunet_deblocking_color,
                                     tilesize=enhance.DPIR_TILE, overlap=(0, 0), backend=backend)
+              elif name.startswith("restore/"):
+                  # Its own tile size, as enhance.restore runs it
+                  frame = core.std.BlankClip(width=enhance.RESTORE_TILE[0], height=enhance.RESTORE_TILE[1], format=vs.RGBH, length=1)
+                  out = vsmlrt.inference(frame, path, overlap=(0, 0), tilesize=enhance.RESTORE_TILE, backend=backend)
               else:
                   frame = core.std.BlankClip(width=enhance.TILE[0], height=enhance.TILE[1], format=vs.RGBH, length=1)
                   out = vsmlrt.inference(frame, path, overlap=(0, 0), tilesize=enhance.TILE, backend=backend)

@@ -6,9 +6,9 @@ using System.Text.Json;
 
 namespace NovaMotion.Core;
 
-/// <summary>One "Enhance a photo" job.</summary>
+/// <summary>One "Enhance a photo" job. Restore: Remove noise and blur, how much of NAFNet's result is kept (0: off).</summary>
 public sealed record PhotoOptions(string Preset = "film", int Scale = 2, string Clean = "light", bool MaxDetail = false,
-                                  bool FixCompression = false, double Detail = 0.2);
+                                  bool FixCompression = false, double Detail = 0.2, double Restore = 0);
 
 /// <summary>
 /// Enhance's photo mode: one picture through the same models as videos (engine/photo.py), plus the heavy
@@ -45,6 +45,13 @@ public static class Photo
     public static bool HasMaxDetail(RuntimeLayout? rt) =>
         rt is not null && File.Exists(Path.Combine(rt.MpvDir, "vs-plugins", "models", "enhance", "RealESRGAN_x4plus.onnx"));
 
+    /// <summary>Remove noise and blur's model is installed (enhance-models-v3).</summary>
+    public static bool HasRestore(RuntimeLayout? rt) =>
+        rt is not null && File.Exists(Path.Combine(rt.MpvDir, "vs-plugins", "models", "restore", "nafnet_reds64.onnx"));
+
+    /// <summary>The usual amount of Remove noise and blur: three quarters of NAFNet's picture, so skin keeps some of its texture.</summary>
+    public const double RestoreAmount = 0.75;
+
     /// <summary>"Beach (NOVA Enhance 2x).png" in the folder, never over an existing file; JPEG photos stay JPEG.</summary>
     public static string OutputPath(string image, PhotoOptions o, string folder)
     {
@@ -61,7 +68,7 @@ public static class Photo
     {
         ["preset"] = o.Preset, ["scale"] = o.Scale, ["clean"] = o.Clean, ["strength"] = "full",
         ["model"] = o.MaxDetail ? "max" : "standard", ["fix_compression"] = o.FixCompression,
-        ["detail"] = o.Detail, ["grain"] = 0,
+        ["detail"] = o.Detail, ["grain"] = 0, ["restore"] = o.Restore,
     });
 
     public static IReadOnlyList<string> Arguments(RuntimeLayout rt, string image, string output, PhotoOptions o, int gpu = 0, string? gpuClass = null,
@@ -100,6 +107,7 @@ public static class Photo
     {
         "picture" => "Reading the picture…",
         "clean" => "Fixing compression…",
+        "restore" => "Removing noise and blur…",
         "enhance" => "Enhancing…",
         "save" => "Saving…",
         _ => "Working…",

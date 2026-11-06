@@ -5,14 +5,16 @@
 A single picture can take the heavy models a whole video can't: the "max" tier (Real-ESRGAN x4plus and
 x4plus anime, BSD-3) adds far more texture than the compact video models, and there's no flicker to
 avoid between frames. The picture goes through enhance.py exactly as a video frame does: optional
-Fix compression (DPIR, good for JPEG blocks), the AI enlargement mixed with a plain one by AI strength,
-then detail and grain. Transparency is kept (enlarged plainly). The result is saved as PNG or JPEG.
+Fix compression (DPIR, good for JPEG blocks), Remove noise and blur (NAFNet, at the photo's own size),
+the AI enlargement mixed with a plain one by AI strength, then detail and grain. At the same size with
+Remove noise and blur there's no enlargement: a 4x model's work shrunk back 4x averaged away nearly
+everything it added. Transparency is kept (enlarged plainly). The result is saved as PNG or JPEG.
 
     python photo.py --image in.jpg --out out.png --settings '{"preset": "film", "scale": 2, ...}'
                     [--packages dir] [--gpu 0] [--gpu-class entry]
 
 settings: preset film | anime, scale 1 | 2 | 4 (1: same size, cleaned), clean, strength, detail, grain,
-fix_compression, model standard | max. Prints "stage <name>", then "done <path>", or "error <text>".
+fix_compression, model standard | max, restore 0..1 (Remove noise and blur). Prints "stage <name>", then "done <path>", or "error <text>".
 """
 import argparse
 import json
@@ -35,7 +37,7 @@ def parse_args(argv=None):
     p = argparse.ArgumentParser(description="Enhance a photo with AI.")
     p.add_argument("--image", required=True)
     p.add_argument("--out", required=True)
-    p.add_argument("--settings", default="{}", help="JSON: preset, scale, clean, strength, detail, grain, fix_compression, model")
+    p.add_argument("--settings", default="{}", help="JSON: preset, scale, clean, strength, detail, grain, fix_compression, model, restore")
     p.add_argument("--packages", default="", help="folder holding numpy and Pillow")
     p.add_argument("--gpu", type=int, default=0)
     p.add_argument("--gpu-class", default="")
@@ -143,6 +145,15 @@ def strips(h, out_h):
     return [(y, min(h, y + step)) for y in range(0, h, step)]
 
 
+def enlarge(clip, cfg, e, full):
+    """The AI enlargement, except at the same size after Remove noise and blur: the restored picture
+    is the result there (an upscaler at 1x only smooths it)."""
+    import enhance
+    if e.get("restore") and e["height"] <= (full[1] if full else clip.height):
+        return clip
+    return enhance.upscale(clip, cfg, e, "709", full=full)
+
+
 def enhance_picture(rgb, e, gpu=0, gpu_class=""):
     """The enhanced picture as an H x W x 3 uint8 array. Done in strips, one frame each of one clip
     (so each model is loaded once), saying "progress i/n" after each."""
@@ -157,12 +168,12 @@ def enhance_picture(rgb, e, gpu=0, gpu_class=""):
     # The same 4:4:4 YUV the video chain works in, at 16 bits so nothing is lost on the way
     clip = core.resize.Bicubic(to_clip(rgb), format=vs.YUV444P16, matrix_s="709")
     parts = strips(h, out_h)
-    say("stage clean" if e["fix_compression"] else "stage enhance")
+    say("stage clean" if e["fix_compression"] else "stage restore" if e.get("restore") else "stage enhance")
     if parts is None or len(parts) < 2:
         if e["fix_compression"]:
             clip = enhance.fix_compression(clip, cfg, "709")
             say("stage enhance")
-        out = enhance.finish(enhance.upscale(clip, cfg, e, "709"), e)
+        out = enhance.finish(enlarge(enhance.restore(clip, cfg, e, "709"), cfg, e, None), e)
         out = core.resize.Bicubic(out, format=vs.RGB24, matrix_in_s="709", dither_type="error_diffusion")
         say("progress 1/1")
         f = out.get_frame(0)
@@ -187,7 +198,7 @@ def enhance_picture(rgb, e, gpu=0, gpu_class=""):
     strip_clip = core.std.Splice(frames)
     if e["fix_compression"]:
         strip_clip = enhance.fix_compression(strip_clip, cfg, "709")
-    out = enhance.finish(enhance.upscale(strip_clip, cfg, e, "709", full=(w, h)), e)
+    out = enhance.finish(enlarge(enhance.restore(strip_clip, cfg, e, "709"), cfg, e, (w, h)), e)
     out = core.resize.Bicubic(out, format=vs.RGB24, matrix_in_s="709", dither_type="error_diffusion")
     rows = []
     for i, (top, n) in enumerate(keep):
@@ -226,8 +237,14 @@ def main(argv=None):
     import enhance
     if e.get("model") == "max" and not enhance.has_max_model(e):
         say("note The Max detail models aren't installed (run setup-enhance.cmd); using the standard ones")
-    path, _ = enhance.model_plan(e, img.width, img.height)
-    say(f"model {os.path.basename(path)}")
+    if e.get("restore") and not enhance.has_restore_model():
+        say("note Remove noise and blur needs its model (run setup-enhance.cmd); enhancing without it")
+        e["restore"] = 0
+    if e.get("restore"):
+        say(f"model {enhance.RESTORE_MODEL}.onnx")
+    if not e.get("restore") or e["scale"] > 1:
+        path, _ = enhance.model_plan(e, img.width, img.height)
+        say(f"model {os.path.basename(path)}")
 
     result = Image.fromarray(enhance_picture(rgb, e, a.gpu, a.gpu_class), "RGB")
     say("stage save")

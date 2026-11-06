@@ -51,6 +51,9 @@ def weight(key):
         return 3.0
     if "drunet" in k or "dpir" in k:
         return 2.0
+    # NAFNet (Remove noise and blur): 36 blocks of simple layers, about Real-CUGAN's build
+    if "nafnet" in k:
+        return 3.0
     return 1.0
 
 

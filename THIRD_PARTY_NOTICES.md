@@ -17,6 +17,7 @@ NOVA Motion's own code is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE
 | Real-ESRGAN general, AnimeVideo v3, x4plus and x4plus anime 6B models | Enhance: upscaling; x4plus: Max detail for photos (converted to ONNX by `tools/realesrgan_to_onnx.py`) | BSD-3-Clause | https://github.com/xinntao/Real-ESRGAN |
 | Real-CUGAN models | Enhance: anime and art upscaling | MIT | https://github.com/bilibili/ailab |
 | DPIR deblocking model | Enhance: fixing compression | MIT | https://github.com/cszn/DPIR |
+| NAFNet (REDS, width 64) model | Enhance a photo: Remove noise and blur (converted to ONNX by `tools/restore_to_onnx.py` with NAFNet's own network code) | MIT | https://github.com/megvii-research/NAFNet |
 | Depth Anything V2 Small (ONNX, onnx-community) | Depth for Animate a picture (optional download) | Apache-2.0 | https://huggingface.co/depth-anything/Depth-Anything-V2-Small · https://huggingface.co/onnx-community/depth-anything-v2-small |
 | ONNX Runtime with DirectML | Runs the depth model on the graphics card | MIT | https://github.com/microsoft/onnxruntime |
 | NumPy | Draws the camera move | BSD-3-Clause | https://numpy.org |

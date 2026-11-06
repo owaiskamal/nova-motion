@@ -2,21 +2,23 @@
 # Copyright (C) 2026 Novabit
 <#
 .SYNOPSIS
-  Adds what Enhance's AI clean-up and upscaling need (about 150 MB).
+  Adds what Enhance's AI clean-up and upscaling need (about 500 MB).
 
 .DESCRIPTION
-  Into runtime\mpv\vs-plugins\models\ (enhance, cugan, RealESRGANv2, dpir), from this project's
-  "enhance-models-v1" release, each file checked against the release's SHA256SUMS:
+  Into runtime\mpv\vs-plugins\models\ (enhance, cugan, RealESRGANv2, dpir, restore), from this
+  project's newest "enhance-models-v*" release, each file checked against the release's SHA256SUMS:
     - Real-ESRGAN general, three strengths (BSD-3-Clause): film and live action
     - Real-CUGAN (MIT) and Real-ESRGAN AnimeVideo v3 (BSD-3-Clause): anime and art
     - DPIR deblocking (MIT): compressed downloads
+    - Real-ESRGAN x4plus and x4plus anime (BSD-3-Clause): Max detail for photos
+    - NAFNet REDS (MIT): Remove noise and blur for photos
   On PCs without NVIDIA TensorRT it also adds vs-mlrt's Vulkan runtime (vsncnn, GPL-3.0) and
   vsmlrt.py, so the models run on any modern graphics card.
 
     powershell -ExecutionPolicy Bypass -File setup\Get-EnhanceModels.ps1 [-Force]
 #>
 [CmdletBinding()]
-param([switch]$Force, [string]$Tag = "enhance-models-v2", [switch]$NoPrepare)
+param([switch]$Force, [string]$Tag = "enhance-models-v3", [switch]$NoPrepare)
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference    = "SilentlyContinue"
@@ -37,6 +39,7 @@ function Folder-For([string]$name) {
     if ($name -like "up2x-*" -or $name -like "pro-*") { return "cugan" }
     if ($name -like "realesr-animevideo*") { return "RealESRGANv2" }
     if ($name -like "drunet*") { return "dpir" }
+    if ($name -like "nafnet*") { return "restore" }
     return $null
 }
 
@@ -58,16 +61,16 @@ if (-not (Test-Path (Join-Path $MpvDir "vapoursynth.dll"))) { throw "The player 
 $SevenZip = @((Join-Path $MpvDir "7z.exe"), (Join-Path $Runtime ".cache\7zr.exe")) | Where-Object { Test-Path $_ } | Select-Object -First 1
 
 Step "Enhance models ($Tag)"
-try { $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -Headers $Headers }
-catch {
-    # v2 adds the Max detail models for photos; until it's published, v1 has everything else
-    if ($Tag -ne "enhance-models-v1") {
-        Info "$Tag isn't published yet; using enhance-models-v1 (everything but Max detail)"
-        $Tag = "enhance-models-v1"
-        try { $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$Tag" -Headers $Headers }
-        catch { throw "The Enhance models aren't published yet. Smoothing works meanwhile." }
-    } else { throw "The Enhance models ($Tag) aren't published yet. Smoothing works meanwhile." }
+# v3 adds Remove noise and blur for photos, v2 Max detail; until a newer one is published, the newest
+# that is has everything else
+$rel = $null
+foreach ($t in (@($Tag, "enhance-models-v2", "enhance-models-v1") | Select-Object -Unique)) {
+    try { $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$t" -Headers $Headers }
+    catch { Info "$t isn't published yet"; continue }
+    $Tag = $t; break
 }
+if (-not $rel) { throw "The Enhance models aren't published yet. Smoothing works meanwhile." }
+Info "using $Tag"
 $sumsAsset = $rel.assets | Where-Object { $_.name -eq "SHA256SUMS" } | Select-Object -First 1
 if (-not $sumsAsset) { throw "$Tag has no SHA256SUMS" }
 $sums = @{}
