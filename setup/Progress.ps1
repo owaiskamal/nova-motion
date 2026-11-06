@@ -114,6 +114,7 @@ function Save-NovaDownload {
                     }
                 } finally { $out.Dispose(); $in.Dispose() }
                 if ($total -gt 0 -and $have -lt $total) { throw "the connection closed early" }
+                if ($total -gt 0) { Send-NovaProgress ($Offset + $Share) "$Label`: $(Format-NovaMB $have) of $(Format-NovaMB $total), done" }
                 break
             } catch {
                 if ($attempt -ge 5) { throw "$Label couldn't be downloaded: $_" }

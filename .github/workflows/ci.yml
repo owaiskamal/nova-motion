@@ -170,6 +170,29 @@ jobs:
             Write-Host "::error::no frame preview PNG (mpv exit $($p.ExitCode))"; exit 1
           }
           Write-Host "::notice title=Frame preview::PNG $($f.Length) bytes, mpv exit $($p.ExitCode)"
+      # The app's downloads (setup/Progress.ps1): progress lines, and resuming a broken download
+      - name: Downloads report progress and resume
+        shell: pwsh
+        run: |
+          $test = {
+            . .\setup\Progress.ps1
+            $url = "https://files.pythonhosted.org/packages/source/n/numpy/numpy-2.2.6.tar.gz"
+            $dir = Join-Path $env:RUNNER_TEMP "dl"; New-Item -ItemType Directory -Force $dir | Out-Null
+            Save-NovaDownload -Url $url -OutFile "$dir\whole.tgz" -Label "numpy source"
+            $whole = Get-Item "$dir\whole.tgz"
+            # A download broken after its first 3 MB, then run again
+            $bytes = [IO.File]::ReadAllBytes($whole.FullName)
+            [IO.File]::WriteAllBytes("$dir\resumed.tgz.part", $bytes[0..(3MB - 1)])
+            Save-NovaDownload -Url $url -OutFile "$dir\resumed.tgz" -Label "numpy source"
+            $a = (Get-FileHash $whole.FullName).Hash; $b = (Get-FileHash "$dir\resumed.tgz").Hash
+            Write-Host "sizes $($whole.Length) $((Get-Item "$dir\resumed.tgz").Length) same=$($a -eq $b)"
+          }
+          $out = powershell -NoProfile -Command $test.ToString()
+          $out | Select-Object -Last 4
+          $bars = @($out | Where-Object { $_ -match '^@@progress \d.* MB of .* MB, ' })
+          if (-not ($out -match 'same=True')) { Write-Host "::error::a resumed download isn't the same file"; exit 1 }
+          if ($bars.Count -lt 1) { Write-Host "::error::no download progress lines"; exit 1 }
+          Write-Host "::notice title=Downloads::$($bars.Count) progress lines; a resumed download matches the whole one"
       # The Enhance models' setup exactly as users run it: download, checksums, the Vulkan runtime
       - name: Enhance models setup
         shell: pwsh

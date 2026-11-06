@@ -113,7 +113,16 @@ public sealed partial class MainViewModel
     private double _partStartedAt;
 
     private bool _isModelsOpen;
-    public bool IsModelsOpen { get => _isModelsOpen; set { if (Set(ref _isModelsOpen, value) && value) RefreshParts(); } }
+    public bool IsModelsOpen
+    {
+        get => _isModelsOpen;
+        set
+        {
+            if (!Set(ref _isModelsOpen, value)) return;
+            if (value) RefreshParts();
+            RaiseModule();
+        }
+    }
 
     private void InitModels()
     {

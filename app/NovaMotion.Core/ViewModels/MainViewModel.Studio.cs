@@ -37,9 +37,10 @@ public sealed partial class MainViewModel
     public StudioModule ActiveModule =>
         IsGenerateOpen ? StudioModule.Generate : IsExportOpen ? StudioModule.Enhance : StudioModule.Motion;
 
-    public bool IsMotionModule => ActiveModule == StudioModule.Motion;
-    public bool IsEnhanceModule => ActiveModule == StudioModule.Enhance;
-    public bool IsGenerateModule => ActiveModule == StudioModule.Generate;
+    // The AI Models page covers the module, so the sidebar shows none of them chosen
+    public bool IsMotionModule => !IsModelsOpen && ActiveModule == StudioModule.Motion;
+    public bool IsEnhanceModule => !IsModelsOpen && ActiveModule == StudioModule.Enhance;
+    public bool IsGenerateModule => !IsModelsOpen && ActiveModule == StudioModule.Generate;
 
     private bool _isGenerateOpen;
     public bool IsGenerateOpen
