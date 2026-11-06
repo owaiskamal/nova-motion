@@ -153,7 +153,8 @@ internal static class PhotoTests
         vm.PhotoFixCompression = true;
 
         vm.EnhancePhotoCommand.Execute(null);
-        await Task.Delay(50);
+        // A slow test machine: wait for the run to report, up to 3 s
+        for (var t = 0; t < 60 && !(vm.PhotoStatus == "Enhancing…" && vm.PhotoProgress > 0.4); t++) await Task.Delay(50);
         check(vm.IsEnhancingPhoto && vm.PhotoStatus == "Enhancing…" && !vm.CanEnhancePhoto, $"photo: running ({vm.PhotoStatus})");
         check(runner.Options == new PhotoOptions("anime", 4, "light", true, true, Restore: Photo.RestoreAmount), $"photo: the chosen options are used ({runner.Options})");
         check(vm.PhotoProgress is > 0.45 and < 0.5 && vm.PhotoProgressText.StartsWith("49%") && vm.ActivityProgress == vm.PhotoProgress,
