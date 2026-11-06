@@ -168,6 +168,23 @@ fed = [c for c in calls if c[0] == "inference"]
 check(fed and fed[0][1] == "RealESRGAN_x4plus.onnx" and fed[0][2:] == (3000, 4000),
       f"3000 x 4000 at the same size: the model sees all of it, not a halved copy ({fed[:1]})")
 
+# ---------------------------------------------------------------- strips: progress, and the same picture
+import numpy as np  # noqa: E402
+tall = picture("tall.png", 400, 1100)
+code, text = run(tall, os.path.join(d, "tall-out.png"), '{"preset": "film", "scale": 2, "detail": 0.5}')
+steps = [l for l in text.splitlines() if l.startswith("progress ")]
+check(code == 0 and len(steps) >= 4 and steps[-1].split()[1].split("/")[0] == steps[-1].split()[1].split("/")[1],
+      f"a tall picture is done in strips, saying its progress ({steps[:2]}...{steps[-1:]})")
+strip_out = np.asarray(Image.open(os.path.join(d, "tall-out.png")).convert("RGB")).astype(int)
+saved = photo.strips
+photo.strips = lambda h, out_h: None
+code, _ = run(tall, os.path.join(d, "tall-whole.png"), '{"preset": "film", "scale": 2, "detail": 0.5}')
+photo.strips = saved
+whole_out = np.asarray(Image.open(os.path.join(d, "tall-whole.png")).convert("RGB")).astype(int)
+check(strip_out.shape == whole_out.shape == (2200, 800, 3) and np.abs(strip_out - whole_out).max() <= 1,
+      f"the strips join into exactly the whole-picture result (largest difference {np.abs(strip_out - whole_out).max()})")
+check(photo.strips(1000, 1500) is None and photo.strips(300, 600) is None, "no strips when they can't join exactly or the picture is small")
+
 print()
 print("ALL PASSED" if not fails else f"{fails} FAILED")
 sys.exit(1 if fails else 0)

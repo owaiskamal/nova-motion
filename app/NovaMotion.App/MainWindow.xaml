@@ -256,7 +256,10 @@
                                         <Border Style="{StaticResource Group}" Padding="16,12">
                                             <StackPanel>
                                                 <TextBlock Style="{StaticResource Text.Strong}" Text="{Binding PhotoName}"/>
-                                                <TextBlock Style="{StaticResource Text.Small}" Text="{Binding PhotoStatus}" Margin="0,4,0,0"/>
+                                                <ProgressBar Style="{StaticResource ThinProgress}" Height="5" Maximum="1" Margin="0,8,0,6" Value="{Binding PhotoProgress, Mode=OneWay}"/>
+                                                <TextBlock Style="{StaticResource Text.Small}" Margin="0,2,0,0">
+                                                    <Run Text="{Binding PhotoStatus, Mode=OneWay}"/> <Run Text="{Binding PhotoProgressText, Mode=OneWay}"/>
+                                                </TextBlock>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>

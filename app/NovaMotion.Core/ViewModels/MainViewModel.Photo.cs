@@ -102,6 +102,32 @@ public sealed partial class MainViewModel
     }
 
     public bool IsEnhancingPhoto { get => _isEnhancingPhoto; private set { if (Set(ref _isEnhancingPhoto, value)) RaisePhoto(); } }
+
+    private DateTime _photoStarted;
+    private double _photoDone, _photoShown;
+    private TimeSpan _photoEstimate;
+
+    /// <summary>0..1: the strips done (the photo is enhanced in strips); before the first, a little by the
+    /// estimate while the models load. Never goes back.</summary>
+    public double PhotoProgress => _photoShown;
+    /// <summary>"40% · about 1 min left"</summary>
+    public string PhotoProgressText { get; private set; } = "";
+
+    /// <summary>On each strip, and every half second from Tick.</summary>
+    private void UpdatePhotoProgress()
+    {
+        if (!IsEnhancingPhoto) return;
+        var spent = _clock() - _photoStarted;
+        var byTime = _photoEstimate.TotalSeconds > 0 ? Math.Min(0.08, spent.TotalSeconds / _photoEstimate.TotalSeconds * 0.08) : 0;
+        _photoShown = Math.Max(_photoShown, Math.Max(_photoDone * 0.98, byTime));
+        TimeSpan left;
+        if (_photoDone > 0.05)
+            left = TimeSpan.FromSeconds(spent.TotalSeconds * (1 - _photoDone) / _photoDone);
+        else
+            left = _photoEstimate - spent;
+        PhotoProgressText = $"{Math.Floor(_photoShown * 100):0}%" + (left.TotalSeconds > 5 ? $" · {Estimate.Words(left)} left" : _photoDone >= 1 ? " · saving" : " · nearly done");
+        Raise(nameof(PhotoProgress), nameof(PhotoProgressText));
+    }
     public string PhotoStatus { get => _photoStatus; private set => Set(ref _photoStatus, value); }
     public bool HasPhotoResult => _photoResult is not null && !IsEnhancingPhoto;
     public string PhotoResultName => _photoResult is { } r ? Path.GetFileName(r) : "";
@@ -177,10 +203,16 @@ public sealed partial class MainViewModel
         PhotoStatus = "Starting…";
         IsEnhancingPhoto = true;
         var started = DateTime.UtcNow;
+        _photoStarted = _clock();
+        _photoDone = 0;
+        _photoShown = 0;
+        _photoEstimate = _photoSize is { } sz ? Estimate.Photo(sz.W, sz.H, options, Eng.GpuClass, _settings.EstimateCalibration) : TimeSpan.FromMinutes(1);
+        UpdatePhotoProgress();
         var stage = new Progress<string>(s => _host.Post(() => PhotoStatus = s));
+        var done = new Progress<double>(f => _host.Post(() => { _photoDone = f; UpdatePhotoProgress(); }));
         try
         {
-            await runner.RunAsync(image, output, options, stage, _photoCancel.Token, compare, _photoSpot);
+            await runner.RunAsync(image, output, options, stage, _photoCancel.Token, compare, _photoSpot, done);
             _photoResult = output;
             _photoCompare = compare is not null && File.Exists(compare) ? compare : null;
             PhotoStatus = $"Saved in {PhotoFolder} ({(DateTime.UtcNow - started).TotalSeconds:0} s)";

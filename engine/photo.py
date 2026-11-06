@@ -127,25 +127,77 @@ def to_clip(rgb):
     return core.std.ModifyFrame(blank, blank, fill)
 
 
+# Strips of the picture, for progress: each is enhanced with this much picture around it (as the
+# previews do), so the strips join exactly as if the picture had been done whole
+STRIP_MARGIN = 32
+STRIPS = 12
+
+
+def strips(h, out_h):
+    """[(y0, y1)] rows of the picture in strips, or None when they can't join exactly (the finished
+    size isn't a whole multiple: then the picture is done whole, without progress steps)."""
+    if out_h % h or h < 2 * 256:
+        return None
+    step = max(256, -(-h // STRIPS))
+    step += step % 2
+    return [(y, min(h, y + step)) for y in range(0, h, step)]
+
+
 def enhance_picture(rgb, e, gpu=0, gpu_class=""):
-    """The enhanced picture as an H x W x 3 uint8 array."""
+    """The enhanced picture as an H x W x 3 uint8 array. Done in strips, one frame each of one clip
+    (so each model is loaded once), saying "progress i/n" after each."""
     import numpy as np
     import vapoursynth as vs
     import enhance
     core = vs.core
     h, w = rgb.shape[:2]
     scale, e["height"] = target(w, h, e["scale"])
+    out_w, out_h = enhance.output_size(w, h, e["height"])
     cfg = {"rife_gpu": gpu, "gpu_class": gpu_class}
     # The same 4:4:4 YUV the video chain works in, at 16 bits so nothing is lost on the way
     clip = core.resize.Bicubic(to_clip(rgb), format=vs.YUV444P16, matrix_s="709")
+    parts = strips(h, out_h)
+    say("stage clean" if e["fix_compression"] else "stage enhance")
+    if parts is None or len(parts) < 2:
+        if e["fix_compression"]:
+            clip = enhance.fix_compression(clip, cfg, "709")
+            say("stage enhance")
+        out = enhance.finish(enhance.upscale(clip, cfg, e, "709"), e)
+        out = core.resize.Bicubic(out, format=vs.RGB24, matrix_in_s="709", dither_type="error_diffusion")
+        say("progress 1/1")
+        f = out.get_frame(0)
+        return np.dstack([np.asarray(f[i]) for i in range(3)]).copy()
+
+    k = out_h // h
+    m = STRIP_MARGIN
+    tall = max(y1 - y0 for y0, y1 in parts) + 2 * m
+    frames, keep = [], []
+    for y0, y1 in parts:
+        ya, yb = max(0, y0 - m), min(h, y1 + m)
+        piece = core.std.Crop(clip, top=ya, bottom=h - yb)
+        if piece.height < tall:
+            # The same height for every strip; the extra rows mirror the picture's edge and are cut off
+            need = tall - piece.height
+            edge = core.std.FlipVertical(core.std.Crop(piece, top=max(0, piece.height - need)))
+            while edge.height < need:
+                edge = core.std.StackVertical([edge, edge])
+            piece = core.std.StackVertical([piece, core.std.Crop(edge, bottom=edge.height - need)])
+        frames.append(piece)
+        keep.append(((y0 - ya) * k, (y1 - y0) * k))
+    strip_clip = core.std.Splice(frames)
     if e["fix_compression"]:
-        say("stage clean")
-        clip = enhance.fix_compression(clip, cfg, "709")
-    say("stage enhance")
-    out = enhance.finish(enhance.upscale(clip, cfg, e, "709"), e)
+        strip_clip = enhance.fix_compression(strip_clip, cfg, "709")
+    out = enhance.finish(enhance.upscale(strip_clip, cfg, e, "709", full=(w, h)), e)
     out = core.resize.Bicubic(out, format=vs.RGB24, matrix_in_s="709", dither_type="error_diffusion")
-    f = out.get_frame(0)
-    return np.dstack([np.asarray(f[i]) for i in range(3)]).copy()
+    rows = []
+    for i, (top, n) in enumerate(keep):
+        f = out.get_frame(i)
+        if i == 0 and e["fix_compression"]:
+            say("stage enhance")
+        part = np.dstack([np.asarray(f[c]) for c in range(3)])
+        rows.append(part[top:top + n].copy())
+        say(f"progress {i + 1}/{len(keep)}")
+    return np.vstack(rows)
 
 
 def main(argv=None):

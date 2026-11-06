@@ -47,13 +47,16 @@ public sealed partial class MainViewModel
     public string ActivityDetail =>
         RunningExport is { } e ? $"{e.Title} · {e.Detail}"
         : HasJob ? JobStatus
-        : IsEnhancingPhoto ? PhotoStatus
+        : IsEnhancingPhoto ? $"{PhotoStatus.TrimEnd('…')} · {PhotoProgressText}"
         : WaitingExports > 0 ? "Waiting their turn" : "";
 
     /// <summary>0..1 for the sidebar's ring: the running export, else the preparation.</summary>
-    public double ActivityProgress => RunningExport?.Progress ?? (HasJob ? JobProgress : 0);
+    public double ActivityProgress => RunningExport?.Progress ?? (HasJob ? JobProgress : IsEnhancingPhoto ? PhotoProgress : 0);
 
     /// <summary>Called from Tick.</summary>
-    private void RaiseActivity() =>
+    private void RaiseActivity()
+    {
+        UpdatePhotoProgress();
         Raise(nameof(ActivityCount), nameof(HasActivity), nameof(ActivityTitle), nameof(ActivityDetail), nameof(ActivityProgress));
+    }
 }

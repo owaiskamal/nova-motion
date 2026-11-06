@@ -14,10 +14,11 @@ internal sealed class FakePhotoEnhancer : IPhotoRunner
     public (double X, double Y)? Spot;
 
     public async Task RunAsync(string image, string output, PhotoOptions options, IProgress<string> stage, CancellationToken ct,
-                               string? compare = null, (double X, double Y)? spot = null)
+                               string? compare = null, (double X, double Y)? spot = null, IProgress<double>? done = null)
     {
         Options = options; Output = output; Spot = spot;
         stage.Report(Photo.StageText("enhance"));
+        done?.Report(0.5);
         await Gate.Task.WaitAsync(ct);
         await File.WriteAllTextAsync(output, "png", ct);
         if (compare is not null) { Directory.CreateDirectory(Path.GetDirectoryName(compare)!); await File.WriteAllTextAsync(compare, "cmp", ct); }
@@ -100,6 +101,9 @@ internal static class PhotoTests
         await Task.Delay(50);
         check(vm.IsEnhancingPhoto && vm.PhotoStatus == "Enhancing…" && !vm.CanEnhancePhoto, $"photo: running ({vm.PhotoStatus})");
         check(runner.Options == new PhotoOptions("anime", 4, "light", true, true), $"photo: the chosen options are used ({runner.Options})");
+        check(vm.PhotoProgress is > 0.45 and < 0.5 && vm.PhotoProgressText.StartsWith("49%") && vm.ActivityProgress == vm.PhotoProgress,
+              $"photo: a real progress bar, with the time left ({vm.PhotoProgress:P0}: {vm.PhotoProgressText})");
+        check(Photo.ParseProgress("3/12") == 0.25 && Photo.ParseProgress("x") is null, "photo: progress lines read");
         runner.Gate.SetResult();
         await Task.Delay(50);
         var result = Path.Combine(dir, "out", "Portrait (NOVA Enhance 4x max).jpg");

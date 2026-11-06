@@ -88,6 +88,13 @@ public static class Photo
     public static string ComparePath(RuntimeLayout rt) =>
         Path.Combine(rt.Root, "previews", $"photo-compare-{DateTime.Now:HHmmss}-{Guid.NewGuid().ToString("N")[..6]}.png");
 
+    /// <summary>"3/12" → 0.25.</summary>
+    public static double? ParseProgress(string text)
+    {
+        var parts = text.Trim().Split('/');
+        return parts.Length == 2 && int.TryParse(parts[0], out var a) && int.TryParse(parts[1], out var b) && b > 0 ? Math.Clamp(a / (double)b, 0, 1) : null;
+    }
+
     /// <summary>What the page says during each stage.</summary>
     public static string StageText(string stage) => stage switch
     {
@@ -104,7 +111,7 @@ public interface IPhotoRunner
     /// <summary>Makes the picture and, with compare, its before/after at 100% around spot; reports stage
     /// text. Throws with a readable message on failure.</summary>
     Task RunAsync(string image, string output, PhotoOptions options, IProgress<string> stage, CancellationToken ct,
-                  string? compare = null, (double X, double Y)? spot = null);
+                  string? compare = null, (double X, double Y)? spot = null, IProgress<double>? done = null);
 
     /// <summary>Only the before/after of a result, around another spot.</summary>
     Task CompareAsync(string image, string result, string compare, (double X, double Y) spot, CancellationToken ct);
@@ -114,11 +121,11 @@ public interface IPhotoRunner
 public sealed class PhotoRunner(RuntimeLayout runtime, Func<(int Gpu, string? GpuClass)>? gpu = null) : IPhotoRunner
 {
     public Task RunAsync(string image, string output, PhotoOptions options, IProgress<string> stage, CancellationToken ct,
-                         string? compare = null, (double X, double Y)? spot = null)
+                         string? compare = null, (double X, double Y)? spot = null, IProgress<double>? done = null)
     {
         var (index, gpuClass) = gpu?.Invoke() ?? (0, null);
         if (compare is not null) Directory.CreateDirectory(Path.GetDirectoryName(compare)!);
-        return RunScriptAsync(Photo.Arguments(runtime, image, output, options, index, gpuClass, compare, spot), output, "photo.log", stage, ct);
+        return RunScriptAsync(Photo.Arguments(runtime, image, output, options, index, gpuClass, compare, spot), output, "photo.log", stage, ct, done);
     }
 
     public Task CompareAsync(string image, string result, string compare, (double X, double Y) spot, CancellationToken ct)
@@ -127,7 +134,8 @@ public sealed class PhotoRunner(RuntimeLayout runtime, Func<(int Gpu, string? Gp
         return RunScriptAsync(Photo.CompareArguments(runtime, image, result, compare, spot), compare, "photo-compare.log", new Progress<string>(), ct);
     }
 
-    private async Task RunScriptAsync(IReadOnlyList<string> args, string output, string logName, IProgress<string> stage, CancellationToken ct)
+    private async Task RunScriptAsync(IReadOnlyList<string> args, string output, string logName, IProgress<string> stage, CancellationToken ct,
+                                      IProgress<double>? done = null)
     {
         var psi = new ProcessStartInfo(runtime.PythonExe)
         {
@@ -147,6 +155,7 @@ public sealed class PhotoRunner(RuntimeLayout runtime, Func<(int Gpu, string? Gp
                 lines.Add(line);
                 if (line.StartsWith("stage ", StringComparison.Ordinal)) stage.Report(Photo.StageText(line[6..].Trim()));
                 else if (line.StartsWith("note ", StringComparison.Ordinal)) stage.Report(line[5..].Trim());
+                else if (line.StartsWith("progress ", StringComparison.Ordinal) && Photo.ParseProgress(line[9..]) is { } f) done?.Report(f);
                 else if (line.StartsWith("error ", StringComparison.Ordinal)) error = line[6..].Trim();
             }
             await p.WaitForExitAsync(ct);
