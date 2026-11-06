@@ -231,6 +231,7 @@ Copy-Item (Join-Path $Root "engine\jobs.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\photo.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\generate.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\enhance_build.py") $Runtime -Force
 
 Step "Self-test"
 $vspipe = Join-Path $MpvDir "VSPipe.exe"

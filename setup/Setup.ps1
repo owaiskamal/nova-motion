@@ -176,6 +176,7 @@ Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\photo.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\generate.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\parallax.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\enhance_build.py") $Runtime -Force
 $portable = Join-Path $MpvDir "portable_config"
 New-Item -ItemType Directory -Force $portable | Out-Null
 Copy-Item (Join-Path $Root "engine\mpv\*") $portable -Recurse -Force
