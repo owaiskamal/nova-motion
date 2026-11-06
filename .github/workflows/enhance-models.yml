@@ -138,14 +138,12 @@ jobs:
               print(f, [(i.name, i.shape) for i in s.get_inputs()], y.shape)
           EOF
 
-      - name: Keep the models to try them
+      - name: Keep the models to try them (a draft release, seen only by the repository's owners)
         if: ${{ !inputs.publish }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: enhance-models
-          path: out/*.onnx
-          retention-days: 3
-          compression-level: 0
+        run: |
+          set -e
+          gh release delete "$TAG-trial" --yes >/dev/null 2>&1 || true
+          gh release create "$TAG-trial" out/*.onnx --draft --target "$GITHUB_SHA" --title "Enhance models trial ($TAG)" --notes "Models to try before publishing $TAG; not for setup."
 
       - name: Publish
         if: ${{ inputs.publish }}
