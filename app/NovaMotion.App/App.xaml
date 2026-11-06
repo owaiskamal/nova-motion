@@ -11,6 +11,54 @@
             <c:BoolToVisibility x:Key="BoolToVis"/>
             <c:BoolToVisibility x:Key="InvBoolToVis" Invert="True"/>
             <c:InvertBool x:Key="InvertBool"/>
+            <!-- A part a feature needs, right where the feature is: Download (or Prepare / Update / Try again),
+                 then its progress in place, and the feature unlocks itself when it's ready. Content = an AiPartItem. -->
+            <DataTemplate x:Key="PartPrompt">
+                <Border Background="{StaticResource Cell}" CornerRadius="14" Padding="18,14">
+                    <StackPanel>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                <Button Style="{StaticResource Btn.Primary}" Padding="18,0" Content="{Binding ButtonText}"
+                                        Command="{Binding DataContext.PartActionCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
+                                        Visibility="{Binding HasButton, Converter={StaticResource BoolToVis}}"/>
+                                <Button Style="{StaticResource Btn.Secondary}" Padding="16,0" Content="Cancel"
+                                        Command="{Binding DataContext.CancelPartCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
+                                        Visibility="{Binding CanCancel, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource Text}" TextWrapping="Wrap">
+                                    <Run Text="{Binding Name, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding StatusText, Mode=OneWay}"/>
+                                </TextBlock>
+                                <TextBlock FontSize="12.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0">
+                                    <Run Text="{Binding Description, Mode=OneWay}"/><Run Text=" "/><Run Text="{Binding Size, Mode=OneWay}"/><Run Text=", downloaded once."/>
+                                </TextBlock>
+                            </StackPanel>
+                        </DockPanel>
+                        <StackPanel Margin="0,12,0,0" Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}">
+                            <ProgressBar Style="{StaticResource ThinProgress}" Height="6" Maximum="1" Value="{Binding ProgressValue, Mode=OneWay}"
+                                         IsIndeterminate="{Binding IsIndeterminate, Mode=OneWay}"/>
+                            <DockPanel Margin="0,8,0,0">
+                                <TextBlock DockPanel.Dock="Right" FontSize="12.5" Foreground="{StaticResource Muted}" Margin="12,0,0,0">
+                                    <Run Text="{Binding PercentText, Mode=OneWay}" FontWeight="SemiBold" Foreground="{StaticResource Text}"/><Run Text="  "/><Run Text="{Binding TimeLeft, Mode=OneWay}"/>
+                                </TextBlock>
+                                <TextBlock FontSize="12.5" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" Text="{Binding Detail}"/>
+                            </DockPanel>
+                        </StackPanel>
+                        <TextBlock FontSize="12.5" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,8,0,0" Text="{Binding Detail}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasProgress}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                        <DataTrigger Binding="{Binding Detail}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock FontSize="12.5" Foreground="{StaticResource Danger}" TextWrapping="Wrap" Margin="0,8,0,0" Text="{Binding Error}"
+                                   Visibility="{Binding IsFailed, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

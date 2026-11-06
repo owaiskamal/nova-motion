@@ -141,6 +141,21 @@ public sealed partial class MainViewModel
         RefreshParts();
     }
 
+    // The parts each page offers in place, right where the feature is
+    public AiPartItem? EnhancePart => AiPartItems.FirstOrDefault(i => i.Id == AiParts.Enhance);
+    public AiPartItem? AnimatePart => AiPartItems.FirstOrDefault(i => i.Id == AiParts.Animate);
+    public AiPartItem? TensorRtPart => AiPartItems.FirstOrDefault(i => i.Id == AiParts.TensorRt);
+    public AiPartItem? PhotoMissingPart => AiPartItems.FirstOrDefault(i => i.Id == PhotoModelMissingPart);
+    /// <summary>TensorRT can be added on this PC (an NVIDIA card) and isn't yet.</summary>
+    public bool TensorRtOffered => TensorRtPart is { } t && t.State is not (PartState.Ready or PartState.NotForThisPc);
+
+    /// <summary>The photo models whose parts aren't installed show a lock.</summary>
+    private void LockPhotoModels()
+    {
+        foreach (var o in PhotoModels)
+            o.Locked = o.Value switch { "max" => !Photo.HasMaxDetail(Runtime), "generative" => !Photo.HasGenerative(Runtime), _ => false };
+    }
+
     private PcGraphics Graphics => new(_gpu?.IsNvidia == true, _graphicsGb, _gpu?.Primary ?? "");
 
     /// <summary>Reads every part's state from disk again (not the ones running or waiting).</summary>
@@ -161,7 +176,7 @@ public sealed partial class MainViewModel
             i.Progress = null;
             i.TimeLeft = "";
         }
-        Raise(nameof(PartsNeedingAction), nameof(HasPartsNeedingAction), nameof(PartsSummary));
+        RaiseParts();
     }
 
     /// <summary>How many parts this PC can use that aren't ready yet: the badge on the sidebar.</summary>
@@ -304,6 +319,9 @@ public sealed partial class MainViewModel
         ShowToast(prepared ? $"{item.Name}: prepared for this graphics card." : $"{item.Name} is ready.");
     }
 
-    private void RaiseParts() =>
-        Raise(nameof(PartsNeedingAction), nameof(HasPartsNeedingAction), nameof(PartsSummary));
+    private void RaiseParts()
+    {
+        LockPhotoModels();
+        Raise(nameof(PartsNeedingAction), nameof(HasPartsNeedingAction), nameof(PartsSummary), nameof(TensorRtOffered), nameof(PhotoMissingPart));
+    }
 }

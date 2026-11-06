@@ -27,12 +27,8 @@
                                    Text="A still picture becomes a short 3D camera move: AI works out what is near and far, and near things move more. Made for illustration, anime and art deco posters with gentle motion. Runs on any graphics card, a GTX 1650 or Intel laptop graphics included."/>
 
                         <!-- Not set up yet -->
-                        <DockPanel Visibility="{Binding AnimateNeedsSetup, Converter={StaticResource BoolToVis}}">
-                            <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Primary}" Height="40" Padding="20,0" Content="Add it (about 150 MB)"
-                                    Command="{Binding SetupAnimateCommand}"/>
-                            <TextBlock Style="{StaticResource Text.Body}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"
-                                       Text="It needs a depth model and three small parts, downloaded once from their publishers."/>
-                        </DockPanel>
+                        <ContentControl Focusable="False" Content="{Binding AnimatePart}" ContentTemplate="{StaticResource PartPrompt}"
+                                        Visibility="{Binding AnimateNeedsSetup, Converter={StaticResource BoolToVis}}"/>
 
                         <StackPanel Visibility="{Binding AnimateReady, Converter={StaticResource BoolToVis}}">
                             <DockPanel>

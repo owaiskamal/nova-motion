@@ -1024,8 +1024,20 @@
         <Setter Property="ItemTemplate">
             <Setter.Value>
                 <DataTemplate>
-                    <Button Style="{StaticResource SegmentButton}" Content="{Binding Label}" ToolTip="{Binding Description}" Tag="{Binding IsSelected}"
-                            Command="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"/>
+                    <Button Style="{StaticResource SegmentButton}" ToolTip="{Binding Description}" Tag="{Binding IsSelected}"
+                            Command="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
+                        <StackPanel Orientation="Horizontal">
+                            <!-- its model isn't installed yet -->
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center" Opacity="0.8">
+                                <TextBlock.Visibility>
+                                    <Binding Path="Locked" FallbackValue="Collapsed">
+                                        <Binding.Converter><BooleanToVisibilityConverter/></Binding.Converter>
+                                    </Binding>
+                                </TextBlock.Visibility>
+                            </TextBlock>
+                            <TextBlock Text="{Binding Label}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </DataTemplate>
             </Setter.Value>
         </Setter>

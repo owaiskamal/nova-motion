@@ -67,6 +67,14 @@ internal static class ModelsTests
               "models page: lists every part, what's ready and what to download");
         check(vm.HasPartsNeedingAction && vm.PartsSummary.Contains("to install"), $"models page: says what's left ({vm.PartsSummary})");
 
+        // ---- each page offers its part in place, and options without their model show a lock
+        check(vm.EnhancePart?.Id == AiParts.Enhance && vm.AnimatePart?.Id == AiParts.Animate && vm.TensorRtOffered,
+              "in place: Enhance, Generate and Settings each get their part's card");
+        check(vm.PhotoModels.Single(m => m.Value == "generative").Locked && vm.PhotoModels.Single(m => m.Value == "max").Locked
+              && !vm.PhotoModels.Single(m => m.Value == "standard").Locked, "in place: Max detail and Generative show a lock until installed");
+        vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "generative"));
+        check(vm.PhotoModelMissing && vm.PhotoMissingPart?.Id == AiParts.Generative, "in place: choosing Generative offers its download right there");
+
         // ---- not for this PC
         vm.SetGpu(new GpuInfo(new[] { "Intel(R) Iris(R) Xe Graphics" }));
         check(Item(AiParts.TensorRt).IsBlocked && Item(AiParts.TensorRt).Detail.Contains("NVIDIA") && !Item(AiParts.TensorRt).HasButton
@@ -99,6 +107,8 @@ internal static class ModelsTests
         check(Item(AiParts.Enhance).IsReady && Item(AiParts.Generative).State == PartState.Installing && runner.Ran.Last() == AiParts.Generative,
               $"install: when the Enhance models are ready, Generative starts ({Item(AiParts.Enhance).State}, {Item(AiParts.Generative).State})");
         check(vm.EnhanceReady && vm.PhotoReady, "install: Enhance unlocks without a restart");
+        check(!vm.PhotoModels.Single(m => m.Value == "max").Locked && vm.PhotoModels.Single(m => m.Value == "generative").Locked,
+              "in place: Max detail unlocks with the Enhance models; Generative is still locked");
         // Cancel, then a failure with the script's reason, then success
         vm.CancelPartCommand.Execute(Item(AiParts.Generative));
         await Task.Delay(30);
@@ -117,6 +127,8 @@ internal static class ModelsTests
         vm.PartActionCommand.Execute(Item(AiParts.Generative));
         await Task.Delay(30);
         check(Item(AiParts.Generative).IsReady && Photo.HasGenerative(rt), "install: and after trying again it's ready");
+        check(!vm.PhotoModelMissing && !vm.PhotoModels.Single(m => m.Value == "generative").Locked && vm.CanEnhancePhoto == vm.HasPhoto,
+              "in place: Generative unlocks on the photo page, no restart");
 
         // ---- with TensorRT, the Enhance models are prepared for the card: needs preparing, then prepared
         var plugins = Path.Combine(rt.MpvDir, "vs-plugins");

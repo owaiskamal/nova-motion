@@ -54,9 +54,9 @@ public static class Photo
 
     public static readonly IReadOnlyList<Choice> Models = new[]
     {
-        new Choice("standard", "Standard", "The video models: quick, natural."),
-        new Choice("max", "Max detail", "Real-ESRGAN x4plus: adds much more texture and crisper edges. About 10 times slower, still seconds to a minute a photo."),
-        new Choice("generative", "Generative", "SeedVR2, generative AI: looks at the whole picture and makes new detail that fits it (skin, hair, fabric, leaves). Needs an NVIDIA card with 4 GB or more."),
+        new Choice("standard", "Standard", "Quick and natural. Best for clean photos and quick fixes."),
+        new Choice("max", "Max detail", "Real-ESRGAN x4plus: crisper edges and more texture. Best for small or old pictures you enlarge. Seconds to a minute a photo."),
+        new Choice("generative", "Generative", "SeedVR2, generative AI: makes new detail that fits the picture. Best for phone photos, faces and pets, where the other models change little. Needs an NVIDIA card with 4 GB or more; minutes on a 4 GB card."),
     };
 
     /// <summary>setup-generate.cmd finished: the runner, the model and the Python that runs them.</summary>

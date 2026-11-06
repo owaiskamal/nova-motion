@@ -123,6 +123,8 @@
                     <Border Style="{StaticResource Divider}"/>
                     <TextBlock Style="{StaticResource Text.Strong}" Text="NVIDIA TensorRT"/>
                     <TextBlock Style="{StaticResource Text.Muted}" Margin="0,4,0,0" Text="{Binding TensorRtText}"/>
+                    <ContentControl Margin="0,10,0,0" Focusable="False" Content="{Binding TensorRtPart}" ContentTemplate="{StaticResource PartPrompt}"
+                                    Visibility="{Binding TensorRtOffered, Converter={StaticResource BoolToVis}}"/>
                     <TextBlock Style="{StaticResource Text.Small}" Margin="0,6,0,0" TextWrapping="Wrap"
                                Text="TensorRT compiles RIFE for your exact GPU and video size. A size without an engine pauses for a few minutes the first time you play it."/>
                     <StackPanel Visibility="{Binding CanTune, Converter={StaticResource BoolToVis}}" Margin="0,18,0,0">

@@ -54,4 +54,8 @@ public sealed class OptionItem : Observable
     public bool Available => Choice.Available;
     public string? Badge => Choice.Badge;
     public bool IsSelected { get => _isSelected; set => Set(ref _isSelected, value); }
+
+    private bool _locked;
+    /// <summary>Its model isn't installed: the segment shows a lock (choosing it offers the download).</summary>
+    public bool Locked { get => _locked; set => Set(ref _locked, value); }
 }

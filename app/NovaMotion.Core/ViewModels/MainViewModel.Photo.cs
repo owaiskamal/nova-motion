@@ -63,7 +63,7 @@ public sealed partial class MainViewModel
         foreach (var o in PhotoCleanups) o.IsSelected = o.Value == _photoOptions.Clean;
         Raise(nameof(PhotoOptions), nameof(PhotoModelNote), nameof(PhotoCleanupEnabled), nameof(PhotoRestore), nameof(PhotoRestoreEnabled), nameof(CanEnhancePhoto),
               nameof(PhotoGenerativeChosen), nameof(PhotoGenerativeAmount), nameof(PhotoGenerativeAmountText),
-              nameof(PhotoModelMissing), nameof(PhotoModelMissingPart));
+              nameof(PhotoModelMissing), nameof(PhotoModelMissingPart), nameof(PhotoMissingPart));
         SyncPresets();
     }
 
@@ -246,7 +246,7 @@ public sealed partial class MainViewModel
     private void RaisePhoto()
     {
         Raise(nameof(PhotoPath), nameof(PhotoName), nameof(HasPhoto), nameof(HasPhotoResult), nameof(PhotoResultName), nameof(CanEnhancePhoto),
-              nameof(PhotoReady), nameof(PhotoNeedsSetup), nameof(PhotoShown), nameof(PhotoShowBefore), nameof(PhotoShownLabel), nameof(PhotoModelNote), nameof(PhotoModelMissing), nameof(PhotoModelMissingPart),
+              nameof(PhotoReady), nameof(PhotoNeedsSetup), nameof(PhotoShown), nameof(PhotoShowBefore), nameof(PhotoShownLabel), nameof(PhotoModelNote), nameof(PhotoModelMissing), nameof(PhotoModelMissingPart), nameof(PhotoMissingPart),
               nameof(PhotoCompare), nameof(HasPhotoCompare));
         EnhancePhotoCommand?.Refresh(); CancelPhotoCommand?.Refresh(); ChoosePhotoCommand?.Refresh();
         OpenPhotoResultCommand?.Refresh(); ShowPhotoResultCommand?.Refresh();
