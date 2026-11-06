@@ -403,7 +403,7 @@ public sealed partial class MainViewModel
 
     private GpuInfo? _gpu;
     public string GpuName { get; private set; } = "Detecting…";
-    public string Version { get; } = typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.2.0";
+    public string Version { get; } = typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.3.0";
     public ObservableCollection<BenchmarkItem> Benchmarks { get; } = new();
     public bool HasBenchmarks => Benchmarks.Count > 0;
     public ObservableCollection<string> Problems { get; } = new();

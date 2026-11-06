@@ -58,7 +58,7 @@ Windows 10 or 11. TensorRT needs a one-time download of about 3 GB, offered duri
 
 ## Get started
 
-**Installer:** download `NovaMotion-Setup` from the [latest release](https://github.com/owaiskamal/nova-motion/releases/latest), run it (no admin rights needed) and start NOVA Motion. NVIDIA RTX and GTX 16 users then run *Add NVIDIA TensorRT engine* from the Start menu once. The current installer (0.2.0) has Motion and Enhance for videos; photos, Generate and the AI Models page are in the source build until the next release. Windows may show a SmartScreen warning because the installer isn't code-signed yet: choose *More info*, then *Run anyway*.
+**Installer:** download `NovaMotion-Setup` from the [latest release](https://github.com/owaiskamal/nova-motion/releases/latest), run it (no admin rights needed) and start NOVA Studio. Then open **AI Models** in the sidebar to download the parts you want (TensorRT for NVIDIA, the Enhance models, Animate a picture, Generative detail), with progress inside the app. Windows may show a SmartScreen warning because the installer isn't code-signed yet: choose *More info*, then *Run anyway*.
 
 **From source:** run **`build.cmd`**. It sets everything up and says what it's doing, and you can run it again any time to repair or update; finished steps are skipped:
 

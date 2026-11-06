@@ -2,7 +2,7 @@
 ; Copyright (C) 2026 Novabit
 ;
 ; NOVA Studio installer (Inno Setup 6). Built by CI:
-;   iscc /DAppVersion=0.2.0 installer\NovaMotion.iss
+;   iscc /DAppVersion=0.3.0 installer\NovaMotion.iss
 ; Expects dist\ (dotnet publish output) and runtime\ (setup\Get-Runtime.ps1) to exist.
 ;
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\Programs\NOVA Motion, because the
@@ -12,7 +12,7 @@
 ; AppId, install folder and Start menu group keep the old names so existing installs update in place.
 
 #ifndef AppVersion
-  #define AppVersion "0.2.0"
+  #define AppVersion "0.3.0"
 #endif
 
 [Setup]
