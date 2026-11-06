@@ -71,6 +71,24 @@ check("--resolution 400" in args and "--max_resolution 602" in args and "--batch
       and "--vae_decode_tiled" in args and "--blocks_to_swap" not in args,
       f"a small picture on a 12 GB card: tiled encoding only ({args})")
 
+# ---------------------------------------------------------------- a chosen part, and how much is kept
+import numpy as np  # noqa: E402
+noisy = os.path.join(d, "noisy.png")
+rng = np.random.default_rng(1)
+Image.fromarray(rng.integers(0, 255, (400, 600, 3), dtype=np.uint8)).save(noisy)
+code, text = run(noisy, os.path.join(d, "part.png"), '{"scale": 1}', "--part", "0.5,0.25,0.75,0.75")
+args = open(os.path.join(d, "args.txt")).read().splitlines()[-1]
+res = np.asarray(Image.open(os.path.join(d, "part.png"))).astype(int)
+orig = np.asarray(Image.open(noisy)).astype(int)
+check(code == 0 and res.shape == orig.shape and "--resolution 246" in args and "--max_resolution 296" in args,
+      f"a part: only it and its margin go to the model (150 x 200 + 48 around: {args.split('--resolution ')[1].split()[0]} short side)")
+check(np.abs(res[:, :200] - orig[:, :200]).max() == 0 and np.abs(res[150:250, 330:420] - orig[150:250, 330:420]).mean() > 1,
+      "a part: the rest of the picture untouched, the part changed")
+code, _ = run(src, os.path.join(d, "half.png"), '{"scale": 1, "amount": 0.5}')
+check(code == 0 and Image.open(os.path.join(d, "half.png")).size == (301, 200), "Strength below 1: mixed with the original, the same size")
+check(generate.parse_part("0.9,0.9,0.905,0.95", 100, 100) is None and generate.parse_part("x", 10, 10) is None,
+      "a part too small or unreadable: the whole picture")
+
 # ---------------------------------------------------------------- memory
 check("--blocks_to_swap" in " ".join(generate.memory_args(3000, 4000, 12)), "12 MP on a 12 GB card: the model's blocks swapped")
 check("--blocks_to_swap" not in " ".join(generate.memory_args(3000, 4000, 24)), "12 MP on a 24 GB card: all on the card")

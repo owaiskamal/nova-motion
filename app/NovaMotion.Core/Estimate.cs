@@ -29,8 +29,8 @@ public static class Estimate
     /// compression estimated at 40 h), and about 5x faster on RTX cards. Calibrate replaces them.</summary>
     private static readonly Dictionary<string, Dictionary<string, double>> FirstGuess = new()
     {
-        ["entry"] = new() { [Compact] = 0.07, [Cugan] = 0.30, [Rrdb6] = 0.45, [Rrdb] = 1.5, [Dpir] = 0.07, [Restore] = 0.12, [Generative] = 30, [Rife] = 0.025, [Encode] = 0.006 },
-        ["integrated"] = new() { [Compact] = 0.25, [Cugan] = 1.2, [Rrdb6] = 1.8, [Rrdb] = 6.0, [Dpir] = 0.5, [Restore] = 0.6, [Generative] = 120, [Rife] = 0.08, [Encode] = 0.01 },
+        ["entry"] = new() { [Compact] = 0.07, [Cugan] = 0.30, [Rrdb6] = 0.45, [Rrdb] = 1.5, [Dpir] = 0.07, [Restore] = 0.12, [Generative] = 95, [Rife] = 0.025, [Encode] = 0.006 },
+        ["integrated"] = new() { [Compact] = 0.25, [Cugan] = 1.2, [Rrdb6] = 1.8, [Rrdb] = 6.0, [Dpir] = 0.5, [Restore] = 0.6, [Generative] = 600, [Rife] = 0.08, [Encode] = 0.01 },
         [""] = new() { [Compact] = 0.014, [Cugan] = 0.06, [Rrdb6] = 0.09, [Rrdb] = 0.3, [Dpir] = 0.025, [Restore] = 0.03, [Generative] = 5, [Rife] = 0.006, [Encode] = 0.004 },
     };
 
@@ -111,7 +111,11 @@ public static class Estimate
         // Generative: SeedVR2 by the megapixels it makes (its "tile" is a megapixel of the result), plus
         // loading a 3-billion-weight model
         if (o.Generative)
-            return TimeSpan.FromSeconds(w * scale * h * scale / 1e6 * SecondsPerTile(Generative, gpuClass, calibration) + 25);
+        {
+            // Measured on a GTX 1650 (4-bit model): about 90 s a megapixel made, 1024 x 1024 crops at the same size
+            var part = o.Part is { } p ? Math.Min(1, p.Area * 1.15 + 0.002) : 1;      // its margin included
+            return TimeSpan.FromSeconds(w * scale * h * scale * part / 1e6 * SecondsPerTile(Generative, gpuClass, calibration) + 25);
+        }
         var (iw, ih) = Math.Max(w, h) * 4 <= 16384 ? (w, h) : AiInputSize(w, h, (int)(w * scale), (int)(h * scale));
         // At the same size, Remove noise and blur is the result: no enlarging (photo.py's enlarge)
         var enlarges = o.Restore <= 0 || scale > 1;

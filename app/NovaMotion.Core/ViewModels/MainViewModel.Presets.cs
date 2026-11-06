@@ -347,7 +347,14 @@ public sealed partial class MainViewModel
     }
 
     private (int W, int H)? _photoSize;
-    public string PhotoEtaText => _photo is null || _photoSize is not { } sz ? ""
-        : $"{char.ToUpperInvariant(Estimate.Words(Estimate.Photo(sz.W, sz.H, _photoOptions, Eng.GpuClass, _settings.EstimateCalibration))[0])}"
-          + $"{Estimate.Words(Estimate.Photo(sz.W, sz.H, _photoOptions, Eng.GpuClass, _settings.EstimateCalibration))[1..]} on this PC";
+    public string PhotoEtaText
+    {
+        get
+        {
+            if (_photo is null || _photoSize is not { } sz) return "";
+            var o = _photoOptions.Generative ? _photoOptions with { Part = _photoPart } : _photoOptions;
+            var words = Estimate.Words(Estimate.Photo(sz.W, sz.H, o, Eng.GpuClass, _settings.EstimateCalibration));
+            return char.ToUpperInvariant(words[0]) + words[1..] + " on this PC";
+        }
+    }
 }

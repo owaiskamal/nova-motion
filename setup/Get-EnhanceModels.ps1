@@ -141,6 +141,7 @@ Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\enhance_build.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\jobs.py") $Runtime -Force
 Copy-Item (Join-Path $Root "engine\photo.py") $Runtime -Force
+Copy-Item (Join-Path $Root "engine\generate.py") $Runtime -Force
 
 # Enhance a photo reads and writes pictures with numpy and Pillow (shared with Animate a picture)
 Step "Picture support for Enhance a photo (numpy, Pillow)"

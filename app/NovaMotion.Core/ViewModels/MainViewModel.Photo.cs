@@ -51,6 +51,7 @@ public sealed partial class MainViewModel
         SelectPhotoScaleCommand = new Command(p => { if (p is OptionItem o && int.TryParse(o.Value, out var s)) { _photoOptions = _photoOptions with { Scale = s }; SyncPhoto(); } });
         SelectPhotoModelCommand = new Command(p => { if (p is OptionItem o) { _photoOptions = _photoOptions with { MaxDetail = o.Value == "max", Generative = o.Value == "generative" }; SyncPhoto(); } });
         SelectPhotoCleanupCommand = new Command(p => { if (p is OptionItem o) { _photoOptions = _photoOptions with { Clean = o.Value }; SyncPhoto(); } });
+        ClearPhotoPartCommand = new Command(() => PhotoPart = null, () => HasPhotoPart);
         SyncPhoto();
     }
 
@@ -60,7 +61,8 @@ public sealed partial class MainViewModel
         foreach (var o in PhotoScales) o.IsSelected = o.Value == _photoOptions.Scale.ToString(System.Globalization.CultureInfo.InvariantCulture);
         foreach (var o in PhotoModels) o.IsSelected = o.Value == _photoOptions.Model;
         foreach (var o in PhotoCleanups) o.IsSelected = o.Value == _photoOptions.Clean;
-        Raise(nameof(PhotoOptions), nameof(PhotoModelNote), nameof(PhotoCleanupEnabled), nameof(PhotoRestore), nameof(PhotoRestoreEnabled), nameof(CanEnhancePhoto));
+        Raise(nameof(PhotoOptions), nameof(PhotoModelNote), nameof(PhotoCleanupEnabled), nameof(PhotoRestore), nameof(PhotoRestoreEnabled), nameof(CanEnhancePhoto),
+              nameof(PhotoGenerativeChosen), nameof(PhotoGenerativeAmount), nameof(PhotoGenerativeAmountText));
         SyncPresets();
     }
 
@@ -90,13 +92,49 @@ public sealed partial class MainViewModel
     /// <summary>Generative restores the picture itself.</summary>
     public bool PhotoRestoreEnabled => !_photoOptions.Generative;
     /// <summary>Generative is chosen and can run here.</summary>
-    private bool GenerativeUsable => Photo.HasGenerative(Runtime) && Photo.GenerateVramGb(Runtime) is 0 or >= 7.5;
+    private bool GenerativeUsable => Photo.HasGenerative(Runtime) && Photo.GenerateVramGb(Runtime) is 0 or >= 3.5;
+
+    /// <summary>Generative's Strength: how much of the generated picture is kept, 0.5..1.</summary>
+    public double PhotoGenerativeAmount
+    {
+        get => _photoOptions.Amount;
+        set
+        {
+            var v = Math.Round(Math.Clamp(value, 0.5, 1), 2);
+            if (Math.Abs(_photoOptions.Amount - v) < 0.001) return;
+            _photoOptions = _photoOptions with { Amount = v };
+            Raise(nameof(PhotoGenerativeAmount), nameof(PhotoGenerativeAmountText));
+            SyncPresets();
+        }
+    }
+    public string PhotoGenerativeAmountText => $"{_photoOptions.Amount * 100:0}%";
+    public bool PhotoGenerativeChosen => _photoOptions.Generative;
+
+    private PhotoPart? _photoPart;
+    /// <summary>Generative only for this part of the photo (dragged on the picture), or the whole photo.</summary>
+    public PhotoPart? PhotoPart
+    {
+        get => _photoPart;
+        set
+        {
+            _photoPart = value;
+            Raise(nameof(PhotoPart), nameof(HasPhotoPart), nameof(PhotoPartText), nameof(EtaText), nameof(PhotoEtaText));
+            ClearPhotoPartCommand?.Refresh();
+        }
+    }
+    public bool HasPhotoPart => _photoPart is not null;
+    public string PhotoPartText => _photoPart is { } p && _photoSize is { } sz
+        ? $"Only the chosen part: {(int)((p.X1 - p.X0) * sz.W)} × {(int)((p.Y1 - p.Y0) * sz.H)} px"
+        : "Drag on the picture to generate only a part (much quicker)";
+    public Command ClearPhotoPartCommand { get; private set; } = null!;
 
     public string PhotoModelNote =>
         _photoOptions.Generative && !Photo.HasGenerative(Runtime)
-            ? "Generative needs its own setup: run setup-generate.cmd (about 8 GB; an NVIDIA card with 8 GB or more)."
+            ? "Generative needs its own setup: run setup-generate.cmd (6-8 GB of downloads; an NVIDIA card with 4 GB or more)."
         : _photoOptions.Generative && !GenerativeUsable
-            ? $"Generative needs an NVIDIA card with 8 GB or more; this one has {Photo.GenerateVramGb(Runtime):0.#} GB. Max detail works on it."
+            ? $"Generative needs an NVIDIA card with 4 GB or more; this one has {Photo.GenerateVramGb(Runtime):0.#} GB. Max detail works on it."
+        : _photoOptions.Generative && Photo.GenerateVramGb(Runtime) is > 0 and < 7.5
+            ? "Generative: SeedVR2 makes new detail that fits the picture. On this card about 1.5 minutes a megapixel (a 12 MP photo about 20 minutes): drag on the picture to do just a face or a subject."
         : _photoOptions.Generative
             ? "Generative: SeedVR2 looks at the whole picture and makes new detail that fits it. It cleans the picture itself, so the other choices don't apply."
         : _photoOptions.Restore > 0 && !Photo.HasRestore(Runtime)
@@ -125,6 +163,7 @@ public sealed partial class MainViewModel
         _photoCompare = null;
         _photoSpot = (0.5, 0.5);
         _photoShowBefore = false;
+        PhotoPart = null;
         PhotoStatus = "";
         RaisePhoto();
     }
@@ -212,7 +251,7 @@ public sealed partial class MainViewModel
     private async Task EnhancePhotoAsync()
     {
         if (!CanEnhancePhoto || _photo is not { } image || PhotoEnhancer is not { } runner) return;
-        var options = _photoOptions;
+        var options = _photoOptions.Generative ? _photoOptions with { Part = _photoPart } : _photoOptions;
         string output;
         try
         {

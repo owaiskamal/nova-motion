@@ -7,12 +7,29 @@ using System.Text.Json;
 namespace NovaMotion.Core;
 
 /// <summary>One "Enhance a photo" job. Restore: Remove noise and blur, how much of NAFNet's result is kept (0: off).
-/// Generative: SeedVR2 makes new detail instead (engine/generate.py); the other choices then don't apply.</summary>
+/// Generative: SeedVR2 makes new detail instead (engine/generate.py); the other choices then don't apply. Amount:
+/// how much of the generated picture is kept (the rest the original). Part: only that part of the photo is
+/// generated (set for one run, not part of a preset).</summary>
 public sealed record PhotoOptions(string Preset = "film", int Scale = 2, string Clean = "light", bool MaxDetail = false,
-                                  bool FixCompression = false, double Detail = 0.2, double Restore = 0, bool Generative = false)
+                                  bool FixCompression = false, double Detail = 0.2, double Restore = 0, bool Generative = false,
+                                  double Amount = 0.8, PhotoPart? Part = null)
 {
     /// <summary>"standard", "max" or "generative": the Model choice.</summary>
     public string Model => Generative ? "generative" : MaxDetail ? "max" : "standard";
+}
+
+/// <summary>A part of a photo, as fractions of its width and height.</summary>
+public sealed record PhotoPart(double X0, double Y0, double X1, double Y1)
+{
+    public static PhotoPart? From(double x0, double y0, double x1, double y1)
+    {
+        var (a, b) = (Math.Clamp(Math.Min(x0, x1), 0, 1), Math.Clamp(Math.Max(x0, x1), 0, 1));
+        var (c, d) = (Math.Clamp(Math.Min(y0, y1), 0, 1), Math.Clamp(Math.Max(y0, y1), 0, 1));
+        return b - a < 0.02 || d - c < 0.02 ? null : new PhotoPart(a, c, b, d);
+    }
+
+    public double Area => (X1 - X0) * (Y1 - Y0);
+    public string Argument => string.Create(CultureInfo.InvariantCulture, $"{X0:0.####},{Y0:0.####},{X1:0.####},{Y1:0.####}");
 }
 
 /// <summary>
@@ -39,12 +56,19 @@ public static class Photo
     {
         new Choice("standard", "Standard", "The video models: quick, natural."),
         new Choice("max", "Max detail", "Real-ESRGAN x4plus: adds much more texture and crisper edges. About 10 times slower, still seconds to a minute a photo."),
-        new Choice("generative", "Generative", "SeedVR2, generative AI: looks at the whole picture and makes new detail that fits it (skin, hair, fabric, leaves). Needs an NVIDIA card with 8 GB or more."),
+        new Choice("generative", "Generative", "SeedVR2, generative AI: looks at the whole picture and makes new detail that fits it (skin, hair, fabric, leaves). Needs an NVIDIA card with 4 GB or more."),
     };
 
     /// <summary>setup-generate.cmd finished: the runner, the model and the Python that runs them.</summary>
     public static bool HasGenerative(RuntimeLayout? rt) =>
         rt is not null && File.Exists(rt.GenerateReady) && File.Exists(rt.GenerateScript) && File.Exists(rt.GeneratePython);
+
+    /// <summary>The SeedVR2 model setup-generate.cmd installed (the 4-bit one on cards under 8 GB).</summary>
+    public static string? GenerateModel(RuntimeLayout? rt)
+    {
+        if (rt is null || !File.Exists(rt.GenerateReady)) return null;
+        return File.ReadAllLines(rt.GenerateReady).FirstOrDefault(l => l.StartsWith("model ", StringComparison.Ordinal))?[6..].Trim();
+    }
 
     /// <summary>The graphics card's memory setup-generate.cmd found, in GB (0: unknown).</summary>
     public static double GenerateVramGb(RuntimeLayout? rt)
@@ -89,7 +113,7 @@ public static class Photo
     {
         ["preset"] = o.Preset, ["scale"] = o.Scale, ["clean"] = o.Clean, ["strength"] = "full",
         ["model"] = o.MaxDetail ? "max" : "standard", ["fix_compression"] = o.FixCompression,
-        ["detail"] = o.Detail, ["grain"] = 0, ["restore"] = o.Restore,
+        ["detail"] = o.Detail, ["grain"] = 0, ["restore"] = o.Restore, ["amount"] = o.Amount,
     });
 
     public static IReadOnlyList<string> Arguments(RuntimeLayout rt, string image, string output, PhotoOptions o, int gpu = 0, string? gpuClass = null,
@@ -114,6 +138,8 @@ public static class Photo
             "--runner", rt.GenerateRunner, "--models", rt.GenerateModels, "--gpu", gpu.ToString(CultureInfo.InvariantCulture),
             "--vram", GenerateVramGb(rt).ToString(CultureInfo.InvariantCulture),
         };
+        if (GenerateModel(rt) is { Length: > 0 } model) args.AddRange(new[] { "--dit-model", model });
+        if (o.Part is { } part) args.AddRange(new[] { "--part", part.Argument });
         if (compare is not null) args.AddRange(new[] { "--compare", compare, "--spot", Spot(spot) });
         return args;
     }

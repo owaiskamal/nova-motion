@@ -115,7 +115,29 @@ internal static class PhotoTests
         File.WriteAllText(rt.GenerateScript, "");
         File.WriteAllText(rt.GenerateReady, "runner 4490bd1\nmodel seedvr2_ema_3b_fp8_e4m3fn.safetensors\nvram_mb 4096\n");
         vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "generative"));
-        check(!vm.CanEnhancePhoto && vm.PhotoModelNote.Contains("this one has 4 GB"), $"photo: Generative on a 4 GB card: says why not ({vm.PhotoModelNote})");
+        check(vm.CanEnhancePhoto && vm.PhotoModelNote.Contains("1.5 minutes a megapixel"), $"photo: Generative on a 4 GB card: offered, with how slow it is there ({vm.PhotoModelNote})");
+        File.WriteAllText(rt.GenerateReady, "runner 4490bd1\nmodel seedvr2_ema_3b-Q4_K_M.gguf\nvram_mb 2048\n");
+        vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "generative"));
+        check(!vm.CanEnhancePhoto && vm.PhotoModelNote.Contains("this one has 2 GB"), $"photo: Generative on a 2 GB card: says why not ({vm.PhotoModelNote})");
+        File.WriteAllText(rt.GenerateReady, "runner 4490bd1\nmodel seedvr2_ema_3b-Q4_K_M.gguf\nvram_mb 4096\n");
+        var q4 = Photo.GenerateArguments(rt, "in.jpg", "out.jpg", vm.PhotoOptions with { Part = PhotoPart.From(0.6, 0.2, 0.1, 0.5) }).ToList();
+        check(q4[q4.IndexOf("--dit-model") + 1] == "seedvr2_ema_3b-Q4_K_M.gguf" && q4[q4.IndexOf("--part") + 1] == "0.1,0.2,0.6,0.5",
+              "photo: the installed model and the chosen part (corners in any order) reach the script");
+        check(PhotoPart.From(0.1, 0.1, 0.11, 0.5) is null, "photo: a part too thin to mean anything is no part");
+        var sz12 = vm.PhotoOptions with { Scale = 1 };
+        var whole = Estimate.Photo(3000, 4000, sz12, "entry");
+        var face = Estimate.Photo(3000, 4000, sz12 with { Part = new PhotoPart(0.4, 0.2, 0.6, 0.35) }, "entry");
+        check(whole > TimeSpan.FromMinutes(15) && whole < TimeSpan.FromMinutes(25) && face < TimeSpan.FromMinutes(2),
+              $"photo: on a GTX 1650 a 12 MP photo about 20 minutes, a face about a minute ({whole}, {face})");
+        vm.PhotoGenerativeAmount = 0.6;
+        check(vm.PhotoOptions.Amount == 0.6 && vm.PhotoGenerativeAmountText == "60%"
+              && JsonDocument.Parse(Photo.SettingsJson(vm.PhotoOptions)).RootElement.GetProperty("amount").GetDouble() == 0.6,
+              "photo: Generative's strength reaches the script");
+        vm.PhotoPart = PhotoPart.From(0.2, 0.2, 0.5, 0.5);
+        check(vm.HasPhotoPart && vm.ClearPhotoPartCommand.CanExecute(null), "photo: a part can be chosen");
+        vm.ClearPhotoPartCommand.Execute(null);
+        check(!vm.HasPhotoPart, "photo: and cleared for the whole photo");
+        vm.PhotoGenerativeAmount = 0.8;
         File.WriteAllText(rt.GenerateReady, "runner 4490bd1\nmodel seedvr2_ema_3b_fp8_e4m3fn.safetensors\nvram_mb 12282\n");
         vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "generative"));
         check(vm.CanEnhancePhoto && Photo.GenerateVramGb(rt) == 12, "photo: Generative ready on a 12 GB card");
@@ -124,7 +146,7 @@ internal static class PhotoTests
               && gargs[gargs.IndexOf("--gpu") + 1] == "1" && gargs.Contains("--compare"), "photo: Generative's script, runner, card and memory passed");
         check(Photo.OutputPath(@"C:\p\Kid.jpg", vm.PhotoOptions with { Scale = 2 }, dir).EndsWith("Kid (NOVA Enhance 2x generative).jpg"), "photo: a generative result is named so");
         var gen = Estimate.Photo(3000, 4000, vm.PhotoOptions with { Scale = 1 }, "");
-        check(gen > TimeSpan.FromSeconds(60) && gen < TimeSpan.FromMinutes(5), $"photo: Generative estimated by the megapixels it makes ({gen})");
+        check(gen > TimeSpan.FromSeconds(50) && gen < TimeSpan.FromMinutes(5), $"photo: Generative estimated by the megapixels it makes ({gen})");
         vm.SelectPhotoModelCommand.Execute(vm.PhotoModels.Single(m => m.Value == "max"));
         vm.SelectPhotoScaleCommand.Execute(vm.PhotoScales.Single(m => m.Value == "4"));
         vm.SelectPhotoPresetCommand.Execute(vm.PhotoPresets.Single(m => m.Value == "anime"));

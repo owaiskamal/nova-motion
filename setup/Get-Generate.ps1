@@ -10,12 +10,13 @@
     - PyTorch for CUDA 12.8 and the packages in setup\generate-requirements.txt, pinned
     - SeedVR2's runner (numz/ComfyUI-SeedVR2_VideoUpscaler, Apache-2.0) at a pinned commit
     - the SeedVR2 3B model (fp8) and its VAE, checked against the SHA-256 the runner lists
-  Needs an NVIDIA graphics card with 8 GB or more (the RTX 4070's 12 GB runs it well).
+  Needs an NVIDIA graphics card with 4 GB or more. Cards under 8 GB get the 4-bit model (about 2 GB):
+  measured on a GTX 1650 (4 GB), about 90 seconds a megapixel; the RTX 4070's 12 GB runs the 8-bit one.
 
     powershell -ExecutionPolicy Bypass -File setup\Get-Generate.ps1 [-Force]
 #>
 [CmdletBinding()]
-param([switch]$Force, [ValidateSet("fp8", "q4")] [string]$Model = "fp8", [string]$Root = "")
+param([switch]$Force, [ValidateSet("", "fp8", "q4")] [string]$Model = "", [string]$Root = "")
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference    = "SilentlyContinue"
@@ -75,9 +76,11 @@ foreach ($c in $cards) {
     Info "$name, $([math]::Round([double]$mb / 1024, 1)) GB"
     $best = [math]::Max($best, [double]$mb)
 }
-if ($best -lt 7.5 * 1024 -and -not $Force) {
-    throw "Generative detail needs an NVIDIA card with 8 GB or more (this one has $([math]::Round($best / 1024, 1)) GB). -Force installs it anyway."
+if ($best -lt 3.5 * 1024 -and -not $Force) {
+    throw "Generative detail needs an NVIDIA card with 4 GB or more (this one has $([math]::Round($best / 1024, 1)) GB). -Force installs it anyway."
 }
+if (-not $Model) { $Model = if ($best -lt 7.5 * 1024) { "q4" } else { "fp8" } }
+Info "model: $(if ($Model -eq 'q4') { '4-bit, for this card''s memory' } else { '8-bit' })"
 
 Step "uv $UvVersion (installs Python and the packages)"
 $uv = Join-Path $Gen "uv\uv.exe"
@@ -121,7 +124,7 @@ if (-not (Test-Path $stamp) -or (Get-Content $stamp -Raw).Trim() -ne $RunnerComm
 }
 Info "runner in $Runner"
 
-Step "SeedVR2 3B model (about 4 GB, once)"
+Step "SeedVR2 3B model (2-4 GB, once)"
 foreach ($m in $ModelFiles) {
     $dest = Join-Path $Models $m.Name
     if ((Test-Path $dest) -and -not $Force -and (Get-FileHash $dest -Algorithm SHA256).Hash -eq $m.Sha.ToUpper()) { Info "have    $($m.Name)"; continue }
