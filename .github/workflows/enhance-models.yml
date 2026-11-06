@@ -87,7 +87,13 @@ jobs:
           gdown -q -O pth/nafnet_gopro32.pth 1Fr2QadtDCEXg6iwWX8OzeZLbHOx2t5Bj
           gdown -q -O pth/nafnet_gopro64.pth 1S0PVRbyTakYY9a82kujgZLbMihfNBLfC
           gdown -q -O pth/nafnet_reds64.pth 14D4V4raNYIOhETfcuuLI3bGLB-OYIv6X
-          sha256sum pth/nafnet_*.pth
+          sha256sum -c <<'SUMS'
+          89c70e808d1783b6c07911306e106aaf0d4f7f3da8c61078b99ff7f8929a26f4  pth/nafnet_sidd32.pth
+          cd685efaae01f7c4e9951f2deab05780079c8eb1e49ed664b72f6db04dabb445  pth/nafnet_sidd64.pth
+          19394e6155d12ef6371d1d57496f87f0ec88f92bdffa27c0792690722d5d1a5c  pth/nafnet_gopro32.pth
+          329d3ab4077b8d6b7ff61de376e483714667960bf85be027bf4335cda701196f  pth/nafnet_gopro64.pth
+          175fe8b3cdf3abedfbc87769779c3d9f491e05bb2e73ea9d627883f90a4b2df3  pth/nafnet_reds64.pth
+          SUMS
           python tools/restore_to_onnx.py scunet arch/network_scunet.py pth/scunet_psnr.pth out/scunet_color_real_psnr.onnx
           python tools/restore_to_onnx.py scunet arch/network_scunet.py pth/scunet_gan.pth out/scunet_color_real_gan.onnx
           for n in sidd32 sidd64 gopro32 gopro64 reds64; do

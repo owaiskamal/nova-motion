@@ -67,7 +67,7 @@ def stubs():
     for name in ("basicsr", "basicsr.models", "basicsr.models.archs", "basicsr.utils"):
         stub(name)
     stub("basicsr.models.archs.arch_util", LayerNorm2d=LayerNorm2d)
-    stub("basicsr.models.archs.local_arch", Local_Base=object)
+    stub("basicsr.models.archs.local_arch", Local_Base=type("Local_Base", (), {}))
 
 
 def load_module(path):
