@@ -145,6 +145,17 @@ def strips(h, out_h):
     return [(y, min(h, y + step)) for y in range(0, h, step)]
 
 
+def looks_broken(rgb, out):
+    """The result is nothing like the picture: on average more than an eighth of the brightness range
+    apart, compared small (enhancing changes detail, never the picture as a whole)."""
+    import numpy as np
+    from PIL import Image
+    small = (64, max(1, round(64 * rgb.shape[0] / rgb.shape[1])))
+    before = np.asarray(Image.fromarray((rgb * 255 + 0.5).astype("uint8")).resize(small, Image.BOX), dtype=np.float32)
+    after = np.asarray(Image.fromarray(out).resize(small, Image.BOX), dtype=np.float32)
+    return float(np.abs(before - after).mean()) > 32
+
+
 def enlarge(clip, cfg, e, full):
     """The AI enlargement, except at the same size after Remove noise and blur: the restored picture
     is the result there (an upscaler at 1x only smooths it)."""
@@ -246,7 +257,15 @@ def main(argv=None):
         path, _ = enhance.model_plan(e, img.width, img.height)
         say(f"model {os.path.basename(path)}")
 
-    result = Image.fromarray(enhance_picture(rgb, e, a.gpu, a.gpu_class), "RGB")
+    out = enhance_picture(rgb, e, a.gpu, a.gpu_class)
+    if e.get("restore") and looks_broken(rgb, out):
+        # A model that overflows on this graphics card (NAFNet in half precision gave a green
+        # checkerboard on a GTX 1650): the photo without it rather than a ruined one
+        say("note Remove noise and blur gave a broken picture on this graphics card; enhanced without it")
+        e["restore"] = 0
+        say("progress 0/1")
+        out = enhance_picture(rgb, e, a.gpu, a.gpu_class)
+    result = Image.fromarray(out, "RGB")
     say("stage save")
     if alpha is not None:
         result.putalpha(alpha.resize(result.size, Image.LANCZOS))

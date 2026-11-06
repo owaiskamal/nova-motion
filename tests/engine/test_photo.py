@@ -215,6 +215,23 @@ code, text = run(tall, os.path.join(d, "tall-r.png"), '{"preset": "film", "scale
 steps = [l for l in text.splitlines() if l.startswith("progress ")]
 check(code == 0 and len(steps) >= 2 and Image.open(os.path.join(d, "tall-r.png")).size == (400, 1100),
       f"a tall photo is cleaned in strips, with progress ({len(steps)} steps)")
+# A restoration model that breaks on the card (overflowing in half precision): the photo without it
+saved_inf = m.inference
+
+
+def broken(clip, path, **kw):
+    if os.path.basename(path).startswith("nafnet"):
+        calls.append(("inference", os.path.basename(path), clip.width, clip.height, ()))
+        return core.std.Expr(clip, "x 0 * 0.2 +" if clip.format.sample_type == vs.FLOAT else "x 0 *")
+    return saved_inf(clip, path, **kw)
+
+
+m.inference = broken
+code, text = run(src, os.path.join(d, "r3.png"), '{"preset": "film", "scale": 1, "restore": 1, "detail": 0}')
+m.inference = saved_inf
+r3 = np.asarray(Image.open(os.path.join(d, "r3.png")).convert("RGB")).astype(float)
+check(code == 0 and "gave a broken picture" in text and abs(r3.mean() - o.mean()) < 15,
+      f"a broken restoration is noticed: the photo is enhanced without it (brightness {r3.mean():.0f} against {o.mean():.0f})")
 m = enhance.mirror_pad(core.std.BlankClip(width=10, height=6, format=vs.GRAY8, color=[7]), 25, 3)
 check((m.width, m.height) == (35, 9), "mirror padding reaches any size")
 
