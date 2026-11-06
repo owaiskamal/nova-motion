@@ -12,3 +12,7 @@ obj/
 __pycache__/
 engine/jobs/
 engine/trt-engines/
+
+# Your own photos for testing Enhance on this PC: never committed
+test-photo/
+test-photos/
