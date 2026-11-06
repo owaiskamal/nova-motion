@@ -54,6 +54,10 @@ internal static class UiTest
             vm.SelectModule(StudioModule.Enhance);
             await Task.Delay(500);
             Shot(w, "03c-enhance");
+            vm.IsSidebarCollapsed = true;
+            await Task.Delay(500);
+            Shot(w, "03c2-enhance-mini-sidebar");
+            vm.IsSidebarCollapsed = false;
             vm.OpenCustomizeCommand.Execute(null);
             await Task.Delay(500);
             Shot(w, "03d-enhance-customize");

@@ -21,12 +21,28 @@
             </Grid.ColumnDefinitions>
 
             <!-- ======================================================== sidebar (iPadOS style) -->
-            <Border x:Name="Sidebar" Grid.Column="0" Width="236" Background="{StaticResource Surface}"
+            <Border x:Name="Sidebar" Grid.Column="0" Background="{StaticResource Surface}"
                     BorderBrush="{StaticResource Separator}" BorderThickness="0,0,1,0">
-                <DockPanel Margin="12,0,12,14">
-                    <!-- NOVA's mark, as before; also the window's drag area -->
-                    <Button DockPanel.Dock="Top" Style="{StaticResource Btn.Link}" Height="56" HorizontalAlignment="Left" Margin="8,0,0,8"
-                            Command="{Binding StopCommand}" WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Motion home" Focusable="False">
+                <!-- Full width, or a mini sidebar of icons (the button at the top, or Ctrl+B) -->
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Width" Value="236"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                                <Setter Property="Width" Value="68"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <DockPanel Margin="10,0,10,14">
+                    <!-- Collapse / expand, and NOVA's mark as before -->
+                    <DockPanel DockPanel.Dock="Top" Height="56" Margin="0,0,0,8">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Btn.Icon}" Content="&#xE700;" Command="{Binding ToggleSidebarCommand}"
+                                WindowChrome.IsHitTestVisibleInChrome="True" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                ToolTip="Show or hide the names (Ctrl+B)"/>
+                    <Button Style="{StaticResource Btn.Link}" HorizontalAlignment="Left" Margin="8,0,0,0"
+                            Command="{Binding StopCommand}" WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Motion home" Focusable="False"
+                            Visibility="{Binding IsSidebarExpanded, Converter={StaticResource BoolToVis}}">
                         <StackPanel Orientation="Horizontal">
                             <c:CadenceStrip Ticks="{Binding CadenceTicks}" BarWidth="3" Gap="2.5" Height="14" Margin="0,0,10,0"
                                             RealBrush="{StaticResource Text}" GeneratedBrush="{StaticResource Nova}"/>
@@ -34,11 +50,56 @@
                                        Foreground="{StaticResource Text}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+                    </DockPanel>
 
                     <!-- Settings, and what's working in the background -->
                     <StackPanel DockPanel.Dock="Bottom">
+                        <!-- Activity: a spinner in the mini sidebar, the card in the full one -->
+                        <Button Command="{Binding ToggleActivityCommand}" Cursor="Hand" Margin="0,0,0,8" Height="42" FocusVisualStyle="{StaticResource FocusRing}"
+                                ToolTip="{Binding ActivityTitle}">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding HasActivity}" Value="True"/>
+                                                <Condition Binding="{Binding IsSidebarCollapsed}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="{StaticResource Cell}" CornerRadius="10">
+                                        <Viewbox Width="18" Height="18"><ContentControl Style="{StaticResource Spinner}"/></Viewbox>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Hover}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
                         <Button Command="{Binding ToggleActivityCommand}" Cursor="Hand" Margin="0,0,0,8" FocusVisualStyle="{StaticResource FocusRing}"
-                                Visibility="{Binding HasActivity, Converter={StaticResource BoolToVis}}" ToolTip="Activity: everything working in the background">
+                                ToolTip="Activity: everything working in the background">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding HasActivity}" Value="True"/>
+                                                <Condition Binding="{Binding IsSidebarCollapsed}" Value="False"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="Bd" Background="{StaticResource Cell}" CornerRadius="12" Padding="12,10">
@@ -74,7 +135,21 @@
                                      IsChecked="{Binding IsGenerateModule, Mode=OneWay}" Command="{Binding SelectModuleCommand}" CommandParameter="generate"
                                      ToolTip="Animate pictures; images and video with open AI models soon"/>
                         <!-- The person's own presets: one click to Enhance with it -->
-                        <StackPanel Visibility="{Binding HasMyPresets, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding HasMyPresets}" Value="True"/>
+                                                <Condition Binding="{Binding IsSidebarCollapsed}" Value="False"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
                             <Border Height="1" Background="{StaticResource Separator}" Margin="8,12"/>
                             <TextBlock Style="{StaticResource Text.GroupHeader}" Text="My presets" Margin="12,0,12,6"/>
                             <ItemsControl ItemsSource="{Binding MyPresetItems}" Focusable="False">

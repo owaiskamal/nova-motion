@@ -102,6 +102,11 @@ internal static class PresetTests
         vm.ApplyVideoPreset("smooth");
         check(vm.EtaText != before, $"page: the estimate follows the preset ({before} → {vm.EtaText})");
         check(!vm.HasActivity && vm.ActivityTitle == "Nothing running", "activity: nothing running");
+        check(!vm.IsSidebarCollapsed, "sidebar: full width at first");
+        vm.ToggleSidebarCommand.Execute(null);
+        var reopened = new MainViewModel(new FakeHost(), new SettingsStore(Path.Combine(dir, "settings")), rt, () => new FakeBackend(), () => DateTime.UtcNow);
+        check(vm.IsSidebarCollapsed && !vm.IsSidebarExpanded && reopened.IsSidebarCollapsed, "sidebar: icons only, remembered next time");
+        vm.ToggleSidebarCommand.Execute(null);
         vm.EnhanceStagedCommand.Execute(null);
         await Task.Delay(50);
         check(!vm.HasStagedVideos && vm.Exports.Count == 2 && vm.Exports.All(e => e.EstimatedWork is not null) && exporter.Runs.Count == 1,

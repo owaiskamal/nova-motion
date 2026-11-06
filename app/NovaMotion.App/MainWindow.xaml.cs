@@ -303,6 +303,13 @@ public partial class MainWindow : Window, IUiHost
 
     private void OnKey(KeyEventArgs e)
     {
+        // Ctrl+B: the sidebar's names on or off, on any page
+        if (e.Key == Key.B && Keyboard.Modifiers == ModifierKeys.Control && Keyboard.FocusedElement is not TextBox)
+        {
+            _vm.ToggleSidebarCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
         if (!_vm.HasMedia || _vm.IsSettingsOpen || _vm.IsExportOpen || _vm.IsGenerateOpen) return;
         if (Keyboard.FocusedElement is TextBox) return;
         var key = e.Key == Key.System ? e.SystemKey : e.Key;

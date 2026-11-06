@@ -103,6 +103,7 @@ public static class KeyMap
         new("Z / X", "Subtitles earlier or later"),
         new("Shift + L", "Loop a part (A–B)"),
         new("Shift + D", "Night mode"),
+        new("Ctrl + B", "Sidebar: icons only, or with names"),
         new("I", "Picture in picture"),
         new("Double-click left or right", "Back or forward 10 s"),
         new("Hold →", "Play at 2× while held"),

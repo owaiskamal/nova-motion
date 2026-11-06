@@ -118,6 +118,8 @@ public sealed class AppSettings
     public EnhanceSettings Enhance { get; set; } = new();
     /// <summary>The person's own Enhance presets ("Save as a new preset"), after the built-in ones.</summary>
     public List<VideoPreset> MyVideoPresets { get; set; } = new();
+    /// <summary>The sidebar shows icons only.</summary>
+    public bool SidebarCollapsed { get; set; }
     public List<PhotoPreset> MyPhotoPresets { get; set; } = new();
     /// <summary>The preset chosen last, which new videos and photos start with.</summary>
     public string VideoPreset { get; set; } = "";

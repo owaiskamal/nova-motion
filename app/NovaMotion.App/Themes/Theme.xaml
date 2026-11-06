@@ -1044,13 +1044,20 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
                     <Border x:Name="Bd" Background="Transparent" CornerRadius="10" Padding="12,0">
-                        <StackPanel Orientation="Horizontal">
+                        <StackPanel x:Name="Row" Orientation="Horizontal">
                             <TextBlock x:Name="Glyph" Style="{StaticResource Icon}" Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" FontSize="17" Width="22" Margin="0,0,12,0"
                                        Foreground="{TemplateBinding Foreground}"/>
-                            <ContentPresenter VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
+                            <ContentPresenter x:Name="Label" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </StackPanel>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <!-- The mini sidebar: icons only, centred -->
+                        <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                            <Setter TargetName="Label" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="Glyph" Property="Margin" Value="0"/>
+                            <Setter TargetName="Row" Property="HorizontalAlignment" Value="Center"/>
+                            <Setter TargetName="Bd" Property="Padding" Value="0"/>
+                        </DataTrigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="#14FFFFFF"/>
                         </Trigger>
@@ -1078,13 +1085,20 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Bd" Background="Transparent" CornerRadius="10" Padding="12,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" FontSize="17" Width="22" Margin="0,0,12,0"
+                        <StackPanel x:Name="Row" Orientation="Horizontal">
+                            <TextBlock x:Name="Glyph" Style="{StaticResource Icon}" Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" FontSize="17" Width="22" Margin="0,0,12,0"
                                        Foreground="{TemplateBinding Foreground}"/>
-                            <ContentPresenter VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
+                            <ContentPresenter x:Name="Label" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </StackPanel>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <!-- The mini sidebar: icons only, centred -->
+                        <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                            <Setter TargetName="Label" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="Glyph" Property="Margin" Value="0"/>
+                            <Setter TargetName="Row" Property="HorizontalAlignment" Value="Center"/>
+                            <Setter TargetName="Bd" Property="Padding" Value="0"/>
+                        </DataTrigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="#14FFFFFF"/>
                         </Trigger>

@@ -12,6 +12,16 @@ public sealed partial class MainViewModel
     private Command? _toggleActivity, _closeActivity;
 
     public bool IsActivityOpen { get => _isActivityOpen; set => Set(ref _isActivityOpen, value); }
+
+    private Command? _toggleSidebar;
+    /// <summary>The sidebar as icons only (a mini sidebar), remembered.</summary>
+    public bool IsSidebarCollapsed
+    {
+        get => _settings.SidebarCollapsed;
+        set { if (_settings.SidebarCollapsed == value) return; _settings.SidebarCollapsed = value; _store.Save(_settings); Raise(); Raise(nameof(IsSidebarExpanded)); }
+    }
+    public bool IsSidebarExpanded => !IsSidebarCollapsed;
+    public Command ToggleSidebarCommand => _toggleSidebar ??= new Command(() => IsSidebarCollapsed = !IsSidebarCollapsed);
     public Command ToggleActivityCommand => _toggleActivity ??= new Command(() => IsActivityOpen = !IsActivityOpen);
     public Command CloseActivityCommand => _closeActivity ??= new Command(() => IsActivityOpen = false);
 
