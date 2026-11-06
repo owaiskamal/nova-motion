@@ -30,3 +30,7 @@ NOVA Motion's own code is licensed under GPL-3.0-or-later (see [LICENSE](LICENSE
 | Onest and Unbounded fonts (bundled in the app, `app/NovaMotion.App/Fonts`) | Interface type | SIL Open Font License 1.1 | https://github.com/google/fonts |
 
 Online playback through yt-dlp is subject to each website's own terms of service.
+
+## Images on the website and in the README
+
+The before/after comparison photos (`site/img/compare/`, `docs/img/compare-*.jpg`) are made from the Kodak Lossless True Color Image Suite, released by Eastman Kodak for unrestricted use. The "before" pictures were reduced, or blurred and compressed, for the tests; the "after" pictures are the output of the models named with them.

@@ -1,18 +1,38 @@
-# NOVA Motion
+# NOVA Studio
 
-**Watch at your screen's full frame rate.** Free, open-source AI motion smoothing for Windows, by Novabit. NOVA Motion generates the frames in between with AI, live, on your own graphics card, so 24 and 25 fps video plays smoothly instead of stepping. It runs even on a GTX 1650 laptop.
+**AI for your videos and photos, on your own PC.** Free, open-source Windows app by Novabit. Smooth any video to your screen's frame rate as it plays, clean up and enlarge videos and photos, add real detail with generative AI, and bring still pictures to life. Nothing is uploaded and nothing is paid per use; it runs even on a GTX 1650 laptop. (The first module was called NOVA Motion, and the repository keeps that name.)
 
-[![Latest release](https://img.shields.io/github/v/release/owaiskamal/nova-motion?label=download&color=FFB84D)](https://github.com/owaiskamal/nova-motion/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/owaiskamal/nova-motion?label=download&color=FFB020)](https://github.com/owaiskamal/nova-motion/releases/latest)
 [![CI](https://github.com/owaiskamal/nova-motion/actions/workflows/ci.yml/badge.svg)](https://github.com/owaiskamal/nova-motion/actions/workflows/ci.yml)
-[![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-2A3456)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-2E2E35)](LICENSE)
 
 **[Download for Windows](https://github.com/owaiskamal/nova-motion/releases/latest)** · [Website](https://owaiskamal.github.io/nova-motion/) · [How it works](docs/ENGINEERING.md) · [Report a problem](https://github.com/owaiskamal/nova-motion/issues)
 
+![Two parrots: on the left a 192 × 128 picture enlarged 4× the usual way, soft; on the right the same picture with NOVA Enhance Max detail, crisp feathers and eyes](docs/img/compare-parrots.jpg)
+
+<sub>A 192 × 128 picture made 4× larger: bicubic, and Max detail (Real-ESRGAN x4plus) at full strength, the model's own output. Photo: Kodak Lossless True Color Image Suite.</sub>
+
 <!-- Demo: a 60 fps before/after clip goes here. Upload the MP4 by dragging it into this file in GitHub's web editor; GitHub inserts a link it plays inline. Credit under it: Footage: Tears of Steel (CC BY 3.0) Blender Foundation, mango.blender.org -->
 
-![The Motion home screen: paste a link or drop a video; the strip of white and amber bars shows 24 frames in and 60 out](docs/img/home.png)
+## What's inside
 
-## What it does
+| | What it does | Runs on |
+| --- | --- | --- |
+| **Motion** | Live AI smoothing (RIFE) to your screen's frame rate, for files, YouTube and 1,000+ sites, in a full player | Any graphics card; fastest on NVIDIA with TensorRT |
+| **Enhance videos** | Clean-up and upscaling to 4K or 8K (Real-ESRGAN, Real-CUGAN, DPIR) and 60 fps copies, with a preview and a time estimate first | Any graphics card |
+| **Enhance photos** | Max detail (Real-ESRGAN x4plus), Remove noise and blur (NAFNet), and **Generative detail** (SeedVR2), which draws new detail that fits the picture | Any card; Generative needs NVIDIA with 4 GB or more |
+| **Generate** | Animate a picture: a still becomes a short 3D camera move (Depth Anything). Images and clips from open models are next | Any graphics card |
+| **AI Models** | Every part installs inside the app, with real progress, pause and resume, and a disk-space check | |
+
+| Motion | Enhance photos | AI Models |
+| --- | --- | --- |
+| ![The Motion home screen](docs/img/motion.png) | ![The Enhance page for photos, with presets](docs/img/enhance-photos.png) | ![The AI Models page](docs/img/ai-models.png) |
+
+![A window with shutters and red flowers: on the left blurred and JPEG-compressed, on the right after Remove noise and blur](docs/img/compare-window.jpg)
+
+<sub>Remove noise and blur at the same size. The photo was blurred and saved as a low-quality JPEG for this test. Photo: Kodak test set.</sub>
+
+## Motion
 
 - **Real AI frames, live.** RIFE, an open AI model, makes the in-between frames while you watch. The frames from the video itself are never touched.
 - **Fits your graphics card.** A one-time tuning run measures each model on your PC and the engine uses the best one that keeps up. On cards like a GTX 1650 the AI works on a half-size copy and only its frames are scaled up, and 4K video is smoothed at 1080p (online video is fetched at 1080p at most while smoothing), which looks the same on a 1080p laptop screen at a quarter of the work.
@@ -38,7 +58,7 @@ Windows 10 or 11. TensorRT needs a one-time download of about 3 GB, offered duri
 
 ## Get started
 
-**Installer:** download `NovaMotion-Setup` from the [latest release](https://github.com/owaiskamal/nova-motion/releases/latest), run it (no admin rights needed) and start NOVA Motion. NVIDIA RTX and GTX 16 users then run *Add NVIDIA TensorRT engine* from the Start menu once. Windows may show a SmartScreen warning because the installer isn't code-signed yet: choose *More info*, then *Run anyway*.
+**Installer:** download `NovaMotion-Setup` from the [latest release](https://github.com/owaiskamal/nova-motion/releases/latest), run it (no admin rights needed) and start NOVA Motion. NVIDIA RTX and GTX 16 users then run *Add NVIDIA TensorRT engine* from the Start menu once. The current installer (0.2.0) has Motion and Enhance for videos; photos, Generate and the AI Models page are in the source build until the next release. Windows may show a SmartScreen warning because the installer isn't code-signed yet: choose *More info*, then *Run anyway*.
 
 **From source:** run **`build.cmd`**. It sets everything up and says what it's doing, and you can run it again any time to repair or update; finished steps are skipped:
 
@@ -46,7 +66,7 @@ Windows 10 or 11. TensorRT needs a one-time download of about 3 GB, offered duri
 2. the player runtime: mpv, VapourSynth, RIFE on Vulkan with four models, MVTools, yt-dlp (about 150 MB),
 3. on NVIDIA RTX and GTX 16 cards, NVIDIA TensorRT through [vs-mlrt](https://github.com/AmusementClub/vs-mlrt) with RIFE 4.6, 4.22 Lite, 4.25 Lite and 4.26 (asks first),
 4. the tests, then the app in `dist\`,
-5. AI enhance for Enhance: the upscaling and clean-up models (about 150 MB, asks first), and Animate a picture for Generate: a depth model and three Python packages (about 150 MB, asks first),
+5. AI enhance for Enhance: the upscaling and clean-up models (about 500 MB, asks first), and Animate a picture for Generate: a depth model and three Python packages (about 150 MB, asks first),
 6. tuning for your PC, redone when it's outdated or the graphics changed,
 7. Start menu and desktop shortcuts, and a summary of what's ready.
 
@@ -68,7 +88,7 @@ Options: `build.cmd -Yes` answers every question with yes; `-NoTensorRT`, `-NoEn
 - **Generative detail for photos:** the third photo model, **Generative**, runs SeedVR2 3B (ByteDance, Apache-2.0), a one-step diffusion transformer that looks at the whole picture and makes new detail that fits it (eyelashes, fur, skin texture, the crumb of bread) instead of only sharpening what's there. No prompt: the picture is its context. **Drag on the picture to generate only a part** (a face, a pet), blended into the rest; **Strength** (50–100%, 80% by default) mixes in the photo itself, which tames the brush-stroke look the model can give large areas of fur or grass. It cleans the picture itself, so the other choices don't apply. Same progress bar, before/after and time estimate as the rest of Enhance; if the card runs out of memory it tries again with more of the model in the PC's memory. `setup-generate.cmd` installs it (its own Python with PyTorch for CUDA, SeedVR2's runner at a pinned commit, the model checked against its SHA-256): on cards under 8 GB the 4-bit model (about 2 GB). Needs an NVIDIA card with 4 GB or more. Measured on a GTX 1650 (4 GB), 4-bit model: about 90 seconds a megapixel at the same size (a 1024 × 1024 crop 88–112 s; 2× about 6 minutes), so a 12 MP photo about 20 minutes and a face about a minute; there it beat every other model on our test photos (Max detail, Remove noise and blur, both together), which barely changed phone photos the phone had already processed heavily. On the RTX 4070 it runs the 8-bit model.
 - **Subtitles, audio, speed and online quality** in one panel; drop a subtitle file on the video to load it.
 
-![Enhance: frame rate, quality, a before/after video switch with start time and length](docs/img/enhance.png)
+![Enhance for videos: presets, previews of a frame or 4 seconds, and a time estimate](docs/img/enhance-videos.png)
 
 ## Keyboard
 
@@ -113,7 +133,7 @@ How the engine gets there, and the problems it took to make AI frames real-time 
 
 ## NOVA Studio
 
-NOVA Motion is the first module of **NOVA Studio**, a set of AI video tools that run on your own graphics card. In the app, the title bar has three tabs:
+NOVA Motion was the first module of **NOVA Studio**, a set of AI video and photo tools that run on your own graphics card. In the app, the sidebar has three pages, plus AI Models and Settings:
 
 - **Motion:** real-time smoothing for files and online video. Available.
 - **Enhance:** smooth, AI-enhanced copies of videos, and Enhance a photo. Available.
@@ -129,7 +149,7 @@ The plan is in [docs/NOVA-STUDIO.md](docs/NOVA-STUDIO.md). The code, settings fo
 | M2 Own player window | ✅ mpv inside the app, on-video controls, subtitles, queue, resume |
 | M3 Engine manager | ✅ scene-cut and repeated-frame handling · ✅ per-size engine status and preparation · ✅ tuning, offered on first run · ✅ automatic model and AI-size choice with step-down · ✅ defaults for GTX and laptop graphics |
 | M4 Online and launch | ✅ quality picker · ✅ daily yt-dlp updates · ✅ project site · extension in the stores |
-| M5 Enhance & Export | ✅ offline smooth copies with the best model, queue, GPU encoding · ✅ AI clean-up and upscaling to 4K/8K (Real-ESRGAN, Real-CUGAN, DPIR), preview · temporal consistency, generative detail (SeedVR2), a model distilled for speed |
+| M5 Enhance & Export | ✅ offline smooth copies with the best model, queue, GPU encoding · ✅ AI clean-up and upscaling to 4K/8K (Real-ESRGAN, Real-CUGAN, DPIR), preview · ✅ photos: Max detail, Remove noise and blur, generative detail (SeedVR2) · ✅ in-app installs (AI Models page) · temporal consistency, generative detail for video, a model distilled for speed |
 | M6 NOVA Studio shell | ✅ one app with Motion, Enhance and Generate tabs · ✅ Generate hardware check |
 | M7 Generate | managed ComfyUI engine, model manager, Flux.1 Schnell and SDXL images, Wan 2.2 video, one click to smooth and upscale |
 | Later | light timeline (trim, join, titles), smoothing over any window, faster AMD/Intel paths, cloud GPU tier, mobile |

@@ -3,160 +3,257 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NOVA Motion: smooth video with AI, on your own PC</title>
-<meta name="description" content="Free, open-source AI motion smoothing for Windows. 24 and 25 fps video plays at your screen's frame rate, live, even on a GTX 1650 laptop.">
-<meta property="og:title" content="NOVA Motion by Novabit">
-<meta property="og:description" content="Free, open-source AI motion smoothing for Windows. Runs even on a GTX 1650 laptop.">
-<meta property="og:image" content="https://owaiskamal.github.io/nova-motion/img/enhance.png">
+<title>NOVA Studio: AI for your videos and photos, on your own PC</title>
+<meta name="description" content="Free, open-source AI for Windows: smooth video to your screen's frame rate live, clean up and enlarge videos and photos, add generative detail and animate pictures. Everything runs on your own graphics card, even a GTX 1650 laptop.">
+<meta property="og:title" content="NOVA Studio by Novabit">
+<meta property="og:description" content="Free, open-source AI video and photo tools that run on your own graphics card.">
+<meta property="og:image" content="https://owaiskamal.github.io/nova-motion/img/og.jpg">
 <meta property="og:type" content="website">
-<meta name="theme-color" content="#0F1424">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230F1424'/%3E%3Cg fill='%23FFB84D'%3E%3Crect x='6' y='9' width='3' height='14' rx='1.5' fill='%23ECEFF7'/%3E%3Crect x='12' y='9' width='3' height='14' rx='1.5'/%3E%3Crect x='18' y='9' width='3' height='14' rx='1.5'/%3E%3Crect x='24' y='9' width='3' height='14' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0B0B0F">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230B0B0F'/%3E%3Cg fill='%23FFB020'%3E%3Crect x='6' y='9' width='3' height='14' rx='1.5' fill='%23F5F5F7'/%3E%3Crect x='12' y='9' width='3' height='14' rx='1.5'/%3E%3Crect x='18' y='9' width='3' height='14' rx='1.5'/%3E%3Crect x='24' y='9' width='3' height='14' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
 <style>
 @font-face { font-family: "Unbounded"; src: url("fonts/Unbounded-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
 @font-face { font-family: "Onest"; src: url("fonts/Onest-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Onest"; src: url("fonts/Onest-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
 
 :root {
-  /* The app's own palette */
-  --base: #0F1424;
-  --surface: #151B2E;
-  --raised: #1C2440;
-  --line: #2A3456;
-  --text: #ECEFF7;
-  --muted: #959DB9;
-  --faint: #5D6688;
-  --nova: #FFB84D;
-  --nova-ink: #241503;
-  --measure: 34rem;
+  /* The app's own palette (app/NovaMotion.App/Theme.xaml) */
+  --base: #0B0B0F;
+  --surface: #141418;
+  --raised: #1C1C21;
+  --hover: #2A2A31;
+  --line: #2E2E35;
+  --text: #F5F5F7;
+  --muted: #A1A1AA;
+  --faint: #6B6B74;
+  --nova: #FFB020;
+  --nova-hover: #FFC75A;
+  --nova-ink: #1A1200;
+  --nova-wash: rgba(255, 176, 32, .10);
+  --measure: 36rem;
   --gutter: clamp(1rem, 4vw, 3rem);
+  --radius: 16px;
 }
 * { box-sizing: border-box; }
-html { background: var(--base); color: var(--text); }
-body {
-  margin: 0;
-  font: 400 1.0625rem/1.6 "Onest", system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
+html { background: var(--base); color: var(--text); scroll-behavior: smooth; }
+body { margin: 0; background: var(--base); font: 400 1.0625rem/1.6 "Onest", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 a { color: var(--nova); text-underline-offset: 3px; }
-a:focus-visible, button:focus-visible { outline: 2px solid var(--nova); outline-offset: 3px; border-radius: 6px; }
-img { max-width: 100%; display: block; }
-.wrap { max-width: 72rem; margin: 0 auto; padding: 0 var(--gutter); }
+a:focus-visible, button:focus-visible, input:focus-visible + .handle { outline: 2px solid var(--nova); outline-offset: 3px; border-radius: 8px; }
+img, video { max-width: 100%; display: block; }
+.wrap { max-width: 76rem; margin: 0 auto; padding: 0 var(--gutter); }
+.eyebrow { font: 600 .8rem/1 "Onest", sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--nova); margin: 0 0 1rem; }
 
 /* ---------- header */
-header.top { display: flex; align-items: center; gap: 2rem; padding: 1.25rem 0; }
+header.top { position: sticky; top: 0; z-index: 10; background: rgba(11, 11, 15, .82); backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid transparent; }
+header.top.scrolled { border-bottom-color: var(--line); }
+header.top .wrap { display: flex; align-items: center; gap: 2rem; height: 4.25rem; }
 .brand { display: flex; align-items: center; gap: .65rem; text-decoration: none; color: var(--text);
-  font: 600 1rem/1 "Unbounded", sans-serif; letter-spacing: .02em; }
+  font: 600 1rem/1 "Unbounded", sans-serif; letter-spacing: .02em; white-space: nowrap; }
 .brand svg { flex: none; }
-.brand small { font: 400 .875rem/1 "Onest", sans-serif; color: var(--muted); letter-spacing: 0; }
-header.top nav { margin-left: auto; display: flex; gap: 1.5rem; align-items: center; }
+header.top nav { margin-left: auto; display: flex; gap: 1.6rem; align-items: center; }
 header.top nav a { color: var(--muted); text-decoration: none; font-weight: 600; font-size: .95rem; }
 header.top nav a:hover { color: var(--text); }
 header.top nav a.btn-primary, header.top nav a.btn-primary:hover { color: var(--nova-ink); }
-@media (max-width: 40rem) {
-  header.top nav a.secondary, .brand small { display: none; }
-  td:first-child { white-space: normal; }
-}
+@media (max-width: 52rem) { header.top nav a.secondary { display: none; } }
 
 /* ---------- buttons */
-.btn { display: inline-flex; align-items: center; gap: .55rem; padding: .85rem 1.35rem; border-radius: 10px;
-  font: 600 1rem/1 "Onest", sans-serif; text-decoration: none; border: 1px solid transparent; }
+.btn { display: inline-flex; align-items: center; gap: .55rem; padding: .9rem 1.4rem; border-radius: 12px;
+  font: 600 1rem/1 "Onest", sans-serif; text-decoration: none; border: 1px solid transparent; transition: background .15s, border-color .15s; }
 .btn-primary { background: var(--nova); color: var(--nova-ink); }
-.btn-primary:hover { background: #FFC56B; }
+.btn-primary:hover { background: var(--nova-hover); }
 .btn-quiet { background: var(--raised); color: var(--text); border-color: var(--line); }
 .btn-quiet:hover { border-color: var(--faint); }
-header.top .btn { padding: .6rem 1rem; font-size: .9rem; }
+header.top .btn { padding: .6rem 1rem; font-size: .9rem; border-radius: 10px; }
 
 /* ---------- hero */
-.hero { padding: clamp(2.5rem, 7vw, 5.5rem) 0 2rem; }
-.hero h1 {
-  font: 600 clamp(2.3rem, 6.2vw, 4.6rem)/1.04 "Unbounded", sans-serif;
-  letter-spacing: -.02em; margin: 0; max-width: 15ch;
-}
-.hero .lede { color: var(--muted); font-size: clamp(1.05rem, 1.6vw, 1.25rem); max-width: var(--measure); margin: 1.5rem 0 2rem; }
-.hero .lede strong { color: var(--text); font-weight: 600; }
-.actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
-.fineprint { color: var(--faint); font-size: .9rem; margin-top: 1rem; }
+.hero { padding: clamp(3rem, 8vw, 6rem) 0 0; text-align: center; }
+.hero h1 { font: 600 clamp(2.2rem, 6vw, 4.6rem)/1.05 "Unbounded", sans-serif; letter-spacing: -.025em; margin: 0 auto; max-width: 17ch; }
+.hero h1 em { font-style: normal; color: var(--nova); }
+.hero .lede { color: var(--muted); font-size: clamp(1.05rem, 1.7vw, 1.25rem); max-width: 40rem; margin: 1.5rem auto 2rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: center; }
+.fineprint { color: var(--faint); font-size: .9rem; margin: 1rem 0 0; }
+.hero .stage { margin-top: clamp(2.5rem, 6vw, 4rem); }
 
-/* ---------- the motion demo: the page's one bold moment */
-.demo { margin-top: clamp(2.5rem, 6vw, 4.5rem); }
-.lane { position: relative; }
+/* ---------- before/after slider: the page's signature */
+.compare { position: relative; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface);
+  aspect-ratio: 3 / 2; user-select: none; -webkit-user-select: none; touch-action: pan-y; cursor: ew-resize; }
+.compare img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.compare .after { clip-path: inset(0 0 0 var(--pos, 50%)); }
+.compare .divider { position: absolute; top: 0; bottom: 0; left: var(--pos, 50%); width: 2px; margin-left: -1px; background: var(--text);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.25); pointer-events: none; }
+.compare .handle { position: absolute; top: 50%; left: var(--pos, 50%); width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
+  background: var(--text); color: var(--base); display: grid; place-items: center; pointer-events: none; box-shadow: 0 6px 24px rgba(0,0,0,.45); }
+.compare input[type=range] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.compare .tag { position: absolute; bottom: 14px; padding: .4rem .7rem; border-radius: 9px; background: rgba(11,11,15,.78); color: var(--text);
+  font-size: .85rem; font-weight: 600; pointer-events: none; backdrop-filter: blur(6px); max-width: 45%; }
+.compare .tag.l { left: 14px; }
+.compare .tag.r { right: 14px; text-align: right; }
+.compare .tag.r b { color: var(--nova); font-weight: 600; }
+@media (max-width: 40rem) { .compare .tag { font-size: .72rem; padding: .3rem .5rem; bottom: 10px; } .compare .tag.l { left: 10px; } .compare .tag.r { right: 10px; } }
+.compare-note { color: var(--faint); font-size: .875rem; margin: .75rem 0 0; text-align: left; }
+.hero .compare-note { text-align: center; }
+
+/* tabs above a slider */
+.tabs { display: inline-flex; gap: .25rem; padding: .25rem; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); margin: 0 0 1rem; flex-wrap: wrap; }
+.tabs button { font: 600 .9rem/1 "Onest", sans-serif; color: var(--muted); background: none; border: 0; padding: .65rem 1rem; border-radius: 9px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--raised); color: var(--text); }
+.tabs button:hover { color: var(--text); }
+
+/* ---------- product strip */
+.products { text-align: left; display: grid; grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr)); gap: 1rem; margin-top: clamp(3.5rem, 8vw, 5.5rem); }
+.product { display: block; padding: 1.4rem 1.4rem 1.5rem; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line);
+  text-decoration: none; color: var(--text); transition: border-color .15s, background .15s; }
+.product:hover { border-color: var(--faint); background: var(--raised); }
+.product .ico { width: 40px; height: 40px; border-radius: 11px; background: var(--nova-wash); color: var(--nova); display: grid; place-items: center; margin-bottom: 1rem; }
+.product h3 { font: 600 1.1rem/1.3 "Onest", sans-serif; margin: 0 0 .35rem; }
+.product p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+/* ---------- sections */
+section.block { padding: clamp(5rem, 11vw, 8rem) 0 0; }
+h2 { font: 600 clamp(1.7rem, 3.6vw, 2.6rem)/1.12 "Unbounded", sans-serif; letter-spacing: -.015em; margin: 0 0 1rem; max-width: 20ch; }
+.intro { color: var(--muted); max-width: var(--measure); margin: 0 0 2.5rem; font-size: 1.1rem; }
+.split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(2rem, 5vw, 4.5rem); align-items: center; }
+.split.flip { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.split.flip > :first-child { order: 2; }
+@media (max-width: 58rem) { .split, .split.flip { grid-template-columns: 1fr; } .split.flip > :first-child { order: 0; } }
+.points { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.1rem; }
+.points li { padding-left: 1.6rem; position: relative; color: var(--muted); }
+.points li::before { content: ""; position: absolute; left: 0; top: .55em; width: 8px; height: 8px; border-radius: 2px; background: var(--nova); }
+.points strong { color: var(--text); font-weight: 600; }
+.shot { margin: 0; }
+.shot img { border-radius: var(--radius); border: 1px solid var(--line); width: 100%; height: auto; }
+.shot figcaption { color: var(--faint); font-size: .875rem; margin-top: .75rem; }
+.chip { display: inline-block; font: 600 .75rem/1 "Onest", sans-serif; padding: .35rem .55rem; border-radius: 7px; background: var(--nova-wash); color: var(--nova); vertical-align: middle; margin-left: .5rem; letter-spacing: .02em; }
+
+/* the motion lanes */
 .lane + .lane { margin-top: 1.25rem; }
-.lane-name { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
-  font-weight: 600; font-size: .95rem; margin-bottom: .5rem; }
+.lane-name { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; font-weight: 600; font-size: .95rem; margin-bottom: .5rem; }
 .lane-name span:last-child { color: var(--muted); font-weight: 400; font-size: .875rem; }
-.lane canvas { width: 100%; height: clamp(64px, 9vw, 96px); display: block; background: var(--surface);
-  border: 1px solid var(--line); border-radius: 12px; }
-.lane.smooth canvas { border-color: #4a3c22; }
+.lane canvas { width: 100%; height: clamp(64px, 9vw, 96px); display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.lane.smooth canvas { border-color: #4d3a14; }
 .cadence-note { display: flex; gap: 1.5rem; flex-wrap: wrap; color: var(--muted); font-size: .875rem; margin-top: 1rem; }
 .key { display: inline-flex; align-items: center; gap: .45rem; }
 .key i { width: 4px; height: 14px; border-radius: 2px; display: inline-block; }
+.video-wrap video { width: 100%; border-radius: var(--radius); border: 1px solid var(--line); background: #000; }
 
-/* ---------- sections */
-section.block { padding: clamp(3.5rem, 8vw, 6rem) 0 0; }
-h2 { font: 600 clamp(1.5rem, 3vw, 2.1rem)/1.15 "Unbounded", sans-serif; letter-spacing: -.01em; margin: 0 0 1rem; max-width: 22ch; }
-.intro { color: var(--muted); max-width: var(--measure); margin: 0 0 2.5rem; }
+/* numbers */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1rem; margin: 2.5rem 0 0; }
+.stat { padding: 1.25rem 1.3rem; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+.stat b { display: block; font: 600 1.9rem/1.1 "Unbounded", sans-serif; color: var(--text); margin-bottom: .4rem; }
+.stat span { color: var(--muted); font-size: .9rem; }
 
-.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 2.25rem 3rem; margin: 0; padding: 0; list-style: none; }
-.features h3 { font: 600 1.1rem/1.3 "Onest", sans-serif; margin: 0 0 .4rem; }
-.features p { margin: 0; color: var(--muted); max-width: 32rem; }
-.features li { border-top: 1px solid var(--line); padding-top: 1.1rem; }
-
-.shot { margin: clamp(3rem, 6vw, 4.5rem) 0 0; }
-.shot img { border-radius: 14px; border: 1px solid var(--line); }
-.shot figcaption { color: var(--faint); font-size: .875rem; margin-top: .75rem; }
-
-/* hardware */
-table { border-collapse: collapse; width: 100%; max-width: 52rem; font-size: .975rem; }
-th, td { text-align: left; padding: .8rem 1rem .8rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+/* tables */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .975rem; }
+th, td { text-align: left; padding: .85rem 1.25rem .85rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 600; font-size: .875rem; }
-td:first-child { font-weight: 600; white-space: nowrap; }
+td:first-child { font-weight: 600; }
 td.dim { color: var(--muted); }
 
-/* video, shown once a demo clip exists */
-.video-wrap video { width: 100%; border-radius: 14px; border: 1px solid var(--line); background: #000; }
+/* install cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; }
+.card { padding: 1.4rem; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+.card h3 { font: 600 1.05rem/1.3 "Onest", sans-serif; margin: 0 0 .4rem; }
+.card p { color: var(--muted); margin: 0; font-size: .95rem; }
 
-/* next + footer */
-.next { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 2rem 3rem; }
-.next h3 { font: 600 1.05rem/1.3 "Onest", sans-serif; margin: 0 0 .35rem; }
-.next p { color: var(--muted); margin: 0; }
-.status { color: var(--nova); font-size: .95rem; font-weight: 600; margin: 0 0 .35rem !important; }
-footer { margin-top: clamp(4rem, 9vw, 7rem); padding: 2.5rem 0 3rem; border-top: 1px solid var(--line); color: var(--faint); font-size: .875rem; }
-footer p { max-width: 46rem; margin: 0 0 .6rem; }
+/* faq */
+details { border-bottom: 1px solid var(--line); padding: 1.1rem 0; max-width: 52rem; }
+summary { cursor: pointer; font-weight: 600; font-size: 1.05rem; list-style: none; display: flex; justify-content: space-between; gap: 1rem; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; color: var(--nova); font-size: 1.3rem; line-height: 1; }
+details[open] summary::after { content: "–"; }
+details p { color: var(--muted); margin: .75rem 0 0; max-width: 46rem; }
+
+/* closing call */
+.cta { margin-top: clamp(5rem, 11vw, 8rem); padding: clamp(2.5rem, 6vw, 4rem); border-radius: 24px; text-align: center;
+  background: radial-gradient(120% 140% at 50% 0%, rgba(255,176,32,.16), rgba(255,176,32,0) 60%), var(--surface); border: 1px solid var(--line); }
+.cta h2 { margin: 0 auto 1rem; }
+.cta p { color: var(--muted); max-width: 34rem; margin: 0 auto 2rem; }
+
+footer { margin-top: clamp(4rem, 9vw, 6rem); padding: 2.5rem 0 3rem; border-top: 1px solid var(--line); color: var(--faint); font-size: .875rem; }
+footer p { max-width: 52rem; margin: 0 0 .6rem; }
 footer a { color: var(--muted); }
-
-@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <a class="brand" href="./" aria-label="NOVA Motion home">
+<header class="top" id="top">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="NOVA Studio home">
       <svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true">
-        <rect x="0" y="0" width="3" height="20" rx="1.5" fill="#ECEFF7"/>
-        <rect x="7.5" y="0" width="3" height="20" rx="1.5" fill="#FFB84D"/>
-        <rect x="15" y="0" width="3" height="20" rx="1.5" fill="#FFB84D"/>
-        <rect x="22.5" y="0" width="3" height="20" rx="1.5" fill="#FFB84D"/>
+        <rect x="0" y="0" width="3" height="20" rx="1.5" fill="#F5F5F7"/>
+        <rect x="7.5" y="0" width="3" height="20" rx="1.5" fill="#FFB020"/>
+        <rect x="15" y="0" width="3" height="20" rx="1.5" fill="#FFB020"/>
+        <rect x="22.5" y="0" width="3" height="20" rx="1.5" fill="#FFB020"/>
       </svg>
-      NOVA Motion <small>by Novabit</small>
+      NOVA STUDIO
     </a>
     <nav aria-label="Main">
-      <a class="secondary" href="#features">Features</a>
-      <a class="secondary" href="#benchmarks">Results</a>
+      <a class="secondary" href="#motion">Motion</a>
+      <a class="secondary" href="#enhance">Enhance</a>
+      <a class="secondary" href="#photos">Photos</a>
+      <a class="secondary" href="#generate">Generate</a>
       <a class="secondary" href="https://github.com/owaiskamal/nova-motion">GitHub</a>
-      <a class="btn btn-primary" href="https://github.com/owaiskamal/nova-motion/releases/latest">Download</a>
+      <a class="btn btn-primary" href="#download">Download</a>
     </nav>
-  </header>
+  </div>
+</header>
 
+<div class="wrap">
   <main>
     <section class="hero">
-      <h1>Watch at your screen's full frame rate.</h1>
-      <p class="lede">Films and most online video are made at 24 or 25 frames a second. <strong>NOVA Motion generates the frames in between with AI, live, on your own graphics card</strong>, so motion looks smooth instead of stepping. Free and open source for Windows.</p>
+      <p class="eyebrow">Free and open source · Windows</p>
+      <h1>AI for your videos and photos, <em>on your own PC.</em></h1>
+      <p class="lede">Smooth any video to your screen's frame rate as it plays. Clean up and enlarge videos and photos, add real detail with generative AI, bring still pictures to life. Nothing is uploaded, nothing is paid per use, and it runs even on a GTX&nbsp;1650 laptop.</p>
       <div class="actions">
-        <a class="btn btn-primary" href="https://github.com/owaiskamal/nova-motion/releases/latest">Download for Windows</a>
+        <a class="btn btn-primary" href="#download">Download for Windows</a>
         <a class="btn btn-quiet" href="https://github.com/owaiskamal/nova-motion">Source on GitHub</a>
       </div>
-      <p class="fineprint">Windows 10 and 11. Best on NVIDIA graphics, including a GTX 1650 laptop; Intel and AMD work too.</p>
 
+      <div class="stage">
+        <div class="compare" data-compare style="--pos:50%">
+          <img src="img/compare/parrots-before.jpg" alt="Two parrots, enlarged four times from a 192 by 128 picture the usual way: soft and smeared." width="768" height="512">
+          <img class="after" src="img/compare/parrots-after.jpg" alt="The same parrots enlarged by NOVA Enhance with Max detail: crisp feathers, eyes and beak stripes." width="768" height="512">
+          <span class="divider" aria-hidden="true"></span>
+          <span class="handle" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M7 5 2 10l5 5M13 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="tag l">Before · 192 × 128, enlarged 4×</span>
+          <span class="tag r"><b>NOVA Enhance</b> · Max detail 4×</span>
+          <input type="range" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+        </div>
+        <p class="compare-note">Drag to compare. A 192 × 128 picture made 4× larger: the usual way (bicubic) and with Max detail (Real-ESRGAN), the model's own result, nothing retouched. Photo: Kodak test set.</p>
+      </div>
+
+      <nav class="products" aria-label="What's inside">
+        <a class="product" href="#motion">
+          <span class="ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4v12M8 4v12M13 4v12M18 4v12"/></svg></span>
+          <h3>Motion</h3>
+          <p>Live AI smoothing for files, YouTube and 1,000+ sites, in a full player.</p>
+        </a>
+        <a class="product" href="#enhance">
+          <span class="ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m10 2 2.3 5 5.2.6-3.9 3.6 1.1 5.3L10 13.8 5.3 16.5l1.1-5.3L2.5 7.6l5.2-.6z"/></svg></span>
+          <h3>Enhance videos</h3>
+          <p>Clean-up, upscaling to 4K and 8K and 60 fps copies, with a preview first.</p>
+        </a>
+        <a class="product" href="#photos">
+          <span class="ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="m3 14 4.5-4.5 3.5 3.5 2-2 4 4"/></svg></span>
+          <h3>Enhance photos</h3>
+          <p>Enlarge, remove blur and add generative detail that fits the picture.</p>
+        </a>
+        <a class="product" href="#generate">
+          <span class="ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16 16 4M11 4h5v5"/><circle cx="5" cy="5" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/></svg></span>
+          <h3>Generate</h3>
+          <p>Turn a still picture into a short 3D camera move. More open models coming.</p>
+        </a>
+      </nav>
+    </section>
+
+    <!-- ================================================================ Motion -->
+    <section class="block" id="motion">
+      <p class="eyebrow">Motion</p>
+      <h2>Watch at your screen's full frame rate.</h2>
+      <p class="intro">Films and most online video are made at 24 or 25 frames a second, so pans judder on a 60, 120 or 144 Hz screen. NOVA Motion makes the frames in between with AI, live, while you watch. The frames from the video itself are never touched.</p>
       <div class="demo" aria-label="Animated comparison of 24 fps and 60 fps motion">
         <div class="lane">
           <div class="lane-name"><span>As filmed</span><span>24 frames a second</span></div>
@@ -171,116 +268,283 @@ footer a { color: var(--muted); }
           <span class="key"><i style="background:var(--nova)"></i>Frames NOVA Motion makes</span>
         </div>
       </div>
-    </section>
 
-    <section class="block video-wrap" id="demo-video" hidden>
-      <h2>See it on real footage</h2>
-      <p class="intro">The original on the left, NOVA Motion on the right, both playing at 60 frames a second. Made with NOVA Motion's own before/after export.</p>
-      <video src="media/demo.mp4" controls muted loop playsinline preload="metadata"></video>
-      <p class="fineprint" id="demo-credit"></p>
-    </section>
-
-    <section class="block" id="features">
-      <h2>Smooth motion, without a high-end PC</h2>
-      <p class="intro">NOVA Motion is a full video player with the smoothing built in. It measures your graphics card and uses what it can really keep up with.</p>
-      <ul class="features">
-        <li>
-          <h3>Real AI frames, live</h3>
-          <p>RIFE, an open AI model, makes the in-between frames while you watch. The frames from the video itself are never touched.</p>
-        </li>
-        <li>
-          <h3>Fits your graphics card</h3>
-          <p>A one-time tuning run measures each model on your PC. On cards like a GTX 1650 the AI works on a half-size copy and only its frames are scaled up, which is four times less work.</p>
-        </li>
-        <li>
-          <h3>YouTube and 1,000+ sites</h3>
-          <p>Paste a link, or send the video you're watching from Chrome or Edge with the browser extension. It picks up where you stopped.</p>
-        </li>
-        <li>
-          <h3>Steady, even when it's hard</h3>
-          <p>If frames start dropping, it switches to a lighter setting on its own instead of stuttering. One click plays without smoothing.</p>
-        </li>
-        <li>
-          <h3>Smooth copies of your files</h3>
-          <p>Enhance saves a smooth version of any video that plays anywhere, or a labelled before/after clip to share.</p>
-        </li>
-        <li>
-          <h3>Free and open</h3>
-          <p>GPL-3.0. No account, no watermark, no upload: everything runs on your PC.</p>
-        </li>
-      </ul>
-      <figure class="shot">
-        <img src="img/enhance.png" width="1024" height="600" loading="lazy"
-             alt="The Enhance screen: frame rate 60, 120 fps or twice the source, Best or Faster quality, a before/after video switch with start time and length, and a Choose videos button.">
-        <figcaption>Enhance: pick a frame rate and quality, or make a short before/after clip to share.</figcaption>
-      </figure>
-    </section>
-
-    <section class="block" id="benchmarks">
-      <h2>Tested on real PCs</h2>
-      <p class="intro">Real playback of 1080p video, with the setting NOVA Motion picked on its own.</p>
-      <table>
-        <thead><tr><th scope="col">PC</th><th scope="col">Video</th><th scope="col">Result</th></tr></thead>
-        <tbody>
-          <tr><td>RTX 4070 desktop</td><td>24 fps film to 60</td><td>Smooth, AI at full size</td></tr>
-          <tr><td>GTX 1650 laptop</td><td>24 fps film to 72 on a 144 Hz screen</td><td>Smooth, AI at half size</td></tr>
-          <tr><td>GTX 1650 laptop</td><td>25 fps video</td><td class="dim">Plays at 50, the most this card keeps up with</td></tr>
-        </tbody>
-      </table>
-      <p class="fineprint">Measure your own PC with benchmark.cmd, and share the result in a GitHub issue to help others with the same card.</p>
-    </section>
-
-    <section class="block" id="hardware">
-      <h2>What runs on your PC</h2>
-      <table>
-        <thead><tr><th scope="col">Graphics</th><th scope="col">How NOVA Motion runs</th></tr></thead>
-        <tbody>
-          <tr><td>NVIDIA RTX</td><td>RIFE on TensorRT, the fastest path, at your screen's refresh rate.</td></tr>
-          <tr><td>NVIDIA GTX 16</td><td>RIFE on TensorRT with the AI at half size, 60 fps or an even rate for your screen.</td></tr>
-          <tr><td>Other NVIDIA, AMD, Intel</td><td class="dim">RIFE on Vulkan when tuning shows it keeps up, MVTools otherwise. Supported, tested less so far.</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="block" id="next">
-      <h2>Part of NOVA Studio</h2>
-      <p class="intro">NOVA Motion is the first module of NOVA Studio, a set of AI video tools that run on your own graphics card.</p>
-      <div class="next">
-        <div><h3>Motion</h3><p class="status">Available</p><p>Real-time smoothing for files and online video.</p></div>
-        <div><h3>Enhance</h3><p class="status">Available</p><p>Smooth copies of files. AI upscaling is next.</p></div>
-        <div><h3>Generate</h3><p class="status">In development</p><p>Images and short clips from open models, handed straight to Enhance.</p></div>
+      <div class="video-wrap" id="demo-video" hidden style="margin-top:2.5rem">
+        <video src="media/demo.mp4" controls muted loop playsinline preload="metadata"></video>
+        <p class="compare-note" id="demo-credit"></p>
       </div>
-      <p class="fineprint">Follow progress: watch the repository's releases on GitHub.</p>
+
+      <div class="split" style="margin-top:clamp(3rem,7vw,5rem)">
+        <ul class="points">
+          <li><strong>Fits your graphics card.</strong> A one-time tuning run measures each AI model on your PC, and the engine uses the best one that keeps up. On cards like a GTX 1650 the AI works on a half-size copy, four times less work.</li>
+          <li><strong>YouTube and 1,000+ sites.</strong> Paste a link, or send the video you're watching from Chrome or Edge with the browser extension. It picks up where you stopped.</li>
+          <li><strong>Steady, never stuck.</strong> If frames start dropping it steps to a lighter setting by itself instead of stuttering. One click plays without smoothing.</li>
+          <li><strong>A player like the best ones.</strong> Seek previews, Skip intro, picture in picture, subtitles, night mode for quieter explosions and clearer voices, live sharpening and Anime4K.</li>
+        </ul>
+        <figure class="shot">
+          <img src="img/app/motion.webp" width="1024" height="720" loading="lazy" alt="The Motion home screen: paste a link or drop a video, profiles such as Balanced, Max quality, Light and Anime, and a cadence strip of white and amber bars.">
+          <figcaption>Motion: paste a link or drop a video. The strip shows real frames in white, AI frames in amber.</figcaption>
+        </figure>
+      </div>
+
+      <div class="table-wrap" style="margin-top:clamp(3rem,7vw,4.5rem)">
+        <table>
+          <caption class="sr-only" style="position:absolute;left:-9999px">Measured playback</caption>
+          <thead><tr><th scope="col">PC</th><th scope="col">Video</th><th scope="col">What happened</th></tr></thead>
+          <tbody>
+            <tr><td>RTX 4070 desktop</td><td>1080p film, 24 fps to 60</td><td>Smooth, RIFE 4.6 on TensorRT at full size</td></tr>
+            <tr><td>GTX 1650 laptop, 144 Hz</td><td>1080p film, 24 fps to 72</td><td>Smooth, the AI at half size</td></tr>
+            <tr><td>GTX 1650 laptop, 144 Hz</td><td>25 fps video</td><td class="dim">Plays at 50, the most this card keeps up with</td></tr>
+            <tr><td>RTX 4070, 4K screen</td><td>4K YouTube, 24 fps</td><td class="dim">Now smoothed at 1080p and enlarged by the player; at full 4K the CPU made only about 20 frames a second</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fineprint">Real playback with the settings NOVA Motion picked by itself. Measure your own PC with benchmark.cmd and share it in a GitHub issue.</p>
+    </section>
+
+    <!-- ================================================================ Enhance videos -->
+    <section class="block" id="enhance">
+      <p class="eyebrow">Enhance videos</p>
+      <h2>Cleaner, sharper, smoother copies.</h2>
+      <p class="intro">Pick a preset and see how long it will take on your PC before anything starts. AI cleans and enlarges every frame up to 8K, RIFE makes it 60 fps, and the copy plays smoothly anywhere: a phone, a TV, an upload.</p>
+      <div class="split flip">
+        <ul class="points">
+          <li><strong>Presets for real videos.</strong> Anime episode, Film &amp; live action, Old or low-res, Blocky download, 4K remaster, Just smooth. Every choice is one tap away in Customize.</li>
+          <li><strong>See it first.</strong> Preview one full-size before/after frame in seconds, or 4 seconds of video, before you spend an hour exporting.</li>
+          <li><strong>The right model for the picture.</strong> Real-ESRGAN for film and live action, Real-CUGAN for anime and art, DPIR to fix compression blocks.</li>
+          <li><strong>Before/after clips to share.</strong> A labelled side-by-side or split, made for posting.</li>
+        </ul>
+        <figure class="shot">
+          <img src="img/app/enhance-videos.webp" width="1024" height="720" loading="lazy" alt="The Enhance page for videos: drop videos, preview a frame or 4 seconds, and presets such as Anime episode, Film and live action, Old or low-res, Blocky download, 4K remaster and Just smooth.">
+          <figcaption>Enhance: presets, previews and a time estimate for your PC.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ================================================================ Photos -->
+    <section class="block" id="photos">
+      <p class="eyebrow">Enhance photos</p>
+      <h2>More detail than the photo had.</h2>
+      <p class="intro">One picture can take the heaviest models a whole video can't. Enlarge to print, fix pictures saved from chats, remove blur, or let generative AI draw new detail that fits.</p>
+
+      <div class="tabs" role="tablist" aria-label="Photo examples">
+        <button role="tab" aria-selected="true" data-set="bikes">Max detail 4×</button>
+        <button role="tab" aria-selected="false" data-set="window">Remove noise and blur</button>
+        <button role="tab" aria-selected="false" data-set="hats">Small picture</button>
+      </div>
+      <div class="compare" data-compare id="photo-compare" style="--pos:50%">
+        <img class="before" src="img/compare/bikes-before.jpg" alt="" width="768" height="512">
+        <img class="after" src="img/compare/bikes-after.jpg" alt="" width="768" height="512">
+        <span class="divider" aria-hidden="true"></span>
+        <span class="handle" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M7 5 2 10l5 5M13 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="tag l"></span>
+        <span class="tag r"></span>
+        <input type="range" min="0" max="100" value="50" step="0.5" aria-label="Drag to compare before and after">
+      </div>
+      <p class="compare-note" id="photo-note"></p>
+
+      <div class="split" style="margin-top:clamp(3rem,7vw,5rem)">
+        <div>
+          <h3 style="font:600 1.35rem/1.25 Onest,sans-serif;margin:0 0 1rem">Generative detail <span class="chip">New</span></h3>
+          <ul class="points">
+            <li><strong>It looks at the whole picture.</strong> SeedVR2, a diffusion model, makes eyelashes, fur, skin texture and the crumb of bread where a phone smeared them, instead of only sharpening what's there. No prompt: the photo is its context.</li>
+            <li><strong>Only where you want it.</strong> Drag over a face or a pet to generate just that part, blended into the rest. Strength mixes in the original for a natural look.</li>
+            <li><strong>Honest about time.</strong> On a GTX 1650 (4 GB) about 90 seconds a megapixel: a face in about a minute, a 12 MP photo about 20 minutes. Much faster on RTX cards. Needs an NVIDIA card with 4 GB or more.</li>
+            <li><strong>Remove noise and blur</strong> (NAFNet) and <strong>Max detail</strong> (Real-ESRGAN) run on any card, in seconds.</li>
+          </ul>
+        </div>
+        <figure class="shot">
+          <img src="img/app/enhance-photos.webp" width="1024" height="720" loading="lazy" alt="The Enhance page for photos: presets Phone photo, Enlarge to print, Small or old picture, Saved from a chat and Anime and art, with Size, Remove noise and blur, Model and Clean-up settings.">
+          <figcaption>Photos: presets for phone photos, prints, chats and art.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ================================================================ Generate -->
+    <section class="block" id="generate">
+      <p class="eyebrow">Generate</p>
+      <h2>Bring a still picture to life.</h2>
+      <div class="split flip">
+        <div>
+          <p class="intro" style="margin-bottom:1.5rem">Animate a picture turns a still into a short 3D camera move: push in, drift, rise, sway or orbit. AI works out what is near and far, and near things move more. Made for illustration, anime and posters, and it runs on any graphics card, laptop graphics included.</p>
+          <ul class="points">
+            <li><strong>Straight into the rest of the studio.</strong> Clips land in Videos\NOVA Studio, ready to smooth to 60 fps or enlarge in Enhance.</li>
+            <li><strong>Coming next:</strong> images and short clips from open models (Flux, SDXL, Wan 2.2). The page already checks what your PC can run.</li>
+          </ul>
+        </div>
+        <figure class="shot">
+          <img src="img/app/generate.webp" width="1024" height="720" loading="lazy" alt="The Generate page: Animate a picture with camera moves Push in, Pull out, Drift, Rise, Sway and Orbit, a length from 4 to 12 seconds and an amount of movement.">
+          <figcaption>Generate: Animate a picture, with camera moves, length and amount of movement.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ================================================================ AI models -->
+    <section class="block" id="models">
+      <p class="eyebrow">Setup</p>
+      <h2>Install only what you use, inside the app.</h2>
+      <div class="split">
+        <div>
+          <p class="intro" style="margin-bottom:1.5rem">The AI Models page lists every part with what it unlocks, its size for your card and whether this PC can run it. Each feature offers its own download right where you need it.</p>
+          <ul class="points">
+            <li><strong>Real progress.</strong> Megabytes, speed and time left, with no console windows.</li>
+            <li><strong>Pause and resume.</strong> A download carries on where it stopped, even after closing the app. Every file is checked before it's used.</li>
+            <li><strong>No surprises.</strong> It checks there's room on the drive first, and says why a part isn't for this PC.</li>
+            <li><strong>Ready for your card.</strong> Models are prepared for your graphics card once, right after they download, so a first export never stalls.</li>
+          </ul>
+        </div>
+        <figure class="shot">
+          <img src="img/app/ai-models.webp" width="1024" height="720" loading="lazy" alt="The AI Models page: Player engine ready, TensorRT for NVIDIA not for this PC, Enhance models ready, Animate a picture ready, and Generative detail.">
+          <figcaption>AI Models: what each part unlocks, its size and its state.</figcaption>
+        </figure>
+      </div>
+
+      <div class="stats" aria-label="Why it's different">
+        <div class="stat"><b>0</b><span>accounts, uploads, watermarks or fees per video</span></div>
+        <div class="stat"><b>4 GB</b><span>graphics card is enough, GTX 1650 laptops included</span></div>
+        <div class="stat"><b>8K</b><span>largest video or photo it enlarges to</span></div>
+        <div class="stat"><b>GPL-3.0</b><span>free software: read it, change it, share it</span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ hardware -->
+    <section class="block" id="hardware">
+      <p class="eyebrow">Your PC</p>
+      <h2>What runs on your graphics card.</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Graphics</th><th scope="col">Motion</th><th scope="col">Enhance</th><th scope="col">Generative detail</th></tr></thead>
+          <tbody>
+            <tr><td>NVIDIA RTX</td><td>RIFE on TensorRT, at your screen's refresh rate</td><td>TensorRT, fastest</td><td>8-bit model on 8 GB and up</td></tr>
+            <tr><td>NVIDIA GTX 16</td><td>RIFE on TensorRT, the AI at half size</td><td>TensorRT</td><td>4-bit model on 4–6 GB</td></tr>
+            <tr><td>AMD, Intel, other NVIDIA</td><td class="dim">RIFE on Vulkan when it keeps up, MVTools otherwise</td><td class="dim">Vulkan</td><td class="dim">Not yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fineprint">Windows 10 or 11. Animate a picture, Max detail and Remove noise and blur run on every card.</p>
+    </section>
+
+    <!-- ================================================================ faq -->
+    <section class="block" id="faq">
+      <p class="eyebrow">Questions</p>
+      <h2>Good to know.</h2>
+      <details>
+        <summary>Is it really free?</summary>
+        <p>Yes. NOVA Studio is free software under the GNU GPL v3.0, made by Novabit. There's no account, no subscription and no watermark, and the AI models it uses all allow commercial use.</p>
+      </details>
+      <details>
+        <summary>Is anything uploaded?</summary>
+        <p>No. Every model runs on your own graphics card. The only things NOVA Studio downloads are its parts (from the AI Models page) and the online videos you ask it to play.</p>
+      </details>
+      <details>
+        <summary>Will it work on my laptop?</summary>
+        <p>Very likely. It's built and tested on a GTX 1650 laptop with 4 GB. Motion measures your card once and picks what keeps up, and every feature says up front whether this PC can run it.</p>
+      </details>
+      <details>
+        <summary>How is generative detail different from sharpening?</summary>
+        <p>Sharpening and classic upscaling can only make existing edges crisper. Generative detail draws new detail that fits the scene, the way a painter would, which is why it can bring back texture a phone's processing smeared away. It's slower, so you can apply it to just a part of the photo.</p>
+      </details>
+      <details>
+        <summary>Does it replace SVP or Topaz?</summary>
+        <p>It covers the same ground, live motion smoothing and AI enhancement, as one free, open app. It's an independent project that shares no code with either.</p>
+      </details>
+    </section>
+
+    <section class="cta" id="download">
+      <h2>Try it on your own videos.</h2>
+      <p>Download the installer, or build the latest from source with one command. Each feature offers its AI model the first time you use it.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="https://github.com/owaiskamal/nova-motion/releases/latest">Download for Windows</a>
+        <a class="btn btn-quiet" href="https://github.com/owaiskamal/nova-motion#get-started">Build from source</a>
+      </div>
+      <p class="fineprint" style="margin-top:1.25rem">The current installer (0.2.0) has Motion and Enhance for videos. Photos, Generate and the AI Models page are in the source build and come to the installer with the next release.</p>
     </section>
   </main>
 
   <footer>
-    <p>NOVA Motion is free software under the GNU GPL v3.0. It builds on mpv, VapourSynth, vs-mlrt, RIFE, MVTools and yt-dlp. NVIDIA TensorRT is downloaded on your PC by the setup and isn't part of NOVA Motion.</p>
-    <p>An independent project, not affiliated with NVIDIA, SVP or the projects above.</p>
-    <p>© 2026 Novabit. <a href="https://github.com/owaiskamal/nova-motion">GitHub</a> · <a href="https://github.com/owaiskamal/nova-motion/issues">Report a problem</a></p>
+    <p>NOVA Studio is free software under the GNU GPL v3.0, by Novabit. It builds on mpv, VapourSynth, vs-mlrt, RIFE, MVTools, Real-ESRGAN, Real-CUGAN, DPIR, NAFNet, SeedVR2, Depth Anything and yt-dlp. NVIDIA TensorRT is downloaded on your PC and isn't part of NOVA Studio.</p>
+    <p>Comparison photos: Kodak Lossless True Color Image Suite. The "before" pictures were made smaller, or blurred and compressed, for these tests; the "after" pictures are the models' own output, run at full strength.</p>
+    <p>An independent project, not affiliated with NVIDIA, Topaz Labs, SVP, ByteDance or the projects above.</p>
+    <p>© 2026 Novabit · <a href="https://github.com/owaiskamal/nova-motion">GitHub</a> · <a href="https://github.com/owaiskamal/nova-motion/issues">Report a problem</a></p>
   </footer>
 </div>
 
 <script>
 (() => {
-  // ---- Real footage clip: shown only once media/demo.mp4 exists
-  const vw = document.getElementById('demo-video');
-  const v = vw.querySelector('video');
-  v.addEventListener('loadedmetadata', () => { vw.hidden = false; }, { once: true });
-  document.getElementById('demo-credit').textContent =
-    'Footage: Tears of Steel (CC BY 3.0) Blender Foundation, mango.blender.org';
+  // ---- header border once the page scrolls
+  const top = document.getElementById('top');
+  const onScroll = () => top.classList.toggle('scrolled', scrollY > 8);
+  addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
-  // ---- The two lanes: the same motion, sampled 24 and 60 times a second
+  // ---- before/after sliders: a range input over the pictures (keyboard and screen readers work)
+  function wire(el) {
+    const input = el.querySelector('input[type=range]');
+    const set = v => el.style.setProperty('--pos', v + '%');
+    input.addEventListener('input', () => set(input.value));
+    // A gentle sweep the first time it's seen, so it's clear the picture can be dragged
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduce && 'IntersectionObserver' in window) {
+      const io = new IntersectionObserver(es => {
+        if (!es[0].isIntersecting) return;
+        io.disconnect();
+        let t0 = null;
+        const step = now => {
+          if (input.dataset.touched) return;
+          t0 ??= now;
+          const p = Math.min(1, (now - t0) / 1600);
+          const v = 50 + 22 * Math.sin(p * Math.PI * 2) * (1 - p);
+          input.value = v; set(v);
+          if (p < 1) requestAnimationFrame(step);
+        };
+        setTimeout(() => requestAnimationFrame(step), 350);
+      }, { threshold: 0.6 });
+      io.observe(el);
+    }
+    input.addEventListener('pointerdown', () => { input.dataset.touched = '1'; });
+    input.addEventListener('keydown', () => { input.dataset.touched = '1'; });
+  }
+  document.querySelectorAll('[data-compare]').forEach(wire);
+
+  // ---- photo examples
+  const sets = {
+    bikes: { tagL: 'Before · 192 × 128, enlarged 4×', tagR: '<b>Max detail</b> · 4×',
+      alt: ['Motocross riders enlarged four times the usual way: soft, blocky helmets and wheels.', 'The same riders with Max detail: sharp spokes, lettering and helmet stripes.'],
+      note: 'A 192 × 128 picture made 4× larger: bicubic, and Max detail (Real-ESRGAN x4plus) at full strength. Photo: Kodak test set.' },
+    window: { tagL: 'Before · blurred and JPEG-compressed', tagR: '<b>Remove noise and blur</b>',
+      alt: ['A window with shutters and red flowers, blurred and compressed: soft slats and smeared leaves.', 'The same picture after Remove noise and blur: crisp shutter slats, leaf edges and petals.'],
+      note: 'The photo was blurred and saved as a low-quality JPEG for this test, then run through Remove noise and blur (NAFNet) at the same size. Photo: Kodak test set.' },
+    hats: { tagL: 'Before · 192 × 128, enlarged 4×', tagR: '<b>Max detail</b> · 4×',
+      alt: ['Colourful hats on a wall, enlarged four times the usual way: blurry.', 'The same hats with Max detail: clear weave and brims.'],
+      note: 'A 192 × 128 picture made 4× larger: bicubic, and Max detail (Real-ESRGAN x4plus) at full strength. Photo: Kodak test set.' },
+  };
+  const pc = document.getElementById('photo-compare');
+  const note = document.getElementById('photo-note');
+  const tabs = document.querySelectorAll('.tabs [role=tab]');
+  function show(name) {
+    const s = sets[name];
+    const [b, a] = pc.querySelectorAll('img');
+    b.src = `img/compare/${name}-before.jpg`; b.alt = s.alt[0];
+    a.src = `img/compare/${name}-after.jpg`; a.alt = s.alt[1];
+    pc.querySelector('.tag.l').textContent = s.tagL;
+    pc.querySelector('.tag.r').innerHTML = s.tagR;
+    note.textContent = s.note;
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.set === name)));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.set)));
+  show('bikes');
+
+  // ---- real footage clip: shown only once media/demo.mp4 exists
+  const vw = document.getElementById('demo-video');
+  vw.querySelector('video').addEventListener('loadedmetadata', () => { vw.hidden = false; }, { once: true });
+  document.getElementById('demo-credit').textContent = 'Footage: Tears of Steel (CC BY 3.0) Blender Foundation, mango.blender.org';
+
+  // ---- the two lanes: the same motion, sampled 24 and 60 times a second
   const css = getComputedStyle(document.documentElement);
   const TEXT = css.getPropertyValue('--text').trim(), NOVA = css.getPropertyValue('--nova').trim();
   const LINE = css.getPropertyValue('--line').trim(), FAINT = css.getPropertyValue('--faint').trim();
-  const lanes = [
-    { el: document.getElementById('lane24'), fps: 24 },
-    { el: document.getElementById('lane60'), fps: 60 },
-  ];
-  const PERIOD = 2.5;   // seconds to cross and come back
+  const lanes = [{ el: document.getElementById('lane24'), fps: 24 }, { el: document.getElementById('lane60'), fps: 60 }];
+  const PERIOD = 2.5;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
-
   function size() {
     for (const l of lanes) {
       const r = l.el.getBoundingClientRect(), d = devicePixelRatio || 1;
@@ -289,67 +553,45 @@ footer a { color: var(--muted); }
       l.w = r.width; l.h = r.height;
     }
   }
-  // Position along the lane for a time: eased back and forth, like a camera pan
   const pos = t => { const p = (t % PERIOD) / PERIOD; return 0.5 - 0.5 * Math.cos(p * 2 * Math.PI); };
-
   function drawLane(l, t, still) {
     const { ctx, w, h } = l;
     ctx.clearRect(0, 0, w, h);
     const r = Math.min(h * 0.22, 16), pad = r * 2.2, y = h / 2, span = w - 2 * pad;
-    // tick rail along the bottom: where frames fall in time across one pass
-    ctx.fillStyle = LINE;
-    ctx.fillRect(pad, h - 12, span, 1);
+    ctx.fillStyle = LINE; ctx.fillRect(pad, h - 12, span, 1);
     if (still) {
-      // Reduced motion: every frame of one pass, like a long exposure
       const n = Math.round(l.fps * PERIOD / 2);
       for (let i = 0; i <= n; i++) {
         const tt = i / l.fps, real = l.fps === 24 || Math.abs(tt * 24 - Math.round(tt * 24)) < 1e-6;
-        ctx.globalAlpha = 0.85;
-        ctx.fillStyle = real ? TEXT : NOVA;
+        ctx.globalAlpha = 0.85; ctx.fillStyle = real ? TEXT : NOVA;
         ctx.beginPath(); ctx.arc(pad + pos(tt) * span, y, r * 0.55, 0, 7); ctx.fill();
       }
-      ctx.globalAlpha = 1;
-      return;
+      ctx.globalAlpha = 1; return;
     }
-    // The frame being shown: the last one this lane has made
     const idx = Math.floor(t * l.fps), shown = idx / l.fps;
-    const isReal = i => l.fps === 24 || ((i % 5) + 5) % 5 === 0;   // at 60 fps, 1 frame in 5 lands on a filmed one
-    // the last frames' marks on the rail, fading: white = from the video, amber = made by NOVA Motion
+    const isReal = i => l.fps === 24 || ((i % 5) + 5) % 5 === 0;
     const marks = Math.round(l.fps * 0.4);
     for (let k = marks; k >= 0; k--) {
       const i = idx - k;
-      ctx.globalAlpha = 1 - k / (marks + 1);
-      ctx.fillStyle = isReal(i) ? TEXT : NOVA;
+      ctx.globalAlpha = 1 - k / (marks + 1); ctx.fillStyle = isReal(i) ? TEXT : NOVA;
       ctx.fillRect(pad + pos(i / l.fps) * span - 1.5, h - 18, 3, 12);
     }
-    // faint trail of the previous positions, so the size of each step reads
     for (let k = 4; k >= 1; k--) {
-      ctx.globalAlpha = 0.07 * (5 - k);
-      ctx.fillStyle = FAINT;
+      ctx.globalAlpha = 0.07 * (5 - k); ctx.fillStyle = FAINT;
       ctx.beginPath(); ctx.arc(pad + pos(shown - k / l.fps) * span, y - 4, r, 0, 7); ctx.fill();
     }
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = TEXT;
+    ctx.globalAlpha = 1; ctx.fillStyle = TEXT;
     ctx.beginPath(); ctx.arc(pad + pos(shown) * span, y - 4, r, 0, 7); ctx.fill();
   }
-
   let start = performance.now(), raf = 0;
-  function frame(now) {
-    const t = (now - start) / 1000;
-    lanes.forEach(l => drawLane(l, t, false));
-    raf = requestAnimationFrame(frame);
-  }
+  const frame = now => { lanes.forEach(l => drawLane(l, (now - start) / 1000, false)); raf = requestAnimationFrame(frame); };
   function run() {
-    cancelAnimationFrame(raf);
-    size();
-    if (reduce.matches) lanes.forEach(l => drawLane(l, 0, true));
-    else raf = requestAnimationFrame(frame);
+    cancelAnimationFrame(raf); size();
+    if (reduce.matches) lanes.forEach(l => drawLane(l, 0, true)); else raf = requestAnimationFrame(frame);
   }
   addEventListener('resize', run);
   reduce.addEventListener('change', run);
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) cancelAnimationFrame(raf); else run();
-  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) cancelAnimationFrame(raf); else run(); });
   run();
 })();
 </script>
