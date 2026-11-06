@@ -388,7 +388,9 @@ ls = _ns2["live_size"]
 check(ls({"gpu_class": "entry"}, 3840, 2160) == (1920, 1080), "live size: 4K on a GTX 16 card works at 1080p")
 check(ls({"gpu_class": "entry"}, 1920, 1080) == (1920, 1080), "live size: 1080p is left alone")
 check(ls({"gpu_class": "integrated"}, 3840, 1600) == (1920, 800), "live size: a 2.4:1 4K film keeps its shape")
-check(ls({"gpu_class": ""}, 3840, 2160) == (3840, 2160), "live size: an RTX card on a 4K screen keeps 4K")
+check(ls({"gpu_class": ""}, 3840, 2160) == (1920, 1080), "live size: 4K works at 1080p on any card (full-size RGB at 4K can't keep up)")
+check(ls({"gpu_class": ""}, 2560, 1440) == (2560, 1440) and ls({"gpu_class": "", "size_step": 1}, 2560, 1440) == (1920, 1080),
+      "live size: 1440p keeps its size on a fast card until frames drop, then 1080p")
 sr = _ns2["step_rate"]
 check(sr(Fraction(75), Fraction(25), 1) == Fraction(50) and sr(Fraction(75), Fraction(25), 3) == Fraction(50)
       and sr(Fraction(60), Fraction(25), 1) == Fraction(50) and sr(Fraction(144), Fraction(24), 2) == Fraction(96)

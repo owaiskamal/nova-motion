@@ -241,12 +241,19 @@ def even_rate(want, src, display):
 # A 4K stream on a 1080p laptop screen looks the same as 1080p but is four times the AI work, and
 # tuning and the TensorRT engines are made for 1080p video.
 LIVE_MAX_SIZE = (1920, 1080)
+# Above 1440p every card works at 1080p too. At 4K the cost isn't the AI (it runs on a smaller copy)
+# but turning every frame to RGB and back at full size on the CPU: on an RTX 4070 with a 12-thread CPU
+# a 4K YouTube video made about 20 frames a second at 48 or 60, whatever the model, against more than
+# 80 at 1080p. The player's GPU scaler enlarges the smooth 1080p picture to the screen.
+LIVE_FULL_SIZE_MAX = 2560 * 1440
 
 
 def live_size(cfg, width, height):
     """The size live playback works at: the video's own, or fitted within 1080p on entry and
-    integrated graphics, and on any card when the screen itself is no larger than 1080p."""
-    limit = cfg.get("gpu_class") in ("entry", "integrated")
+    integrated graphics, on any card when the screen itself is no larger than 1080p, for videos
+    above 1440p, and when the player asks for it after frames kept dropping (size_step)."""
+    limit = (cfg.get("gpu_class") in ("entry", "integrated") or width * height > LIVE_FULL_SIZE_MAX
+             or int(cfg.get("size_step") or 0) > 0)
     res = globals().get("display_res")
     try:
         dw, dh = int(res[0]), int(res[1])

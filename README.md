@@ -105,6 +105,7 @@ Real playback, 1080p video, with the setting the engine picked on its own:
 | GTX 1650 laptop, 144 Hz screen | 24 fps film to 72 | Smooth, RIFE 4.6 on TensorRT with the AI at half size |
 | GTX 1650 laptop, 144 Hz screen | 25 fps video | Plays at 50: 75 needs about 50 AI frames a second, more than this card makes |
 | GTX 1650 laptop, 1080p screen | 4K YouTube film, 24 fps | Was dropping frames: the AI ran at 1920×1080, 4× the work. Now fetched and smoothed at 1080p |
+| RTX 4070 desktop, 12-thread CPU, 4K 60 Hz screen | 4K YouTube video (VP9), 24 fps | Was lagging: about 20 frames a second at 60 and at 48, whatever the model or AI size, because every frame went to RGB and back at 4K on the CPU (1080p makes more than 80). Now videos above 1440p are smoothed at 1080p on every card and the player enlarges them to the screen; a 1440p video that drops frames goes to 1080p before a lighter model. To be measured again |
 
 Frames-per-second benchmarks are being measured again. Earlier figures came from a still test clip, which the engine processes faster than real video because it skips repeated frames, so they overstated speed; tuning and `benchmark.cmd` now use moving test frames. Measure your own PC with `benchmark.cmd`, and share the result in an issue to help others with the same card.
 

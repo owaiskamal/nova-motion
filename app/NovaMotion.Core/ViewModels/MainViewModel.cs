@@ -223,11 +223,12 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         _handledEof = false;
         _fpsSamples.Clear();
         _dropSamples.Clear();
-        if (Eng.QualityStep != 0 || Eng.RateStep != 0)
+        if (Eng.QualityStep != 0 || Eng.RateStep != 0 || Eng.SizeStep != 0)
         {
-            // Every video starts on the best model and rate again; lower ones were only for the last video
+            // Every video starts on the best model, rate and size again; lower ones were only for the last video
             Eng.QualityStep = 0;
             Eng.RateStep = 0;
+            Eng.SizeStep = 0;
             _store.WriteEngineConfig(Eng);
         }
         _engineLighter = true;

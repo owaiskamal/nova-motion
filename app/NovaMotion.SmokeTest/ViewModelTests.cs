@@ -169,6 +169,14 @@ internal static class ViewModelTests
         for (var i = 0; i < 30; i++) { now = now.AddSeconds(0.5); dropsAt += 10; fake.Prop("frame-drop-count", dropsAt); vm.Tick(); }
         check(vm.Settings.Active.Engine.RateStep >= 1 && fake.Applied?.RateStep >= 1 && vm.ToastText.Contains("lowered the frame rate"),
               $"vm: steady late frames with no lighter model lower the frame rate (rate step {vm.Settings.Active.Engine.RateStep})");
+        // A 1440p video: the full-size picture is the cost, so it's smoothed at 1080p before anything else
+        fake.Prop("video-params/w", 2560);
+        fake.Prop("video-params/h", 1440);
+        for (var i = 0; i < 30 && vm.Settings.Active.Engine.SizeStep == 0; i++) { now = now.AddSeconds(0.5); dropsAt += 10; fake.Prop("frame-drop-count", dropsAt); vm.Tick(); }
+        check(vm.Settings.Active.Engine.SizeStep == 1 && fake.Applied?.SizeStep == 1 && vm.ToastText.Contains("at 1080p"),
+              $"vm: dropped frames on a video above 1080p smooth it at 1080p first (size step {vm.Settings.Active.Engine.SizeStep})");
+        fake.Prop("video-params/w", 1920);
+        fake.Prop("video-params/h", 1080);
 
         // ---- seek bar scrubbing
         vm.IsScrubbing = true;

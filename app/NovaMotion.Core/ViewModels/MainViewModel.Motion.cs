@@ -576,14 +576,23 @@ public sealed partial class MainViewModel
 
         // First a lighter model or AI size, while one exists; then a lower frame rate (a whole
         // multiple of the video's), down to twice the video's rate. Works on any screen and engine.
-        var canStep = Eng.Engine == "rife_trt" && Eng.TrtModel == "auto" && Eng.QualityStep < MaxQualityStep && _engineLighter;
-        var canLower = !canStep && Eng.RateStep < MaxRateStep;
+        // A video bigger than 1080p (the engine already shrinks 4K) is smoothed at 1080p first: there the
+        // cost is the full-size picture, not the model, so a lighter model wouldn't help
+        var canShrink = Eng.SizeStep == 0 && (_state.VideoHeight > 1080 || _state.VideoWidth > 1920)
+                        && _state.VideoWidth * _state.VideoHeight <= 2560 * 1440;
+        var canStep = !canShrink && Eng.Engine == "rife_trt" && Eng.TrtModel == "auto" && Eng.QualityStep < MaxQualityStep && _engineLighter;
+        var canLower = !canShrink && !canStep && Eng.RateStep < MaxRateStep;
         var settled = _lastStepAt is null || now - _lastStepAt > TimeSpan.FromSeconds(10);
-        if (late > DropRateLimit && settled && (canStep || canLower))
+        if (late > DropRateLimit && settled && (canShrink || canStep || canLower))
         {
             _lastStepAt = now;
             _dropSamples.Clear();
-            if (canStep)
+            if (canShrink)
+            {
+                Eng.SizeStep = 1;
+                ShowToast("Frames were dropping, so NOVA Motion now smooths this video at 1080p; the player enlarges it to your screen.");
+            }
+            else if (canStep)
             {
                 Eng.QualityStep++;
                 ShowToast("Frames were dropping, so NOVA Motion switched to a lighter model to stay smooth.");

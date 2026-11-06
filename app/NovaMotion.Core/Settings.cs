@@ -27,6 +27,8 @@ public sealed class EngineSettings
     [JsonPropertyName("quality_step")]   public int QualityStep { get; set; }
     /// <summary>Set by the player when frames keep dropping on the lightest model: whole multiples lower.</summary>
     [JsonPropertyName("rate_step")]      public int RateStep { get; set; }
+    /// <summary>Set by the player when frames drop on a video above 1080p: smooth it at 1080p first.</summary>
+    [JsonPropertyName("size_step")]      public int SizeStep { get; set; }
     [JsonPropertyName("rife_threads")]   public int RifeThreads { get; set; } = 4;
     [JsonPropertyName("scene_detect")]   public bool SceneDetect { get; set; } = true;
     /// <summary>Blend across frames the video repeats (common in sports and TV uploads).</summary>

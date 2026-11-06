@@ -134,6 +134,7 @@ public static class ExportPlan
         e.DemoLabels = o.Comparison || o.Still;
         e.RtxVsr = false;
         e.QualityStep = 0;
+        e.SizeStep = 0;
         e.SceneDetect = true;
         e.Dedup = true;
         e.TargetText = o.Target;
