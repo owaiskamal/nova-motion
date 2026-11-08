@@ -149,7 +149,7 @@ The plan is in [docs/NOVA-STUDIO.md](docs/NOVA-STUDIO.md). The code, settings fo
 | M2 Own player window | ✅ mpv inside the app, on-video controls, subtitles, queue, resume |
 | M3 Engine manager | ✅ scene-cut and repeated-frame handling · ✅ per-size engine status and preparation · ✅ tuning, offered on first run · ✅ automatic model and AI-size choice with step-down · ✅ defaults for GTX and laptop graphics |
 | M4 Online and launch | ✅ quality picker · ✅ daily yt-dlp updates · ✅ project site · extension in the stores |
-| M5 Enhance & Export | ✅ offline smooth copies with the best model, queue, GPU encoding · ✅ AI clean-up and upscaling to 4K/8K (Real-ESRGAN, Real-CUGAN, DPIR), preview · ✅ photos: Max detail, Remove noise and blur, generative detail (SeedVR2) · ✅ in-app installs (AI Models page) · temporal consistency, generative detail for video, a model distilled for speed |
+| M5 Enhance & Export | ✅ offline smooth copies with the best model, queue, GPU encoding · ✅ AI clean-up and upscaling to 4K/8K (Real-ESRGAN, Real-CUGAN, DPIR), preview · ✅ photos: Max detail, Remove noise and blur, generative detail (SeedVR2) · ✅ in-app installs (AI Models page) · temporal consistency, generative detail for video (testing now: `tools/generative-video-test.cmd` runs SeedVR2 on a few seconds of a video at 1080p and 4K and times it), a model distilled for speed |
 | M6 NOVA Studio shell | ✅ one app with Motion, Enhance and Generate tabs · ✅ Generate hardware check |
 | M7 Generate | managed ComfyUI engine, model manager, Flux.1 Schnell and SDXL images, Wan 2.2 video, one click to smooth and upscale |
 | Later | light timeline (trim, join, titles), smoothing over any window, faster AMD/Intel paths, cloud GPU tier, mobile |
