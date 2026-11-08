@@ -348,9 +348,10 @@ def whole_view(w, h):
 # How a before/after shows the picture (the app's Compare choice). "side" was the 100% detail view
 # before the choice existed; old settings keep meaning that.
 COMPARE_VIEWS = {"split": split_view, "whole": whole_view, "zoom": demo_view, "side": demo_view}
-# A side-by-side of two whole frames is twice as wide: kept within 7680 px, which encoders and
-# players take (two 4K frames fit; two 8K frames are shown at 4K each)
-COMPARE_MAX_WIDTH = 7680
+# A side-by-side of two whole frames is twice as wide: kept within 3840 px (two 1080p frames). The GPU's
+# H.264 encoder stops at 4096 px wide ("Width 7678 exceeds 4096" on an RTX 4070, which failed the export),
+# and 3840 is also the most that sharing sites and screens show
+COMPARE_MAX_WIDTH = 3840
 
 
 def compare_mode(cfg):

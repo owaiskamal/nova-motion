@@ -268,8 +268,8 @@ b = core.std.Crop(split, left=q, right=0)
 diff = core.std.PlaneStats(a[5], b[5]).get_frame(0).props["PlaneStatsDiff"]
 check(diff < 0.002, f"split: its right side is the full export's (difference {diff:.5f})")
 side = run({"engine": "mvtools", "target": 60, "source_frames": 12, "demo": True, "demo_mode": "whole", "enhance": e}, w=1920, h=1080, frames=12)
-check(side.width <= 7680 and side.width >= 7600 and side.height >= 2100,
-      f"side by side: both whole frames, within 7680 px ({side.width}x{side.height})")
+check(side.width <= 3840 and side.width >= 3800 and side.height >= 1060,
+      f"side by side: both whole frames, within 3840 px ({side.width}x{side.height})")
 
 # Frame preview: one source frame, enhanced, as the before/after crop
 o = run({"engine": "mvtools", "target": 60, "source_frames": 1, "enabled": False, "demo": True, "demo_labels": True,
