@@ -106,6 +106,7 @@ public sealed partial class MainViewModel
         Target = ExportTargets.FirstOrDefault(t => t.IsSelected)?.Value ?? "60",
         Quality = _exportQuality,
         HardwareEncoder = _exportGpuEncoder,
+        Drawn = _exportDrawn,
     };
 
     private void ApplyRecipe(VideoRecipe r)
@@ -115,6 +116,7 @@ public sealed partial class MainViewModel
         if (!ExportTargets.Any(t => t.IsSelected) && ExportTargets.FirstOrDefault() is { } first) first.IsSelected = true;
         ExportBest = r.Quality == ExportQuality.Best;
         ExportGpuEncoder = r.HardwareEncoder;
+        ExportDrawn = r.Drawn;
         SyncEnhance();
     }
 
@@ -191,6 +193,8 @@ public sealed partial class MainViewModel
             else { _settings.VideoPreset = Presets.Video[0].Id; ApplyRecipe(Presets.Video[0].Recipe); }
             _store.Save(_settings);
         }
+        // Not saved on its own (like the frame rate): it starts as the chosen preset has it
+        _exportDrawn = Presets.FindVideo(_settings, _settings.VideoPreset)?.Recipe.Drawn ?? false;
         if (Presets.FindPhoto(_settings, _settings.PhotoPreset) is { } pp) _photoOptions = pp.Options;
         else { _settings.PhotoPreset = Presets.Photo[0].Id; _photoOptions = Presets.Photo[0].Options; }
         BuildPresetItems();

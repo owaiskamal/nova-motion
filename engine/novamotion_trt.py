@@ -428,16 +428,29 @@ def frame_info(clip):
     return core.std.ModifyFrame(diff, [diff, d1, d2, dm1, c1, c2], mark)
 
 
-def plan(n, p, q, info):
+def plan(n, p, q, info, drawn=False):
     """Which source frames output frame n is made from, and where between them it sits.
 
     Returns (a, b, t2, copy): blend frames a and b at time t2 / (2p); copy=True means show
     frame a as it is. Normally a = floor(n*q/p) and b = a + 1. A repeated frame carries no
     motion, so blending across it gives a ball that stops and then jumps; instead the pair is
     widened to skip the repeat and the time point halved to match the longer gap.
+
+    drawn (anime and cartoons): a drawing held for 2 or 3 frames is shown as drawn, and the
+    switch from one held drawing to the next gets no in-between frames either, because the AI
+    can only morph one drawing into another (a mouth melting from closed to open). What moves
+    on every frame (pans, camera moves, scrolling backgrounds) is smoothed as usual.
     """
     i, k = n * q // p, (n * q) % p
     g = lambda name: info.props.get(name, 0)
+    if drawn:
+        if g("Dup1"):                                    # i+1 repeats i: the same drawing, held
+            return i, i, 0, True
+        if g("Dup0") and g("Dup2") and k:                # a held drawing changes to another held one
+            return (i, i, 0, True) if k * 2 < p else (i + 1, i + 1, 0, True)
+        if g("Cut1") and k:
+            return (i, i, 0, True) if k * 2 < p else (i + 1, i + 1, 0, True)
+        return i, i + 1, 2 * k, k == 0
     # Only a single repeat inside moving video counts: a run of identical frames is a still
     # scene, and a pair is never widened across a cut
     if g("Dup0") and not g("DupM1") and not g("Dup1") and not g("Cut1"):   # i repeats i-1: blend i-1 .. i+1
@@ -450,7 +463,7 @@ def plan(n, p, q, info):
 
 
 def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=True, step=0, streams=None,
-                gpu_class="", ai_scale="auto"):
+                gpu_class="", ai_scale="auto", drawn=False):
     """rgbh: RGBH clip at src fps. Returns RGBH at dst fps (same size).
 
     Built on vsmlrt.RIFEMerge rather than vsmlrt.RIFE: RIFE() precomputes a table entry for
@@ -527,15 +540,15 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
     phases = [core.std.BlankClip(gray_base, color=(k / (2 * p)), keep=True) for k in range(2 * p + 1)]
     src_at = lambda idx: clip[min(max(idx, 0), last)]
 
-    if scene_detect or dedup:
+    if scene_detect or dedup or drawn:
         info = frame_info(clip)
         if not scene_detect:
             info = core.std.SetFrameProps(info, Cut1=0, Cut2=0)
-        if not dedup:
+        if not dedup and not drawn:
             info = core.std.SetFrameProps(info, DupM1=0, Dup0=0, Dup1=0, Dup2=0)
         info_base = core.std.BlankClip(info, length=length, fpsnum=dst.numerator, fpsden=dst.denominator, keep=True)
         info_out = core.std.FrameEval(info_base, lambda n: info[min(n * q // p, last)])
-        decide = lambda n, f: plan(n, p, q, f)
+        decide = lambda n, f: plan(n, p, q, f, drawn)
     else:
         info_out = core.std.BlankClip(gray_base, format=vs.GRAY8, keep=True)
         decide = lambda n, f: (n * q // p, n * q // p + 1, 2 * ((n * q) % p), (n * q) % p == 0)

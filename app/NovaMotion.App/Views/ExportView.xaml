@@ -447,6 +447,14 @@
                                             <TextBlock Text="Frame rate" VerticalAlignment="Center"/>
                                         </DockPanel>
                                         <Border Style="{StaticResource GroupCell}">
+                                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ExportDrawn}">
+                                                <StackPanel>
+                                                    <TextBlock Text="Anime: keep drawings as drawn"/>
+                                                    <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="No morphing between drawings; only camera moves and pans are smoothed."/>
+                                                </StackPanel>
+                                            </CheckBox>
+                                        </Border>
+                                        <Border Style="{StaticResource GroupCell}">
                                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ExportFaster}">
                                                 <StackPanel>
                                                     <TextBlock Text="Faster smoothing"/>

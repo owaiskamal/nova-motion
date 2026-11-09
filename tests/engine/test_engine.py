@@ -339,7 +339,29 @@ check(sum(flags) == 0, f"dedup: a small moving ball on a still background is not
 twice = field[0:3] + field[2] + field[3:7]                  # frame 3 repeats frame 2
 flags = [novamotion_trt.frame_info(twice).get_frame(n).props["Dup0"] for n in range(8)]
 check(flags == [0, 0, 0, 1, 0, 0, 0, 0], f"dedup: the repeated frame is still found ({flags})")
+
+# Drawn animation (anime on 2s): every output frame is a real drawing, no in-betweens to morph,
+# while a pan that moves on every frame is still smoothed
+drawn_pos = [0.0, 0.0, 0.2, 0.2, 0.4, 0.4, 0.6, 0.6, 0.8, 0.8]
+def drawn_frame(n, f):        # a small drawing (top left) changing on 2s over a still background: not a cut
+    out = f.copy()
+    for pl in range(3):
+        np_ = out[pl]
+        for y in range(48):
+            for x in range(80):
+                np_[y, x] = drawn_pos[n]
+    return out
+held = core.std.BlankClip(width=640, height=360, format=vs.RGBS, length=len(drawn_pos), fpsnum=24, color=[0.3] * 3)
+held = core.resize.Point(core.std.ModifyFrame(held, held, drawn_frame), format=vs.RGBH)
+d_ = [track(novamotion_trt.interpolate(held, Fraction(24), Fraction(60), "rife-v4.6", 0, scene_detect=True, drawn=True), n) for n in range(2, 20)]
+check(all(any(abs(v - x) < 0.002 for x in drawn_pos) for v in d_), f"drawn: anime on 2s shows only real drawings ({d_})")
+m_ = [track(novamotion_trt.interpolate(held, Fraction(24), Fraction(60), "rife-v4.6", 0, scene_detect=True), n) for n in range(2, 20)]
+check(any(all(abs(v - x) > 0.01 for x in drawn_pos) for v in m_), f"drawn off: the same video gets in-between frames ({m_})")
+d_ = [track(novamotion_trt.interpolate(moving[4:], Fraction(24), Fraction(48), "rife-v4.6", 0, scene_detect=True, drawn=True), n) for n in range(0, 6)]
+check(any(abs(v - 0.45) < 0.002 for v in d_), f"drawn: a pan moving on every frame is still smoothed ({d_})")
 fake.RIFEMerge = real_merge
+o = run({"engine": "mvtools", "target": 60, "drawn": True}, fps=24, frames=10, w=640, h=360)
+check(o.fps == Fraction(60), f"drawn on MVTools: still 60 fps ({o.fps})")
 
 import json as _json
 man = os.path.join(novamotion_trt.ENGINE_DIR, "novamotion-engines.json")

@@ -78,6 +78,10 @@ public sealed partial class MainViewModel
     private bool _exportGpuEncoder = true;
     public bool ExportGpuEncoder { get => _exportGpuEncoder; set { if (Set(ref _exportGpuEncoder, value)) SyncPresets(); } }
 
+    private bool _exportDrawn;
+    /// <summary>Anime: keep drawings as drawn, smooth only camera moves (set by the Anime episode preset).</summary>
+    public bool ExportDrawn { get => _exportDrawn; set { if (Set(ref _exportDrawn, value)) SyncPresets(); } }
+
     public ObservableCollection<OptionItem> CompareModes { get; } = new(EngineCatalog.CompareModes.Select(c => new OptionItem(c)));
     private Command? _selectCompareModeCommand;
     public Command SelectCompareModeCommand => _selectCompareModeCommand ??= new Command(p =>
@@ -180,6 +184,7 @@ public sealed partial class MainViewModel
             HardwareEncoder = _exportGpuEncoder && _gpu?.IsNvidia != false,
             Comparison = _exportComparison || preview,
             Compare = CompareMode,
+            Drawn = _exportDrawn,
             StartSeconds = ExportOptions.ParseTime(ExportStartText),
             LengthSeconds = preview ? PreviewSeconds : ExportOptions.ParseTime(ExportLengthText),
         };

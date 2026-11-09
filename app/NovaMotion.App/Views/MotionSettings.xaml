@@ -144,6 +144,12 @@
                 <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Sports and TV uploads often show a frame twice, so motion stops for a moment. NOVA Motion keeps it moving. TensorRT engine."/>
             </StackPanel>
         </CheckBox>
+        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Drawn}" Margin="0,12,0,0">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Text.Body}" Text="Anime: keep drawings as drawn"/>
+                <TextBlock Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="Anime holds each drawing for 2 or 3 frames. Smoothing between two drawings morphs one into the other (melting faces), so with this on they're shown as drawn, and only camera moves and pans are smoothed."/>
+            </StackPanel>
+        </CheckBox>
         <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Demo}" Margin="0,12,0,0">
             <StackPanel>
                 <TextBlock Style="{StaticResource Text.Body}" Text="Before and after"/>

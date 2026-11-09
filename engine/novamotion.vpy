@@ -56,6 +56,7 @@ DEFAULTS = {
     "rife_threads": 4,
     "scene_detect": True,
     "dedup": True,               # repeated frames in the video: blend across them, not to a stop
+    "drawn": False,              # anime and cartoons: drawings shown as drawn, only camera moves smoothed
     "mv_quality": "balanced",    # fast | balanced | quality
     "demo": False,               # before/after: original on the left, smoothed on the right
     "demo_mode": "side",         # side: the same middle part of the picture twice | split: left and right halves
@@ -282,7 +283,8 @@ def interpolate_rife_trt(clip, cfg, src, dst):
     smooth = novamotion_trt.interpolate(rgb, src, dst, cfg.get("trt_model", "auto"), cfg["rife_gpu"],
                                          bool(cfg["scene_detect"]), bool(cfg.get("dedup", True)),
                                          int(cfg.get("quality_step") or 0), cfg.get("trt_streams"),
-                                         cfg.get("gpu_class") or "", cfg.get("ai_scale") or "auto")
+                                         cfg.get("gpu_class") or "", cfg.get("ai_scale") or "auto",
+                                         bool(cfg.get("drawn")))
     # Bilinear for the chroma step back to 4:2:0: same look as bicubic at this size, and
     # cheaper on the CPU for every one of the 60 output frames a second
     return core.resize.Bilinear(smooth, format=clip.format.id, matrix_s=matrix, dither_type="ordered")
@@ -678,8 +680,29 @@ def smoothed(clip, cfg, src):
             if type(e).__name__ == "EngineNotBuilt":       # being built in the background: MVTools meanwhile
                 break
     if smooth is None:
-        smooth = interpolate_mvtools(clip, cfg, src, dst)
+        smooth, engine = interpolate_mvtools(clip, cfg, src, dst), interpolate_mvtools
+    if cfg.get("drawn") and engine is not interpolate_rife_trt:    # TensorRT does it itself, skipping the AI work
+        smooth = keep_drawings(smooth, clip, src, dst)
     return smooth, dst
+
+
+def keep_drawings(smooth, clip, src, dst):
+    """Anime on Vulkan RIFE and MVTools: real frames where a drawing is held or switches to the
+    next, the engine's frames where everything moves (see novamotion_trt.plan, drawn)."""
+    import novamotion_trt
+    ratio = Fraction(dst) / Fraction(src)
+    p, q = ratio.numerator, ratio.denominator
+    last = clip.num_frames - 1
+    info = novamotion_trt.frame_info(clip)
+    base = core.std.BlankClip(info, length=smooth.num_frames, fpsnum=dst.numerator, fpsden=dst.denominator, keep=True)
+    info_out = core.std.FrameEval(base, lambda n: info[min(n * q // p, last)])
+    real = core.resize.Point(clip, format=smooth.format.id) if clip.format.id != smooth.format.id else clip
+
+    def pick(n, f):
+        a, _, _, copy = novamotion_trt.plan(n, p, q, f, drawn=True)
+        return real[min(max(a, 0), last)] if copy else smooth
+
+    return core.std.FrameEval(smooth, pick, prop_src=info_out)
 
 
 if _debug:

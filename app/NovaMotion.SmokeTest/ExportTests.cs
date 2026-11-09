@@ -62,6 +62,9 @@ internal static class ExportTests
         var e = ExportPlan.Engine(playing, o, trt, models);
         check(e.Engine == "rife_trt" && e.TrtModel == "rife-v4.26" && !e.Demo && !e.RtxVsr && e.QualityStep == 0 && e.Dedup && e.SceneDetect && e.TargetText == "60",
               "export: best quality uses the newest TensorRT model, no demo/VSR/step-down");
+        check(!e.Drawn && ExportPlan.Engine(new EngineSettings { Drawn = true }, o, trt, models).Drawn == false
+              && ExportPlan.Engine(playing, o with { Drawn = true }, trt, models).Drawn,
+              "export: keep drawings as drawn comes from the export's choice, not the player's");
         var enh = new EnhanceSettings { Preset = "film", Height = 2160 };
         check(ExportPlan.Engine(playing, o with { Comparison = true, Enhance = enh }, trt, models).DemoMode == "split"
               && ExportPlan.Engine(playing, o with { Comparison = true, Enhance = enh, Compare = "whole" }, trt, models).DemoMode == "whole"

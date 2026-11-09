@@ -28,6 +28,8 @@ public sealed record ExportOptions
     /// <summary>How a before/after shows the picture: "split" (left original, right NOVA), "whole" (both
     /// whole frames side by side) or "zoom" (the middle at 100%, to see detail).</summary>
     public string Compare { get; init; } = "split";
+    /// <summary>Anime: drawings kept as drawn, only camera moves smoothed.</summary>
+    public bool Drawn { get; init; }
     /// <summary>Only part of the video: from this second…</summary>
     public double? StartSeconds { get; init; }
     /// <summary>…for this many seconds (null: to the end).</summary>
@@ -141,6 +143,7 @@ public static class ExportPlan
         e.SizeStep = 0;
         e.SceneDetect = true;
         e.Dedup = true;
+        e.Drawn = o.Drawn;
         e.TargetText = o.Target;
         e.Enhance = o.Enhancing ? o.Enhance! with { } : null;
         e.MvQuality = "quality";

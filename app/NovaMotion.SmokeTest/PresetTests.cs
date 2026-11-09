@@ -18,6 +18,8 @@ internal static class PresetTests
         check(Presets.IsEdited(anime, edited), "presets: a changed size shows as edited");
 
         check(anime.Recipe.Enhance.Grain == 0.3, "presets: Anime episode adds fine grain (no waxy look)");
+        check(anime.Recipe.Drawn && !Presets.Video.Where(v => v.Id != "anime").Any(v => v.Recipe.Drawn),
+              "presets: Anime episode keeps drawings as drawn; the others smooth everything");
 
         var mine = Presets.SaveVideo(s, "Anime episode", "1440p anime", edited);
         check(mine.Id == "my-video-1" && mine.Name == "Anime episode 2" && !mine.BuiltIn && Presets.FindVideo(s, "my-video-1") == mine,
@@ -89,6 +91,9 @@ internal static class PresetTests
         var vmOld = new MainViewModel(new FakeHost(), oldStore, rt, () => new FakeBackend(), () => DateTime.UtcNow, new FakeExporter());
         check(vmOld.Settings.Enhance!.Grain == 0.3 && vmOld.Settings.Enhance.Tuning == EnhanceSettings.CurrentTuning && !vmOld.PresetEdited,
               "page: Anime episode saved before its grain gets fine grain, not shown as edited");
+        check(vmOld.ExportDrawn, "page: Anime episode keeps drawings as drawn after a restart");
+        vmOld.ExportDrawn = false;
+        check(vmOld.PresetEdited, "page: turning off keep-drawings edits the preset");
         vm.UseVideoPresetCommand.Execute(vm.VideoPresetItems.Single(i => i.Id == "remaster"));
         check(vm.SizeRow == "4K" && vm.VideoPresetItems.Single(i => i.IsSelected).Id == "remaster" && vm.CurrentRecipe().Enhance.Height == 2160,
               "page: a preset card sets every option");

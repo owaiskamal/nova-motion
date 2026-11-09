@@ -104,7 +104,7 @@ public sealed partial class MainViewModel
         foreach (var o in OnlineHeights) o.IsSelected = o.Value == _settings.OnlineMaxHeight.ToString(CultureInfo.InvariantCulture);
         RebuildModels();
         foreach (var o in AiSizes) o.IsSelected = o.Value == (Eng.AiScale is "" ? "auto" : Eng.AiScale);
-        Raise(nameof(SmoothingEnabled), nameof(SceneDetect), nameof(Dedup), nameof(Demo), nameof(DemoSideBySide), nameof(ShowDemoLabels), nameof(RtxVsr), nameof(IsRife), nameof(IsMvTools),
+        Raise(nameof(SmoothingEnabled), nameof(SceneDetect), nameof(Dedup), nameof(Drawn), nameof(Demo), nameof(DemoSideBySide), nameof(ShowDemoLabels), nameof(RtxVsr), nameof(IsRife), nameof(IsMvTools),
               nameof(ActiveProfileName), nameof(EngineName), nameof(TargetName), nameof(HasModels), nameof(IsTensorRt),
               nameof(CloseToTray), nameof(ResumePlayback), nameof(AutoQueueFolder), nameof(AutoUpdateYtDlp), nameof(StartMinimizedToTray));
         UpdateEngineState();
@@ -155,6 +155,7 @@ public sealed partial class MainViewModel
         }
     }
     public bool Dedup { get => Eng.Dedup; set { if (Eng.Dedup == value) return; Eng.Dedup = value; Raise(); _ = SaveAndApplyAsync(); } }
+    public bool Drawn { get => Eng.Drawn; set { if (Eng.Drawn == value) return; Eng.Drawn = value; Raise(); _ = SaveAndApplyAsync(); } }
     public bool SceneDetect { get => Eng.SceneDetect; set { if (Eng.SceneDetect == value) return; Eng.SceneDetect = value; Raise(); _ = SaveAndApplyAsync(); } }
     public bool Demo { get => Eng.Demo; set { if (Eng.Demo == value) return; Eng.Demo = value; Raise(); Raise(nameof(ShowDemoLabels)); _ = SaveAndApplyAsync(); } }
     public bool DemoSideBySide

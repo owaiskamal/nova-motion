@@ -12,10 +12,13 @@ public sealed record VideoRecipe
     [JsonPropertyName("target")] public string Target { get; init; } = "60";
     [JsonPropertyName("quality")] public ExportQuality Quality { get; init; } = ExportQuality.Best;
     [JsonPropertyName("gpu_encoder")] public bool HardwareEncoder { get; init; } = true;
+    /// <summary>Anime: drawings kept as drawn, only camera moves smoothed (no morphing faces).</summary>
+    [JsonPropertyName("drawn")] public bool Drawn { get; init; }
 
     /// <summary>Same choices, ignoring bookkeeping (Enhance's tuning marker).</summary>
     public bool SameAs(VideoRecipe other) =>
-        Target == other.Target && Quality == other.Quality && HardwareEncoder == other.HardwareEncoder && SameLook(Enhance, other.Enhance);
+        Target == other.Target && Quality == other.Quality && HardwareEncoder == other.HardwareEncoder && Drawn == other.Drawn
+        && SameLook(Enhance, other.Enhance);
 
     internal static bool SameLook(EnhanceSettings a, EnhanceSettings b) =>
         a.Preset == b.Preset && a.Height == b.Height && a.Clean == b.Clean && a.FixCompression == b.FixCompression
@@ -55,7 +58,7 @@ public static class Presets
     public static readonly IReadOnlyList<VideoPreset> Video = new[]
     {
         new VideoPreset { Id = "anime", Name = "Anime episode", Description = "Clean lines, 60 fps, same size", BuiltIn = true,
-                          Recipe = new() { Enhance = Look("anime", 0, "light", "balanced", grain: 0.3) } },
+                          Recipe = new() { Enhance = Look("anime", 0, "light", "balanced", grain: 0.3), Drawn = true } },
         new VideoPreset { Id = "film", Name = "Film & live action", Description = "Natural look, keeps the grain", BuiltIn = true,
                           Recipe = new() { Enhance = Look("film", 0, "off", "natural") } },
         new VideoPreset { Id = "old", Name = "Old or low-res", Description = "Enlarge to 1440p, strong clean-up", BuiltIn = true,

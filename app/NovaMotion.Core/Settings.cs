@@ -33,6 +33,8 @@ public sealed class EngineSettings
     [JsonPropertyName("scene_detect")]   public bool SceneDetect { get; set; } = true;
     /// <summary>Blend across frames the video repeats (common in sports and TV uploads).</summary>
     [JsonPropertyName("dedup")]          public bool Dedup { get; set; } = true;
+    /// <summary>Anime and cartoons: drawings shown as drawn (no morphing in-betweens), only camera moves smoothed.</summary>
+    [JsonPropertyName("drawn")]          public bool Drawn { get; set; }
     [JsonPropertyName("mv_quality")]     public string MvQuality { get; set; } = "balanced"; // fast | balanced | quality
     [JsonPropertyName("demo")]           public bool Demo { get; set; }
     /// <summary>"side": the middle of the picture twice, original then smoothed. "split": left and right halves.</summary>
