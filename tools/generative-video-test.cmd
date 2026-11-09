@@ -4,7 +4,7 @@ rem Works from anywhere; it finds NOVA Studio's installed Generative part.
 rem Optional: generative-video-test.cmd "video.mp4" --start 60 --seconds 3 --sizes 1080,2160
 setlocal
 set "RT="
-for %%D in ("%~dp0runtime" "%~dp0..\runtime" "%LOCALAPPDATA%\Programs\NOVA Motion\runtime" "%LOCALAPPDATA%\Programs\NOVA Studio\runtime") do (
+for %%D in ("%~dp0runtime" "%~dp0..\runtime" "%USERPROFILE%\Documents\nova-motion\runtime" "%LOCALAPPDATA%\Programs\NOVA Motion\runtime" "%LOCALAPPDATA%\Programs\NOVA Studio\runtime") do (
   if not defined RT if exist "%%~D\generate\.venv\Scripts\python.exe" set "RT=%%~D"
 )
 if not defined RT (
