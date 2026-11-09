@@ -278,7 +278,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install vapoursynth vapoursynth-mvtools
+      - run: pip install vapoursynth vapoursynth-mvtools numpy
       - run: python tests/engine/test_engine.py engine/novamotion.vpy
       - run: python tests/engine/test_enhance.py engine/novamotion.vpy
       - run: python tests/engine/test_jobs.py
