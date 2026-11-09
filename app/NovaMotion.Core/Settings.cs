@@ -79,9 +79,10 @@ public sealed record EnhanceSettings
     [JsonPropertyName("strength")] public string Strength { get; set; } = "balanced";
     /// <summary>Sharpening after the upscale, 0..1. Off by default: on top of the AI it drew dark outlines.</summary>
     [JsonPropertyName("detail")] public double Detail { get; set; }
-    /// <summary>Settings saved before the November 2026 tuning had sharpening on; moved over once.</summary>
+    /// <summary>Settings saved before the November 2026 tuning had sharpening on (2), and Anime episode
+    /// without its fine grain (3); moved over once.</summary>
     [JsonPropertyName("tuning")] public int Tuning { get; set; }
-    public const int CurrentTuning = 2;
+    public const int CurrentTuning = 3;
     /// <summary>Fine film grain, 0..1.</summary>
     [JsonPropertyName("grain")] public double Grain { get; set; }
 

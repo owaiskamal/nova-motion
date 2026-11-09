@@ -154,7 +154,7 @@ def plan(preset, clean, w, h, height):
 check(plan("film", "off", 1920, 1080, 2160) == ("realesr-general-wdn-x4v3.onnx", 4), "film, no clean-up: keeps grain (wdn)")
 check(plan("film", "strong", 1920, 1080, 2160) == ("realesr-general-x4v3.onnx", 4), "film, strong clean-up: x4v3")
 check(plan("anime", "light", 1920, 1080, 2160) == ("pro-conservative-up2x.onnx", 2), "anime 2x: Real-CUGAN Pro")
-check(plan("anime", "light", 640, 360, 2160) == ("realesr-animevideov3.onnx", 4), "anime 6x: AnimeVideo v3 at 4x")
+check(plan("anime", "light", 640, 360, 2160) == ("pro-conservative-up2x.onnx", 2), "anime 6x: Real-CUGAN too (AnimeVideo v3 looked waxy)")
 os.remove(os.path.join(MODELS, "cugan", "pro-conservative-up2x.onnx"))
 check(plan("anime", "light", 1920, 1080, 2160) == ("up2x-latest-conservative.onnx", 2), "anime without Pro: Real-CUGAN 1")
 

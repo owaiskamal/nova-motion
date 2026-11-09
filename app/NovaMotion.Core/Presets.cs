@@ -55,7 +55,7 @@ public static class Presets
     public static readonly IReadOnlyList<VideoPreset> Video = new[]
     {
         new VideoPreset { Id = "anime", Name = "Anime episode", Description = "Clean lines, 60 fps, same size", BuiltIn = true,
-                          Recipe = new() { Enhance = Look("anime", 0, "light", "balanced") } },
+                          Recipe = new() { Enhance = Look("anime", 0, "light", "balanced", grain: 0.3) } },
         new VideoPreset { Id = "film", Name = "Film & live action", Description = "Natural look, keeps the grain", BuiltIn = true,
                           Recipe = new() { Enhance = Look("film", 0, "off", "natural") } },
         new VideoPreset { Id = "old", Name = "Old or low-res", Description = "Enlarge to 1440p, strong clean-up", BuiltIn = true,

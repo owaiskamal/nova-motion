@@ -12,7 +12,7 @@ Models (all allow commercial use), in vs-plugins/models:
     enhance/realesr-general-{x4v3, mid-x4v3, wdn-x4v3}.onnx  Real-ESRGAN general, BSD-3: film and live action
         x4v3 cleans noise hardest, wdn keeps grain and fine texture, mid is half of each
     cugan/up2x-latest-{no-denoise, conservative, denoise3x}.onnx and pro-*  Real-CUGAN, MIT: anime, art
-    RealESRGANv2/realesr-animevideov3.onnx  Real-ESRGAN AnimeVideo v3, BSD-3: anime, big enlargements
+    RealESRGANv2/realesr-animevideov3.onnx  Real-ESRGAN AnimeVideo v3, BSD-3: installed, no longer chosen
     dpir/drunet_deblocking_color.onnx  DPIR, MIT: compression blocks and ringing
     enhance/RealESRGAN_x4plus{,_anime_6B}.onnx  Real-ESRGAN x4plus, BSD-3: "Max detail" for photos, a full
         RRDB network that adds far more texture than the compact models, and is 10-15x heavier
@@ -92,17 +92,15 @@ def models_dir():
 def model_plan(e, width, height, models=None):
     """(model file, its scale) for these settings: which network, and how many times it enlarges."""
     models = models or models_dir()
-    out_w, out_h = output_size(width, height, e["height"])
-    need = out_h / height
     if e.get("model") == "max":
         path = os.path.join(models, "enhance", MAX_MODELS[e["preset"]] + ".onnx")
         if os.path.exists(path):
             return path, 4
     if e["preset"] == "film":
         return os.path.join(models, "enhance", FILM_MODELS[e["clean"]] + ".onnx"), 4
-    # Anime: Real-CUGAN at 2x for up to 2.5x (the best line art); AnimeVideo v3 at 4x beyond that
-    if need > 2.5:
-        return os.path.join(models, "RealESRGANv2", "realesr-animevideov3.onnx"), 4
+    # Anime: Real-CUGAN at 2x, then enlarged the rest of the way, at every size. AnimeVideo v3 at 4x
+    # (used beyond 2.5x until 0.3.1) flattened shading and hatching into a waxy look on 480p sources
+    # taken to 4K; Real-CUGAN keeps the line art and the cel texture
     legacy, pro = ANIME_MODELS[e["clean"]]
     pro_path = os.path.join(models, "cugan", pro + "-up2x.onnx")
     if os.path.exists(pro_path):

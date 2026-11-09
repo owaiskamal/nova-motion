@@ -17,6 +17,8 @@ internal static class PresetTests
         var edited = anime.Recipe with { Enhance = anime.Recipe.Enhance with { Height = 1440 } };
         check(Presets.IsEdited(anime, edited), "presets: a changed size shows as edited");
 
+        check(anime.Recipe.Enhance.Grain == 0.3, "presets: Anime episode adds fine grain (no waxy look)");
+
         var mine = Presets.SaveVideo(s, "Anime episode", "1440p anime", edited);
         check(mine.Id == "my-video-1" && mine.Name == "Anime episode 2" && !mine.BuiltIn && Presets.FindVideo(s, "my-video-1") == mine,
               $"presets: saved as the person's own, a taken name numbered ({mine.Name})");
@@ -76,6 +78,17 @@ internal static class PresetTests
         };
         check(vm.VideoPresetItems.Count == 6 && vm.VideoPresetItems.Single(i => i.IsSelected).Id == "anime" && !vm.PresetEdited && vm.SizeRow == "Same size",
               $"page: starts on Anime episode, not edited ({vm.SizeRow})");
+
+        // Someone on Anime episode from before it had grain: moved over once, and still not "edited"
+        var oldDir = Path.Combine(dir, "old");
+        var oldStore = new SettingsStore(Path.Combine(oldDir, "settings"));
+        var old = AppSettings.CreateDefaults();
+        old.VideoPreset = "anime";
+        old.Enhance = Presets.FindVideo(old, "anime")!.Recipe.Enhance with { Grain = 0, Tuning = 2 };
+        oldStore.Save(old);
+        var vmOld = new MainViewModel(new FakeHost(), oldStore, rt, () => new FakeBackend(), () => DateTime.UtcNow, new FakeExporter());
+        check(vmOld.Settings.Enhance!.Grain == 0.3 && vmOld.Settings.Enhance.Tuning == EnhanceSettings.CurrentTuning && !vmOld.PresetEdited,
+              "page: Anime episode saved before its grain gets fine grain, not shown as edited");
         vm.UseVideoPresetCommand.Execute(vm.VideoPresetItems.Single(i => i.Id == "remaster"));
         check(vm.SizeRow == "4K" && vm.VideoPresetItems.Single(i => i.IsSelected).Id == "remaster" && vm.CurrentRecipe().Enhance.Height == 2160,
               "page: a preset card sets every option");

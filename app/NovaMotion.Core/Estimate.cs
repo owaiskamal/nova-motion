@@ -65,7 +65,7 @@ public static class Estimate
     {
         if (maxDetail) return preset == "anime" ? Rrdb6 : Rrdb;
         if (preset == "film") return Compact;
-        return outH / (double)inH > 2.5 ? Compact : Cugan;
+        return Cugan;
     }
 
     /// <summary>The frames an export makes from a source: the target frame rate, never more than asked.</summary>

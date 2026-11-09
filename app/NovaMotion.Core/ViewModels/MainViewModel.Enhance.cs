@@ -39,7 +39,9 @@ public sealed partial class MainViewModel
         if (Boost.Tuning < EnhanceSettings.CurrentTuning)
         {
             // Sharpening on top of the AI drew dark outlines on real footage: off, once, for everyone
-            Boost.Detail = 0;
+            if (Boost.Tuning < 2) Boost.Detail = 0;
+            // Anime episode gained fine grain: without it a cleaned 480p episode at 4K looked waxy
+            if (_settings.VideoPreset == "anime" && Boost.Preset == "anime" && Boost.Grain == 0) Boost.Grain = 0.3;
             Boost.Tuning = EnhanceSettings.CurrentTuning;
             _store.Save(_settings);
         }
