@@ -300,20 +300,59 @@ def add_detail(clip, amount):
     return core.std.Expr([clip, blur], [f"x x y - {k:.3f} * +", "", ""] if clip.format.num_planes > 1 else [f"x x y - {k:.3f} * +"])
 
 
+GRAIN_FRAMES = 24     # the numpy grain repeats after this many frames: a second at 24 fps, not noticeable
+
+
 def add_grain(clip, amount):
     """Fine film grain on brightness, different every frame, so a cleaned picture doesn't look
-    plastic. Needs the akarin plugin (installed with TensorRT); without it, no grain."""
-    if amount <= 0 or not hasattr(core, "akarin"):
+    plastic. Made by the akarin plugin when it's installed (with TensorRT), otherwise from a second of
+    numpy noise played in a loop, so grain works on every PC."""
+    if amount <= 0:
         return clip
     fmt = clip.format
     peak = 1.0 if fmt.sample_type == vs.FLOAT else (1 << fmt.bits_per_sample) - 1
     strength = 0.02 * amount * peak
-    noise = "X 12.9898 * Y 78.233 * + N 37.719 * + sin 43758.5453 * dup floor - 0.5 -"
-    expr = f"x {noise} {strength:.4f} * +"
+    if hasattr(core, "akarin"):
+        noise = "X 12.9898 * Y 78.233 * + N 37.719 * + sin 43758.5453 * dup floor - 0.5 -"
+        expr = f"x {noise} {strength:.4f} * +"
+        try:
+            return core.akarin.Expr(clip, _grain_planes(fmt, expr))
+        except vs.Error:
+            pass
     try:
-        return core.akarin.Expr(clip, [expr, "", ""] if fmt.num_planes > 1 else [expr])
-    except vs.Error:
+        return _numpy_grain(clip, strength, peak)
+    except Exception:     # no numpy, or a format it can't fill: no grain rather than no export
         return clip
+
+
+def _numpy_grain(clip, strength, peak):
+    import numpy as np
+    fmt = clip.format
+    mid = 0.0 if fmt.sample_type == vs.FLOAT else (peak + 1) / 2
+    plane = np.float32 if fmt.sample_type == vs.FLOAT else (np.uint8 if fmt.bits_per_sample == 8 else np.uint16)
+    rng = np.random.default_rng(20261109)
+
+    def fill(n, f):
+        out = f.copy()
+        luma = np.asarray(out[0])
+        g = rng.uniform(-0.5, 0.5, luma.shape) * strength + mid
+        luma[:] = g.astype(plane) if fmt.sample_type == vs.FLOAT else np.clip(np.rint(g), 0, peak).astype(plane)
+        if fmt.color_family == vs.RGB:      # the same grain on R, G and B: brightness, no coloured specks
+            for i in (1, 2):
+                np.asarray(out[i])[:] = luma
+        return out
+
+    blank = core.std.BlankClip(clip, length=GRAIN_FRAMES, color=[mid] * fmt.num_planes)
+    noise = core.std.ModifyFrame(blank, blank, fill)
+    noise = (noise * -(-clip.num_frames // GRAIN_FRAMES))[:clip.num_frames]
+    return core.std.Expr([clip, noise], _grain_planes(fmt, f"x y {mid} - +"))
+
+
+def _grain_planes(fmt, expr):
+    """Grain on brightness: the Y plane, or all three of RGB (on R alone it would tint red)."""
+    if fmt.num_planes == 1 or fmt.color_family == vs.RGB:
+        return [expr] * fmt.num_planes
+    return [expr, "", ""]
 
 
 def finish(clip, e):

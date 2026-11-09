@@ -206,6 +206,24 @@ check(o.fps.numerator == 60, "before/after: at the smoothed rate")
 o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 720, "detail": 1, "grain": 0.5}})
 check((o.width, o.height) == (1280, 720), "detail and grain keep the size")
 
+# Grain without akarin (no TensorRT): numpy noise, on brightness only, different from frame to frame
+import numpy as np  # noqa: E402
+for f, color in ((vs.YUV420P10, [512, 512, 512]), (vs.YUV420P8, [128, 128, 128]), (vs.RGBS, [0.5, 0.5, 0.5])):
+    flat = core.std.BlankClip(width=64, height=48, format=f, length=30, color=color)
+    g = enhance._numpy_grain(flat, 0.02 * 0.3 * (1.0 if f == vs.RGBS else (1 << flat.format.bits_per_sample) - 1),
+                             1.0 if f == vs.RGBS else (1 << flat.format.bits_per_sample) - 1)
+    a0, a1, a29 = (np.asarray(g.get_frame(n)[0]).astype(np.float64) for n in (0, 1, 29))
+    base = np.asarray(flat.get_frame(0)[0]).astype(np.float64)
+    name = flat.format.name
+    check(g.num_frames == 30 and g.format.id == flat.format.id, f"grain without akarin keeps frames and format ({name})")
+    check(a0.std() > 0 and abs(a0.mean() - base.mean()) < 0.1 * max(1, a0.std()) and not np.array_equal(a0, a1),
+          f"grain without akarin: noise around the picture, new each frame ({name}, sd {a0.std():.3f})")
+    if f == vs.RGBS:
+        f0 = g.get_frame(0)
+        check(np.array_equal(np.asarray(f0[0]), np.asarray(f0[2])), "grain on RGB: the same on R, G and B (no colour specks)")
+    else:
+        check(np.array_equal(np.asarray(g.get_frame(0)[1]), np.asarray(flat.get_frame(0)[1])), f"grain leaves colour alone ({name})")
+
 backend_override("ncnn")
 calls.clear()
 o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 720}})
