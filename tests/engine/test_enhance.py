@@ -221,6 +221,14 @@ check(all(abs(m - c) < 0.002 for m, c in zip(_means, (0.40, 0.50, 0.60))), f"kee
 _row = np.asarray(_kept[0])[96, 100:104]
 check(abs(abs(float(_row[0] - _row[1])) - 0.10) < 0.005, f"keep colour: fine detail stays as the model made it ({_row.round(3)})")
 
+# Grain fades towards black and white
+def _grain_sd(level):
+    c = core.std.BlankClip(width=64, height=48, format=vs.YUV420P8, length=1, color=[level, 128, 128])
+    return float(np.asarray(enhance._numpy_grain(c, enhance.GRAIN_RANGE * 0.7 * 255, 255).get_frame(0)[0]).astype(np.float64).std())
+_sd = {v: _grain_sd(v) for v in (4, 26, 128, 250)}
+check(_sd[128] > 2 and 0.45 < _sd[26] / _sd[128] < 0.75 and _sd[4] < 0.45 * _sd[128] and _sd[250] < 0.45 * _sd[128],
+      f"grain: strongest in the mid-tones, fading to black and white ({ {k: round(v, 2) for k, v in _sd.items()} })")
+
 # Grain without akarin (no TensorRT): numpy noise, on brightness only, different from frame to frame
 for f, color in ((vs.YUV420P10, [512, 512, 512]), (vs.YUV420P8, [128, 128, 128]), (vs.RGBS, [0.5, 0.5, 0.5])):
     flat = core.std.BlankClip(width=64, height=48, format=f, length=30, color=color)

@@ -337,7 +337,7 @@ def add_grain(clip, amount):
     strength = GRAIN_RANGE * amount * peak
     if hasattr(core, "akarin"):
         noise = "X 12.9898 * Y 78.233 * + N 37.719 * + sin 43758.5453 * dup floor - 0.5 -"
-        expr = f"x {noise} {strength:.4f} * +"
+        expr = f"x {noise} {strength:.4f} * {_grain_weight(peak)} * +"
         try:
             return core.akarin.Expr(clip, _grain_planes(fmt, expr))
         except vs.Error:
@@ -385,7 +385,14 @@ def _numpy_grain(clip, strength, peak):
     blank = core.std.BlankClip(clip, length=GRAIN_FRAMES, color=[mid] * fmt.num_planes)
     noise = core.std.ModifyFrame(blank, blank, fill)
     noise = (noise * -(-clip.num_frames // GRAIN_FRAMES))[:clip.num_frames]
-    return core.std.Expr([clip, noise], _grain_planes(fmt, f"x y {mid} - +"))
+    return core.std.Expr([clip, noise], _grain_planes(fmt, f"x y {mid} - {_grain_weight(peak)} * +"))
+
+
+def _grain_weight(peak):
+    """Grain is strongest in the mid-tones and fades towards black and white, as on film: at full
+    strength everywhere, near-black areas of a dark scene looked noisy (seen on a 1080p anime episode).
+    1 at mid grey, about 0.6 at 10% and 90% brightness, falling further towards black and white."""
+    return f"x {peak} / 0 max 1 min dup 1 swap - * 4 * sqrt"
 
 
 def _grain_planes(fmt, expr):
