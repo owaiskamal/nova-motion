@@ -10,7 +10,7 @@ local fails=0
 local function check(c,w) print((c and "PASS " or "FAIL ")..w); if not c then fails=fails+1 end end
 M.events["file-loaded"]()
 check(has("novamotion") and #M.vf==1, "file-loaded applies filter")
-check(M.cmds[1]:find("vapoursynth=file=%%%d+%%C:/FF/runtime/mpv/../novamotion.vpy:buffered%-frames=12") ~= nil, "vpy path length-quoted: "..M.cmds[1])
+check(M.cmds[1]:find("vapoursynth=file=%%%d+%%C:/FF/runtime/mpv/../novamotion.vpy:buffered%-frames=24") ~= nil, "vpy path length-quoted: "..M.cmds[1])
 M.bindings["toggle"]()
 check(not has("novamotion"), "toggle off removes filter")
 M.bindings["toggle"](); check(has("novamotion"), "toggle on re-adds")
