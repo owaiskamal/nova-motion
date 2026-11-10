@@ -130,6 +130,8 @@ Found in a review of the whole engine, app and setup, not from one bug report ea
 
 ## Tested on real PCs
 
+`tools\playback-profile.cmd` (drop a video on it) plays a few seconds of a real video through the player in several settings (off, as set, automatic, anime drawings kept, 60 fps, 2×, a fixed model, Vulkan) and writes `runtime\profile\<time>\summary.txt`: frames made and dropped a second, the graphics card's load and temperature, whether the PC was on battery, and the engine each run used. Nothing is changed; each run uses its own copy of the settings.
+
 Real playback, 1080p video, with the setting the engine picked on its own:
 
 | PC | Video | Result |
