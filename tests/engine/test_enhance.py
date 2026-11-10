@@ -206,8 +206,22 @@ check(o.fps.numerator == 60, "before/after: at the smoothed rate")
 o = run({"engine": "mvtools", "target": 60, "source_frames": 24, "enhance": {"preset": "film", "height": 720, "detail": 1, "grain": 0.5}})
 check((o.width, o.height) == (1280, 720), "detail and grain keep the size")
 
-# Grain without akarin (no TensorRT): numpy noise, on brightness only, different from frame to frame
+# The AI's picture keeps the original's broad colour and brightness, and its own detail
+_plain = core.std.BlankClip(width=320, height=192, format=vs.RGBS, length=1, color=[0.40, 0.50, 0.60])
+def _stripes(n, f):
+    out = f.copy()
+    for pl, tint in enumerate((0.03, -0.02, 0.01)):                 # a colour drift, plus fine detail
+        a_ = np.asarray(out[pl]); a_[:] = a_ + tint; a_[:, ::2] += 0.05; a_[:, 1::2] -= 0.05
+    return out
 import numpy as np  # noqa: E402
+_ai = core.std.ModifyFrame(_plain, _plain, _stripes)
+_kept = enhance.keep_colour(_ai, _plain).get_frame(0)
+_means = [float(np.asarray(_kept[i]).mean()) for i in range(3)]
+check(all(abs(m - c) < 0.002 for m, c in zip(_means, (0.40, 0.50, 0.60))), f"keep colour: the model's colour drift is taken out ({[round(m, 3) for m in _means]})")
+_row = np.asarray(_kept[0])[96, 100:104]
+check(abs(abs(float(_row[0] - _row[1])) - 0.10) < 0.005, f"keep colour: fine detail stays as the model made it ({_row.round(3)})")
+
+# Grain without akarin (no TensorRT): numpy noise, on brightness only, different from frame to frame
 for f, color in ((vs.YUV420P10, [512, 512, 512]), (vs.YUV420P8, [128, 128, 128]), (vs.RGBS, [0.5, 0.5, 0.5])):
     flat = core.std.BlankClip(width=64, height=48, format=f, length=30, color=color)
     g = enhance._numpy_grain(flat, enhance.GRAIN_RANGE * 0.3 * (1.0 if f == vs.RGBS else (1 << flat.format.bits_per_sample) - 1),
