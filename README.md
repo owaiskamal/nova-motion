@@ -125,7 +125,7 @@ Found in a review of the whole engine, app and setup, not from one bug report ea
 - **Engine scripts could stay at an old version after an update** (each setup script copied its own list of files; the installer never refreshed Animate's script). The app now brings them in step every time it starts, and the setup scripts share one copy step.
 - **Quitting left work running behind the closed app:** an export nobody could see, or a download a second one then ran into. Quitting now says what is still running, asks, and stops it.
 - **An unexpected error left an export on "Starting…" or a download on "Installing" until a restart,** and stopped everything queued after it. It now fails that one item with the reason, and the rest carry on.
-- **Grain did nothing in exports on PCs without TensorRT:** numpy sits in a folder the player's Python doesn't look in. Found there now.
+- **Grain did nothing in exports on PCs without TensorRT:** numpy sits in a folder the player's Python doesn't look in. Found there now. And grain is now strong enough to see: *Fine* was under half a brightness level either way, invisible at 4K and erased by the video encoder; it is about 1.5 levels now, *Film* about 3.5.
 - A before/after of an 8K result is kept within 4096 px wide (NVIDIA's H.264 limit, which failed the export); a download cut short is no longer kept in the cache as if complete; Generative no longer leaves a copy of the picture in the temp folder when it fails; Real-ESRGAN AnimeVideo v3 is no longer downloaded or prepared (anime uses Real-CUGAN at every size), which saves a GTX 16 card about 3 minutes of preparing.
 
 ## Tested on real PCs

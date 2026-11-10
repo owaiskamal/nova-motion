@@ -300,6 +300,11 @@ def add_detail(clip, amount):
     return core.std.Expr([clip, blur], [f"x x y - {k:.3f} * +", "", ""] if clip.format.num_planes > 1 else [f"x x y - {k:.3f} * +"])
 
 
+# The noise's full range at amount 1, as a share of the brightness range. At 0.02 (until 0.3.1) Fine
+# (0.3) came to less than half a level of 255 either way: invisible at 4K, and gone after encoding. At
+# 0.07 Fine is about 1.5 levels (just visible up close, takes the plastic look off flat colour) and Film
+# (0.7) about 3.5 (visible film grain).
+GRAIN_RANGE = 0.07
 GRAIN_FRAMES = 24     # the numpy grain repeats after this many frames: a second at 24 fps, not noticeable
 
 
@@ -311,7 +316,7 @@ def add_grain(clip, amount):
         return clip
     fmt = clip.format
     peak = 1.0 if fmt.sample_type == vs.FLOAT else (1 << fmt.bits_per_sample) - 1
-    strength = 0.02 * amount * peak
+    strength = GRAIN_RANGE * amount * peak
     if hasattr(core, "akarin"):
         noise = "X 12.9898 * Y 78.233 * + N 37.719 * + sin 43758.5453 * dup floor - 0.5 -"
         expr = f"x {noise} {strength:.4f} * +"
