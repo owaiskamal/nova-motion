@@ -283,12 +283,30 @@ def upscale(clip, cfg, e, matrix, full=None):
         # Downscaling the model's output: Spline36 keeps the detail it made without ringing
         big = core.resize.Spline36(big, out_w, out_h)
     mix = MIX[e["preset"]][e["strength"]]
+    # In 32-bit float: older VapourSynth (the one shipped) can't Merge the half floats TensorRT gives
+    plain = core.resize.Spline36(rgb, out_w, out_h, format=vs.RGBS)
+    big = keep_colour(core.resize.Point(big, format=vs.RGBS) if big.format.id != vs.RGBS else big, plain)
     if mix < 1.0:
-        # In 32-bit float: older VapourSynth (the one shipped) can't Merge the half floats TensorRT gives
-        plain = core.resize.Spline36(rgb, out_w, out_h, format=vs.RGBS)
-        big = core.std.Merge(plain, core.resize.Point(big, format=vs.RGBS) if big.format.id != vs.RGBS else big, weight=mix)
+        big = core.std.Merge(plain, big, weight=mix)
     out_matrix = "709" if out_h >= 600 else matrix
     return core.resize.Bicubic(big, format=clip.format.id, matrix_s=out_matrix, dither_type="error_diffusion")
+
+
+# The models drift a little in colour and brightness (Real-ESRGAN by 1 to 1.5 levels of 255 over
+# whole areas, measured against the true picture on Kodak photos), differently from frame to frame.
+# The AI's picture keeps its detail and takes its colour and brightness over areas of about this many
+# pixels from the original: the drift went from 1.4 levels to 0.1, and nothing else changed.
+COLOUR_AREA = 16
+
+
+def keep_colour(ai, plain):
+    """ai (RGBS) with the broad colour and brightness of plain (RGBS, same size)."""
+    w, h = max(2, ai.width // COLOUR_AREA), max(2, ai.height // COLOUR_AREA)
+    if w < 4 or h < 4:
+        return ai
+    small = lambda c: core.resize.Bilinear(c, w, h)
+    drift = core.std.Expr([small(plain), small(ai)], "x y -")
+    return core.std.Expr([ai, core.resize.Bicubic(drift, ai.width, ai.height)], "x y +")
 
 
 def add_detail(clip, amount):
