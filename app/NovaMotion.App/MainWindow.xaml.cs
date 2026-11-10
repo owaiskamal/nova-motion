@@ -42,6 +42,8 @@ public partial class MainWindow : Window, IUiHost
         var work = SystemParameters.WorkArea;
         Width = Math.Min(Width, Math.Max(MinWidth, work.Width * 0.92));
         Height = Math.Min(Height, Math.Max(MinHeight, work.Height * 0.92));
+        // The engine's scripts as this version ships them, before anything uses them
+        _runtime?.SyncEngine();
         _vm = new MainViewModel(this, _store, _runtime, CreatePlayer);
         DataContext = _vm;
         _vm.PropertyChanged += OnVmChanged;
@@ -465,10 +467,16 @@ public partial class MainWindow : Window, IUiHost
     public async void Quit()
     {
         if (_quitting) return;
+        if (!UiTest.Requested && _vm.RunningWork is { } work
+            && MessageBox.Show(this, work + "\n\nQuit NOVA Studio and stop it?", "NOVA Studio", MessageBoxButton.YesNo, MessageBoxImage.Question,
+                               MessageBoxResult.No) != MessageBoxResult.Yes)
+            return;
         _quitting = true;
         _tick.Stop();
         _overlay?.Close();
         await _vm.DisposeAsync();
+        // Cancelled work stops its helper programs (mpv, Python, PowerShell) as it unwinds: a moment for that
+        await Task.Delay(_vm.StoppedWork ? 800 : 0);
         if (_tray is not null) { _tray.Visible = false; _tray.Dispose(); }
         Close();
         Application.Current.Shutdown();

@@ -139,7 +139,9 @@ public static class AiParts
 
     // ------------------------------------------------------------------ preparing Enhance's models
 
-    private static readonly string[] ModelFolders = { "enhance", "cugan", "RealESRGANv2", "dpir", "restore" };
+    // RealESRGANv2 (AnimeVideo v3) isn't here: anime uses Real-CUGAN at every size since 0.3.1, so a copy
+    // left by an older version is neither prepared nor counted as needing it
+    private static readonly string[] ModelFolders = { "enhance", "cugan", "dpir", "restore" };
 
     /// <summary>Enhance's installed model files (the ones enhance_build.py prepares).</summary>
     public static IReadOnlyList<string> EnhanceModelFiles(RuntimeLayout? rt)

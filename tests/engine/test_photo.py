@@ -235,6 +235,18 @@ check(code == 0 and "gave a broken picture" in text and abs(r3.mean() - o.mean()
 m = enhance.mirror_pad(core.std.BlankClip(width=10, height=6, format=vs.GRAY8, color=[7]), 25, 3)
 check((m.width, m.height) == (35, 9), "mirror padding reaches any size")
 
+# A picture named in another script: the lines the app reads are UTF-8 whatever the system's encoding
+# (python -I ignores PYTHONIOENCODING; with an ASCII or cp1252 console the "done" line used to fail)
+import subprocess  # noqa: E402
+_code = ("import sys; sys.path.insert(0, %r); import photo; sys.stdout.reconfigure(encoding='cp1252', errors='strict'); photo.utf8_output(); "
+         "photo.say('done \u0646\u0648\u0627 \u5199\u771f.png')" % os.path.abspath(ENGINE))
+_p = subprocess.run([sys.executable, "-I", "-c", _code], capture_output=True, env=dict(os.environ, LC_ALL="C", LANG="C", PYTHONUTF8="0"))
+check(_p.returncode == 0 and _p.stdout.decode("utf-8").strip() == "done \u0646\u0648\u0627 \u5199\u771f.png",
+      f"output lines are UTF-8 for any file name ({_p.returncode}, {_p.stderr.decode('utf-8', 'replace')[-120:]})")
+
+# Grain inside the player: numpy comes from runtime/studio/packages when it isn't on Python's path
+check(enhance._numpy().__name__ == "numpy", "grain finds numpy")
+
 print()
 print("ALL PASSED" if not fails else f"{fails} FAILED")
 sys.exit(1 if fails else 0)

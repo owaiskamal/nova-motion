@@ -136,6 +136,38 @@ internal static class ExportTests
         check(vm.Exports[^1].IsFailed && vm.Exports[^1].Detail == "Out of video memory", "export: a failure says why");
         vm.ClearFinishedExportsCommand.Execute(null);
         check(!vm.HasExports, "export: clear finished");
+
+        // An error nobody expected fails that export only: the list goes on (it used to stay on "Starting…" for good)
+        var calls = 0;
+        exporter.Outcome = f => ++calls == 1 ? throw new NotSupportedException("something unexpected") : null;
+        vm.QueueExports(new[] { Path.Combine(v, "four.mkv"), Path.Combine(v, "five.mkv") });
+        await WaitFor(() => vm.Exports.Count == 2 && vm.Exports[1].IsDone);
+        check(vm.Exports[0].IsFailed && vm.Exports[0].Detail == "something unexpected" && vm.Exports[1].IsDone,
+              $"export: an unexpected error fails one export, the next still runs ({vm.Exports[0].Status}, {vm.Exports[1].Status})");
+        exporter.Outcome = _ => throw new OperationCanceledException();
+        vm.QueueExports(new[] { Path.Combine(v, "six.mkv") });
+        await WaitFor(() => vm.Exports[^1].Status == ExportStatus.Cancelled);
+        check(vm.Exports[^1].Status == ExportStatus.Cancelled, "export: cancelled while the video was being read shows as cancelled");
+        vm.ClearFinishedExportsCommand.Execute(null);
+
+        // Quitting: says what's still running, and stops it
+        exporter.Outcome = _ => null;
+        exporter.Gate = new TaskCompletionSource();
+        check(vm.RunningWork is null, "quit: nothing running, nothing to ask");
+        vm.QueueExports(new[] { Path.Combine(v, "seven.mkv"), Path.Combine(v, "eight.mkv") });
+        await WaitFor(() => vm.Exports.Count == 2 && vm.Exports[0].IsRunning);
+        check(vm.RunningWork == "2 exports are still running or waiting.", $"quit: says what's still running ({vm.RunningWork})");
+        vm.CancelAllWork();
+        await WaitFor(() => vm.Exports.All(e => e.Status == ExportStatus.Cancelled));
+        check(vm.Exports.All(e => e.Status == ExportStatus.Cancelled) && vm.StoppedWork && vm.RunningWork is null,
+              "quit: every export is stopped, none left running behind a closed app");
+
+        // A before/after of an 8K result: no wider than NVIDIA's H.264 encoder takes; exports are written as .part
+        var big = new ExportOptions { Comparison = true, Enhance = new EnhanceSettings { Preset = "film", Height = 4320 } };
+        check(ExportPlan.MpvArguments(rt, "i", "o", "p", "l", big, new FrameRate(60, 1)).Any(x => x.Contains("lavfi=[scale='min(4096,iw)':-2]"))
+              && !ExportPlan.MpvArguments(rt, "i", "o", "p", "l", o, new FrameRate(60, 1)).Any(x => x.Contains("min(4096")),
+              "export: an Enhance before/after is never wider than 4096 px");
+        check(ExportPlan.PartPath(@"C:\v\a.mp4") == @"C:\v\a.mp4.part", "export: written as .part until complete");
         Directory.Delete(dir, true);
     }
 }

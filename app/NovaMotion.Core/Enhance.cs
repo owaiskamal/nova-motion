@@ -71,7 +71,7 @@ public static class EnhanceCatalog
     public static readonly string[] RequiredModels =
     {
         @"enhance\realesr-general-x4v3.onnx", @"enhance\realesr-general-mid-x4v3.onnx", @"enhance\realesr-general-wdn-x4v3.onnx",
-        @"cugan\up2x-latest-conservative.onnx", @"RealESRGANv2\realesr-animevideov3.onnx",
+        @"cugan\up2x-latest-conservative.onnx",
     };
 
     /// <summary>The models, vs-mlrt and a way to run them on the graphics card (TensorRT or Vulkan).</summary>

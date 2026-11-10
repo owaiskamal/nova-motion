@@ -218,7 +218,9 @@ public sealed class MpvPlayer : IPlayerBackend
         catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException) { }
         finally
         {
-            foreach (var kv in _pending) kv.Value.TrySetCanceled();
+            // Not a cancellation: an export's progress question, unanswered because mpv had just finished
+            // and exited, read as "the user cancelled" and deleted the finished file
+            foreach (var kv in _pending) kv.Value.TrySetException(new MpvException("the player closed"));
             _pending.Clear();
         }
     }

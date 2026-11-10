@@ -5,10 +5,10 @@
   Adds what Enhance's AI clean-up and upscaling need (about 500 MB).
 
 .DESCRIPTION
-  Into runtime\mpv\vs-plugins\models\ (enhance, cugan, RealESRGANv2, dpir, restore), from this
+  Into runtime\mpv\vs-plugins\models\ (enhance, cugan, dpir, restore), from this
   project's newest "enhance-models-v*" release, each file checked against the release's SHA256SUMS:
     - Real-ESRGAN general, three strengths (BSD-3-Clause): film and live action
-    - Real-CUGAN (MIT) and Real-ESRGAN AnimeVideo v3 (BSD-3-Clause): anime and art
+    - Real-CUGAN (MIT): anime and art
     - DPIR deblocking (MIT): compressed downloads
     - Real-ESRGAN x4plus and x4plus anime (BSD-3-Clause): Max detail for photos
     - NAFNet REDS (MIT): Remove noise and blur for photos
@@ -37,7 +37,7 @@ $Repo     = "owaiskamal/nova-motion"
 function Folder-For([string]$name) {
     if ($name -like "realesr-general*" -or $name -like "RealESRGAN_x4plus*") { return "enhance" }
     if ($name -like "up2x-*" -or $name -like "pro-*") { return "cugan" }
-    if ($name -like "realesr-animevideo*") { return "RealESRGANv2" }
+    # realesr-animevideov3 (in the release) isn't used any more: anime takes Real-CUGAN at every size
     if ($name -like "drunet*") { return "dpir" }
     if ($name -like "nafnet*") { return "restore" }
     return $null
@@ -152,11 +152,8 @@ if (-not $hasScript -or (-not $hasTrt -and -not $hasNcnn)) {
 } else {
     Info "runs on $(if ($hasTrt) { 'TensorRT' } else { 'Vulkan (vsncnn)' })"
 }
-Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\enhance_build.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\jobs.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\photo.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\generate.py") $Runtime -Force
+. (Join-Path $PSScriptRoot "Engine.ps1")
+Copy-NovaEngine $Root $Runtime
 
 # Enhance a photo reads and writes pictures with numpy and Pillow (shared with Animate a picture)
 Step "Picture support for Enhance a photo (numpy, Pillow)"

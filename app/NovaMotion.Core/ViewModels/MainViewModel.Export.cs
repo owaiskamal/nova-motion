@@ -223,10 +223,10 @@ public sealed partial class MainViewModel
                 }));
                 string? error;
                 try { error = await _exporter.RunAsync(item.Input, item.Output, engine, item.Options, progress, item.Cancel.Token); }
-                catch (Exception ex) when (ex is IOException or InvalidOperationException or TimeoutException or UnauthorizedAccessException)
-                {
-                    error = ex.Message;
-                }
+                catch (OperationCanceledException) { error = "Cancelled"; }     // cancelled while the video was still being read
+                // Anything else: this export failed, the ones after it still run (an error that got past
+                // here left the item on "Starting…" for good and stopped the whole list)
+                catch (Exception ex) { error = ex.Message; }
                 _host.Post(() =>
                 {
                     if (error is null)

@@ -168,18 +168,9 @@ if ($missing) {
     $state = Get-State
 } else { Ok "all there" }
 # Keep the runtime's engine files in step with the repo (edit engine\, rebuild, play)
-Copy-Item (Join-Path $Root "engine\novamotion.vpy") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\novamotion_build.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\jobs.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\photo.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\generate.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\parallax.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\enhance_build.py") $Runtime -Force
+. (Join-Path $PSScriptRoot "Engine.ps1")
+Copy-NovaEngine $Root $Runtime
 $portable = Join-Path $MpvDir "portable_config"
-New-Item -ItemType Directory -Force $portable | Out-Null
-Copy-Item (Join-Path $Root "engine\mpv\*") $portable -Recurse -Force
 $old = Join-Path $portable "scripts\flowframe.lua"
 if (Test-Path $old) { Remove-Item $old -Force }
 Ok "engine files up to date"

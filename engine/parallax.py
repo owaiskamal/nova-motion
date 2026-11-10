@@ -36,6 +36,17 @@ def say(*parts):
     print(*parts, flush=True)
 
 
+def utf8_output():
+    """The app reads these lines as UTF-8. Left to Windows' code page, a picture named in Urdu, Chinese
+    or with an emoji made the final "done <path>" line fail, and with it a picture that was already saved
+    (python -I ignores PYTHONIOENCODING, so it's set here)."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description="Animate a picture with a 3D camera move.")
     p.add_argument("--image", required=True)
@@ -292,6 +303,7 @@ def encoder(args, w, h):
 
 
 def main(argv=None):
+    utf8_output()
     args = parse_args(argv)
     if args.packages:
         sys.path.insert(0, args.packages)

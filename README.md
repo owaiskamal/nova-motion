@@ -116,6 +116,18 @@ The full list is in Settings → Keyboard shortcuts.
 - **`benchmark.cmd`** measures every engine on your PC (results in `runtime\benchmark.log`). Sharing the result in an issue helps others with the same card.
 - **`collect-logs.cmd`** puts the player and engine logs, settings, tuning results and graphics info into `nova-motion-logs.zip` on your Desktop, to attach to an [issue](https://github.com/owaiskamal/nova-motion/issues).
 
+### Reliability fixes after 0.3.0
+
+Found in a review of the whole engine, app and setup, not from one bug report each:
+
+- **A finished export could be deleted and shown as "Cancelled".** The app asks the player for progress twice a second; a question still unanswered when the player exited at the end read as a cancellation. Fixed, and exports are now written as `name.mp4.part` and renamed when complete, so a file with the final name is always a whole video.
+- **Photos and pictures named in Urdu, Arabic, Chinese, or with an emoji** failed at the very end ("couldn't be enhanced") although the picture had been saved: the scripts' last line couldn't be written in Windows' code page. Their output is UTF-8 now.
+- **Engine scripts could stay at an old version after an update** (each setup script copied its own list of files; the installer never refreshed Animate's script). The app now brings them in step every time it starts, and the setup scripts share one copy step.
+- **Quitting left work running behind the closed app:** an export nobody could see, or a download a second one then ran into. Quitting now says what is still running, asks, and stops it.
+- **An unexpected error left an export on "Starting…" or a download on "Installing" until a restart,** and stopped everything queued after it. It now fails that one item with the reason, and the rest carry on.
+- **Grain did nothing in exports on PCs without TensorRT:** numpy sits in a folder the player's Python doesn't look in. Found there now.
+- A before/after of an 8K result is kept within 4096 px wide (NVIDIA's H.264 limit, which failed the export); a download cut short is no longer kept in the cache as if complete; Generative no longer leaves a copy of the picture in the temp folder when it fails; Real-ESRGAN AnimeVideo v3 is no longer downloaded or prepared (anime uses Real-CUGAN at every size), which saves a GTX 16 card about 3 minutes of preparing.
+
 ## Tested on real PCs
 
 Real playback, 1080p video, with the setting the engine picked on its own:

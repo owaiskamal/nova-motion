@@ -770,8 +770,42 @@ public sealed partial class MainViewModel : Observable, IAsyncDisposable
         };
     }
 
+    /// <summary>What is still being made, in words ("An export is running."), or null: quitting stops it.</summary>
+    public string? RunningWork
+    {
+        get
+        {
+            var exports = Exports.Count(e => !e.Options.Preview && !e.Options.Still && e.Status is ExportStatus.Running or ExportStatus.Waiting);
+            if (exports > 0) return exports == 1 ? "An export is still running." : $"{exports} exports are still running or waiting.";
+            if (IsEnhancingPhoto) return "A photo is still being enhanced.";
+            if (IsAnimating) return "A picture is still being animated.";
+            if (AiPartItems.Any(i => i.IsBusy)) return "A download or preparation is still running (it resumes where it stopped next time).";
+            return null;
+        }
+    }
+
+    /// <summary>Stops every export, photo, animation and download. Left running, they went on behind a closed
+    /// app: an export nobody could see, or an installer that a second one then ran into.</summary>
+    /// <summary>CancelAllWork had something to stop.</summary>
+    public bool StoppedWork { get; private set; }
+
+    public void CancelAllWork()
+    {
+        StoppedWork = RunningWork is not null || Exports.Any(e => e.Status == ExportStatus.Running);
+        foreach (var e in Exports.ToList())
+        {
+            if (e.Status == ExportStatus.Waiting) { e.Status = ExportStatus.Cancelled; e.Detail = "Cancelled"; }
+            else if (e.Status == ExportStatus.Running) e.Cancel?.Cancel();
+        }
+        _photoCancel?.Cancel();
+        _animateCancel?.Cancel();
+        _partQueue.Clear();
+        _partCancel?.Cancel();
+    }
+
     public async ValueTask DisposeAsync()
     {
+        CancelAllWork();
         SaveHistory();
         _store.Save(_settings);
         if (_backend is not null) await _backend.DisposeAsync();

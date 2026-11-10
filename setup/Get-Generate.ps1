@@ -164,8 +164,8 @@ if (Test-Path $uvCache) {
 $x = Join-Path $Cache "runner-x"
 if (Test-Path $x) { Remove-Item $x -Recurse -Force -ErrorAction SilentlyContinue }
 
-Copy-Item (Join-Path $Root "engine\generate.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\photo.py") $Runtime -Force
+. (Join-Path $PSScriptRoot "Engine.ps1")
+Copy-NovaEngine $Root $Runtime
 Set-Content $Ready "runner $RunnerCommit`r`nmodel $($ModelFiles[0].Name)`r`nvram_mb $best"
 Write-Host ""
 Write-Host "Generative detail is ready: on the Enhance page, Photos, choose the model Generative." -ForegroundColor Green

@@ -214,6 +214,8 @@ public sealed class PhotoRunner(RuntimeLayout runtime, Func<(int Gpu, string? Gp
         {
             RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
             WorkingDirectory = runtime.MpvDir,
+            // The scripts write UTF-8 (photo.utf8_output): file names in any script arrive intact
+            StandardOutputEncoding = System.Text.Encoding.UTF8, StandardErrorEncoding = System.Text.Encoding.UTF8,
         };
         foreach (var a in args) psi.ArgumentList.Add(a);
         var log = Path.Combine(runtime.Root, logName);

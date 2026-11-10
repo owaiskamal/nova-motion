@@ -136,7 +136,18 @@ def feather_mask(size, inner, feather):
 
 
 def main(argv=None):
+    photo.utf8_output()
     a = parse_args(argv)
+    work = tempfile.mkdtemp(prefix="nova-generate-")
+    try:
+        return generate(a, work)
+    finally:
+        # The work folder holds a copy of the picture: never left behind, also when it fails
+        import shutil
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def generate(a, work):
     started = time.time()
     say("stage picture")
     from PIL import Image, ImageOps
@@ -160,7 +171,6 @@ def main(argv=None):
     part = parse_part(a.part, img.width, img.height)
     say(f"model {a.dit_model}")
 
-    work = tempfile.mkdtemp(prefix="nova-generate-")
     src = os.path.join(work, "in.png")
     dst = os.path.join(work, "out.png")
     # Upright (EXIF), without transparency: the runner reads it with OpenCV. A chosen part: only it
@@ -215,11 +225,6 @@ def main(argv=None):
             spot = ((part[0][0] + part[0][2]) / 2 / img.width, (part[0][1] + part[0][3]) / 2 / img.height)
         photo.make_compare(img, result, spot, a.compare)
         say(f"compare {a.compare}")
-    for f in (src, dst):
-        try:
-            os.remove(f)
-        except OSError:
-            pass
     say(f"took {time.time() - started:.1f} s, {img.width}x{img.height} to {result.width}x{result.height}")
     say(f"done {a.out}")
     return 0

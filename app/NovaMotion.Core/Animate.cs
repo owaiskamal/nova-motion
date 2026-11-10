@@ -118,6 +118,7 @@ public sealed class AnimateRunner(RuntimeLayout runtime) : IAnimateRunner
         {
             RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
             WorkingDirectory = runtime.MpvDir,
+            StandardOutputEncoding = System.Text.Encoding.UTF8, StandardErrorEncoding = System.Text.Encoding.UTF8,
         };
         foreach (var a in Animate.Arguments(runtime, image, output, options)) psi.ArgumentList.Add(a);
         var log = Path.Combine(runtime.Root, "animate.log");

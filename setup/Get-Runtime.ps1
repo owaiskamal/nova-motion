@@ -55,6 +55,7 @@ trap {
 
 function Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 function Info($msg) { Write-Host "    $msg" }
+. (Join-Path $PSScriptRoot "Engine.ps1")
 
 # GitHub API calls: anonymous use is limited to 60 an hour per IP, which shared CI machines hit.
 # A token (CI sets GITHUB_TOKEN) lifts that; it is only ever sent to api.github.com.
@@ -75,7 +76,11 @@ function Get-File([string]$Url, [string]$Name) {
     $dest = Join-Path $Cache $Name
     if ((Test-Path $dest) -and -not $Force) { Info "cached  $Name"; return $dest }
     Info "download $Url"
-    Invoke-WebRequest -Uri $Url -OutFile $dest -UseBasicParsing -Headers @{ "User-Agent" = "NovaMotion-Setup" }
+    # Under another name until it's whole: a download cut short used to stay in the cache as if complete,
+    # and every later run failed unpacking it
+    $part = "$dest.download"
+    Invoke-WebRequest -Uri $Url -OutFile $part -UseBasicParsing -Headers @{ "User-Agent" = "NovaMotion-Setup" }
+    Move-Item $part $dest -Force
     return $dest
 }
 
@@ -221,17 +226,8 @@ $ytdlp = Get-ReleaseAsset "yt-dlp/yt-dlp" '^yt-dlp\.exe$' "latest" "yt-dlp"
 Copy-Item $ytdlp (Join-Path $MpvDir "yt-dlp.exe") -Force
 
 Step "NOVA Motion config + engine"
-$portable = Join-Path $MpvDir "portable_config"
-New-Item -ItemType Directory -Force -Path $portable | Out-Null
-Copy-Item (Join-Path $Root "engine\mpv\*") $portable -Recurse -Force
-Copy-Item (Join-Path $Root "engine\novamotion.vpy") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\novamotion_trt.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\novamotion_build.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\jobs.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\enhance.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\photo.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\generate.py") $Runtime -Force
-Copy-Item (Join-Path $Root "engine\enhance_build.py") $Runtime -Force
+# Every engine script (the installer takes them from here), and the player's settings
+Copy-NovaEngine $Root $Runtime
 
 Step "Self-test"
 $vspipe = Join-Path $MpvDir "VSPipe.exe"

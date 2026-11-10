@@ -325,8 +325,22 @@ def add_grain(clip, amount):
         return clip
 
 
+def _numpy():
+    """numpy, which Enhance's setup puts in runtime/studio/packages (shared with photos): inside the
+    player that folder isn't on Python's path, so without this grain silently did nothing there."""
+    try:
+        import numpy
+    except ImportError:
+        import sys
+        packages = os.path.join(os.path.dirname(os.path.abspath(__file__)), "studio", "packages")
+        if packages not in sys.path:
+            sys.path.append(packages)
+        import numpy
+    return numpy
+
+
 def _numpy_grain(clip, strength, peak):
-    import numpy as np
+    np = _numpy()
     fmt = clip.format
     mid = 0.0 if fmt.sample_type == vs.FLOAT else (peak + 1) / 2
     plane = np.float32 if fmt.sample_type == vs.FLOAT else (np.uint8 if fmt.bits_per_sample == 8 else np.uint16)
@@ -335,8 +349,11 @@ def _numpy_grain(clip, strength, peak):
     def fill(n, f):
         out = f.copy()
         luma = np.asarray(out[0])
-        g = rng.uniform(-0.5, 0.5, luma.shape) * strength + mid
-        luma[:] = g.astype(plane) if fmt.sample_type == vs.FLOAT else np.clip(np.rint(g), 0, peak).astype(plane)
+        g = rng.random(luma.shape, dtype=np.float32)      # float32: a 4K frame's noise in a few ms, not 100
+        g -= 0.5
+        g *= strength
+        g += mid
+        luma[:] = g if fmt.sample_type == vs.FLOAT else np.clip(np.rint(g, out=g), 0, peak).astype(plane)
         if fmt.color_family == vs.RGB:      # the same grain on R, G and B: brightness, no coloured specks
             for i in (1, 2):
                 np.asarray(out[i])[:] = luma

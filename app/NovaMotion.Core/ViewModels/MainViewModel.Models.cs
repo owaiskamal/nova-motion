@@ -302,7 +302,7 @@ public sealed partial class MainViewModel
                 item.State = AiParts.StateOf(item.Part, Runtime, Graphics);
                 item.Note = prepare ? "Stopped. Models already prepared stay prepared." : "Paused. Resume carries on from what's already downloaded.";
             }
-            catch (Exception ex) when (ex is InvalidOperationException or IOException or System.ComponentModel.Win32Exception)
+            catch (Exception ex)     // whatever it was: the part says so and the next one still runs
             {
                 item.State = PartState.Failed;
                 item.Error = ex.Message;

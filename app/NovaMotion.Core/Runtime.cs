@@ -46,6 +46,42 @@ public sealed class RuntimeLayout
         return null;
     }
 
+    /// <summary>The engine's scripts as this version of the app ships them: the "engine" folder next to runtime.</summary>
+    public string EngineSourceDir => Path.Combine(Path.GetDirectoryName(Root) ?? Root, "engine");
+
+    /// <summary>
+    /// Brings the runtime's copies of the engine scripts (and the player's settings) in step with the ones
+    /// this version ships, and returns the names it replaced. The setup scripts each copied the files they
+    /// knew of, so an update could leave an old one behind: Enhance showed "Needs preparing" for good after
+    /// one, and an installer update never refreshed Animate's script. Done when the app starts, so whatever
+    /// way the app was updated, the engine matches it.
+    /// </summary>
+    public IReadOnlyList<string> SyncEngine()
+    {
+        var replaced = new List<string>();
+        var source = EngineSourceDir;
+        if (!System.IO.Directory.Exists(source)) return replaced;
+        var pairs = System.IO.Directory.GetFiles(source)
+            .Where(f => Path.GetExtension(f).ToLowerInvariant() is ".py" or ".vpy")
+            .Select(f => (From: f, To: Path.Combine(Root, Path.GetFileName(f)))).ToList();
+        var settings = Path.Combine(source, "mpv");
+        if (System.IO.Directory.Exists(settings) && System.IO.Directory.Exists(MpvDir))
+            pairs.AddRange(System.IO.Directory.GetFiles(settings, "*", SearchOption.AllDirectories)
+                .Select(f => (From: f, To: Path.Combine(MpvDir, "portable_config", Path.GetRelativePath(settings, f)))));
+        foreach (var (from, to) in pairs)
+        {
+            try
+            {
+                if (File.Exists(to) && File.ReadAllBytes(from).AsSpan().SequenceEqual(File.ReadAllBytes(to))) continue;
+                System.IO.Directory.CreateDirectory(Path.GetDirectoryName(to)!);
+                File.Copy(from, to, overwrite: true);
+                replaced.Add(Path.GetRelativePath(Root, to));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* in use or read-only: next start */ }
+        }
+        return replaced;
+    }
+
     /// <summary>RIFE models installed for TensorRT, best first: "rife-v4.26", "rife-v4.22_lite"…</summary>
     public IReadOnlyList<string> TrtModels()
     {

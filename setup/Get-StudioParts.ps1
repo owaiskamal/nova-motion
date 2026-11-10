@@ -113,7 +113,8 @@ $check = "import sys; sys.path.insert(0, r'$Packages'); import numpy, PIL, onnxr
          "print('onnxruntime', o.__version__, ', '.join(o.get_available_providers()))"
 & $Python -c $check
 if ($LASTEXITCODE -ne 0) { throw "The packages or the model don't load" }
-Copy-Item (Join-Path $Root "engine\parallax.py") $Runtime -Force
+. (Join-Path $PSScriptRoot "Engine.ps1")
+Copy-NovaEngine $Root $Runtime
 
 $versions = [ordered]@{ model = "depth-anything-v2-small" }
 foreach ($w in $Wheels) { $versions[$w.Name] = $w.Version }

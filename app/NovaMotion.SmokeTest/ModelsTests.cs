@@ -46,6 +46,25 @@ internal static class ModelsTests
         r.Read("@@error The graphics card isn't an NVIDIA one");
         check(r.Error == "The graphics card isn't an NVIDIA one", "progress: the script's own reason when it stops");
 
+        // ---- the engine's scripts follow the app's version, whichever way it was updated
+        var sdir = Path.Combine(Path.GetTempPath(), "nm-sync-" + Guid.NewGuid().ToString("N")[..6]);
+        Directory.CreateDirectory(Path.Combine(sdir, "runtime", "mpv"));
+        Directory.CreateDirectory(Path.Combine(sdir, "engine", "mpv", "scripts"));
+        File.WriteAllText(Path.Combine(sdir, "runtime", "novamotion.vpy"), "old");
+        File.WriteAllText(Path.Combine(sdir, "runtime", "enhance.py"), "same");
+        File.WriteAllText(Path.Combine(sdir, "runtime", "tuning.json"), "{}");
+        foreach (var (name, text) in new[] { ("novamotion.vpy", "new"), ("enhance.py", "same"), ("parallax.py", "new"), ("notes.txt", "x") })
+            File.WriteAllText(Path.Combine(sdir, "engine", name), text);
+        File.WriteAllText(Path.Combine(sdir, "engine", "mpv", "scripts", "novamotion.lua"), "lua");
+        var srt = RuntimeLayout.Find(sdir)!;
+        var replaced = srt.SyncEngine();
+        check(replaced.OrderBy(x => x).SequenceEqual(new[] { Path.Combine("mpv", "portable_config", "scripts", "novamotion.lua"), "novamotion.vpy", "parallax.py" })
+              && File.ReadAllText(Path.Combine(srt.Root, "novamotion.vpy")) == "new" && File.ReadAllText(Path.Combine(srt.Root, "parallax.py")) == "new"
+              && !File.Exists(Path.Combine(srt.Root, "notes.txt")) && File.ReadAllText(Path.Combine(srt.Root, "tuning.json")) == "{}",
+              $"engine: scripts that changed or were missing are brought in step, nothing else is touched ({string.Join(", ", replaced)})");
+        check(srt.SyncEngine().Count == 0, "engine: nothing to do when it's already in step");
+        Directory.Delete(sdir, true);
+
         // ---- a PC with the player engine only
         var dir = Path.Combine(Path.GetTempPath(), "nm-models-" + Guid.NewGuid().ToString("N")[..6]);
         var root = Path.Combine(dir, "runtime");
@@ -132,6 +151,16 @@ internal static class ModelsTests
         check(Item(AiParts.Generative).IsFailed && Item(AiParts.Generative).Error.Contains("no internet") && Item(AiParts.Generative).ButtonText == "Try again",
               $"install: a failure says why in plain words and offers to try again ({Item(AiParts.Generative).Error})");
         runner.Fail = false;
+        // An error of a kind nobody planned for: still shown as failed (it used to stay on "Installing" until a restart)
+        var installs = runner.OnInstall;
+        runner.OnInstall = _ => throw new UnauthorizedAccessException("Access to the path is denied.");
+        runner.Gate = new TaskCompletionSource();
+        runner.Gate.SetResult();
+        vm.PartActionCommand.Execute(Item(AiParts.Generative));
+        await Task.Delay(30);
+        check(Item(AiParts.Generative).IsFailed && !Item(AiParts.Generative).IsBusy && Item(AiParts.Generative).Error.Contains("denied"),
+              $"install: an unexpected error fails the part instead of leaving it installing ({Item(AiParts.Generative).State})");
+        runner.OnInstall = installs;
         runner.Gate = new TaskCompletionSource();
         runner.Gate.SetResult();
         vm.PartActionCommand.Execute(Item(AiParts.Generative));

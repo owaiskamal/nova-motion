@@ -108,6 +108,11 @@ public static class ExportPlan
     public static readonly string[] Targets = { "60", "120", "x2" };
     /// <summary>Source frames repeated after the last one; covers the engine's look-ahead and a miscounted length.</summary>
     public const int TailPad = 8;
+    /// <summary>The widest before/after video: what NVIDIA's H.264 encoder accepts.</summary>
+    public const int MaxCompareWidth = 4096;
+    /// <summary>An export is written under this name and renamed when it's complete, so a file with the
+    /// final name is always a whole video (a crash or power cut left a broken one before).</summary>
+    public static string PartPath(string output) => output + ".part";
 
     /// <summary>"Match (NOVA Motion 60 fps).mp4" next to the original, never overwriting a file.</summary>
     public static string OutputPath(string input, ExportOptions o, Func<string, bool>? exists = null)
@@ -193,6 +198,8 @@ public static class ExportPlan
         // Before/after videos are for sharing: 720p, so a short clip stays small enough to upload.
         // Enhance's before/after is already a full-size crop: shrinking it would hide the detail it shows.
         if (o.Comparison && !o.Enhancing) stamp += ",lavfi=[scale=-2:'min(720,ih)']";
+        // NVIDIA's H.264 encoder stops at 4096 px wide: an 8K split before/after (7680) failed to start
+        else if (o.Comparison && !o.Still) stamp += $",lavfi=[scale='min({MaxCompareWidth},iw)':-2]";
         // Before/after clips are plain 8-bit 4:2:0 H.264, which every browser and phone plays; a 10-bit
         // iPhone clip would otherwise come out as 10-bit H.264, which most don't
         if (o.Comparison && !o.Still) stamp += ",format=fmt=yuv420p";
@@ -319,7 +326,10 @@ public sealed class ExportRunner : IExportRunner
         long? frames = options.Still ? 1
                      : rate is not null && source.Frames is { } n ? FrameRate.Frames(n, FrameRate.Snap(source.Fps!.Value), rate) : null;
 
-        var mpv = new MpvPlayer(_runtime, _store);
+        var final = output;
+        output = ExportPlan.PartPath(final);
+        TryDelete(output);
+        await using var mpv = new MpvPlayer(_runtime, _store);
         var exited = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         mpv.Exited += () => exited.TrySetResult();
         try
@@ -339,15 +349,26 @@ public sealed class ExportRunner : IExportRunner
                         progress.Report(Math.Clamp((tv - from) / span, 0, 1));
                     else progress.Report(0);     // still starting: the app can say what it's waiting for
                 }
-                catch (Exception ex) when (ex is MpvException or TimeoutException or InvalidOperationException or IOException) { }
+                catch (Exception ex) when (ex is MpvException or TimeoutException or InvalidOperationException or IOException
+                                               || (ex is OperationCanceledException && !ct.IsCancellationRequested)) { }
                 await Task.WhenAny(exited.Task, Task.Delay(500, ct));
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            mpv.Kill();
+            await StopAsync(mpv, exited.Task);
             TryDelete(output);
             return "Cancelled";
+        }
+        catch (Exception ex) when (ex is TimeoutException or InvalidOperationException or IOException or System.ComponentModel.Win32Exception
+                                       or OperationCanceledException)
+        {
+            // mpv didn't start or couldn't be reached: never left running on its own, writing a file nobody asked for
+            await StopAsync(mpv, exited.Task);
+            TryDelete(output);
+            return ex is System.ComponentModel.Win32Exception
+                ? "The player (mpv.exe) couldn't be started. If antivirus removed it, run build.cmd or reinstall."
+                : "The export couldn't start: " + ex.Message;
         }
         finally
         {
@@ -361,6 +382,12 @@ public sealed class ExportRunner : IExportRunner
             {
                 TryDelete(output);
                 return why;
+            }
+            try { File.Move(output, final, overwrite: false); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                TryDelete(output);
+                return $"The video was made but couldn't be saved as {Path.GetFileName(final)}: {ex.Message}";
             }
             progress.Report(1);
             if (Environment.GetEnvironmentVariable("NOVAMOTION_UITEST") is null) TryDelete(log);
@@ -449,6 +476,13 @@ public sealed class ExportRunner : IExportRunner
             return err is null ? "The export stopped. Details are in the exports folder." : err[(err.IndexOf(']', err.IndexOf(']') + 1) + 1)..].Trim();
         }
         catch (IOException) { return "The export stopped."; }
+    }
+
+    /// <summary>Ends mpv and waits (briefly) until it has let go of the file it was writing.</summary>
+    private static async Task StopAsync(MpvPlayer mpv, Task exited)
+    {
+        mpv.Kill();
+        if (mpv.IsRunning) await Task.WhenAny(exited, Task.Delay(3000));
     }
 
     private static void TryDelete(string path)
