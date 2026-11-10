@@ -196,6 +196,8 @@ jobs:
       # The Enhance models' setup exactly as users run it: download, checksums, the Vulkan runtime
       - name: Enhance models setup
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # As the app's AI Models page runs it: hidden, its progress read from the @@ lines
           $out = powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File setup\Get-EnhanceModels.ps1 -NoPrepare

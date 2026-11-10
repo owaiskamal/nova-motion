@@ -37,6 +37,9 @@ $Cache    = Join-Path $Runtime ".cache\trt"
 $SevenZip = Join-Path $MpvDir "7z.exe"     # full 7-Zip (ships with VapourSynth portable); handles split archives
 $LogFile  = Join-Path $Runtime "setup-tensorrt.log"
 $Headers  = @{ "User-Agent" = "NovaMotion-Setup" }
+# A token (CI sets GITHUB_TOKEN) lifts GitHub's 60-an-hour limit; it is only ever sent to api.github.com
+$ApiHeaders = @{ "User-Agent" = "NovaMotion-Setup" }
+if ($env:GITHUB_TOKEN) { $ApiHeaders["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
 
 New-Item -ItemType Directory -Force -Path $Cache, $OnnxDir | Out-Null
 Start-Transcript -Path $LogFile -Force | Out-Null
@@ -84,7 +87,7 @@ Info ($gpus -join ", ")
 if (-not ($gpus -match "NVIDIA")) { throw "No NVIDIA GPU found; TensorRT needs one. NOVA Motion's Vulkan RIFE works on any GPU." }
 
 Step "vs-mlrt release"
-$rel = Invoke-RestMethod -Uri "https://api.github.com/repos/AmusementClub/vs-mlrt/releases/latest" -Headers $Headers
+$rel = Invoke-RestMethod -Uri "https://api.github.com/repos/AmusementClub/vs-mlrt/releases/latest" -Headers $ApiHeaders
 Info "vs-mlrt $($rel.tag_name): $(($rel.assets | ForEach-Object { $_.name }) -join ', ')"
 
 if (-not $ModelsOnly) {
@@ -160,7 +163,7 @@ if ($missing) {
 if ($missing) {
     # Models newer than 4.6 are published on their own, one archive each, in the "external-models" release
     Info "looking in vs-mlrt's external-models release"
-    $ext = Invoke-RestMethod -Uri "https://api.github.com/repos/AmusementClub/vs-mlrt/releases/tags/external-models" -Headers $Headers
+    $ext = Invoke-RestMethod -Uri "https://api.github.com/repos/AmusementClub/vs-mlrt/releases/tags/external-models" -Headers $ApiHeaders
     foreach ($f in @($missing)) {
         $a = $ext.assets | Where-Object { $_.name -eq ($f -replace '\.onnx$', '.7z') } | Select-Object -First 1
         if (-not $a) { continue }
@@ -178,7 +181,7 @@ Step "akarin plugin (exact 25->60 style frame rates without extra work)"
 Send-NovaStep "Adding the akarin plugin"
 try {
     # vs-mlrt needs akarin v0.96g or newer; those builds are not always the release marked "latest"
-    $aks = Invoke-RestMethod -Uri "https://api.github.com/repos/AkarinVS/vapoursynth-plugin/releases?per_page=40" -Headers $Headers
+    $aks = Invoke-RestMethod -Uri "https://api.github.com/repos/AkarinVS/vapoursynth-plugin/releases?per_page=40" -Headers $ApiHeaders
     $asset = $null
     foreach ($r in $aks) {
         foreach ($a in $r.assets) {

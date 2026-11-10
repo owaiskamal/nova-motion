@@ -31,6 +31,10 @@ $Plugins  = Join-Path $MpvDir "vs-plugins"
 $Models   = Join-Path $Plugins "models"
 $Cache    = Join-Path $Runtime ".cache\enhance"
 $Headers  = @{ "User-Agent" = "NovaMotion-Setup" }
+# GitHub answers only 60 anonymous questions an hour per network (shared ones run out). A token (CI
+# sets GITHUB_TOKEN) lifts that; it is only ever sent to api.github.com.
+$ApiHeaders = @{ "User-Agent" = "NovaMotion-Setup" }
+if ($env:GITHUB_TOKEN) { $ApiHeaders["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
 $Repo     = "owaiskamal/nova-motion"
 
 # Where each model goes, by name: the folders vs-mlrt looks in
@@ -67,8 +71,14 @@ Step "Enhance models ($Tag)"
 # that is has everything else
 $rel = $null
 foreach ($t in (@($Tag, "enhance-models-v2", "enhance-models-v1") | Select-Object -Unique)) {
-    try { $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$t" -Headers $Headers }
-    catch { Info "$t isn't published yet"; continue }
+    try { $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$t" -Headers $ApiHeaders }
+    catch {
+        # Only "not found" means not published: a busy or unreachable GitHub said the same before, wrongly
+        $status = 0; try { $status = [int]$_.Exception.Response.StatusCode } catch { }
+        if ($status -eq 404) { Info "$t isn't published yet"; continue }
+        if ($status -eq 403 -or $status -eq 429) { throw "GitHub is limiting downloads from this network for now. Try again in a few minutes (up to an hour)." }
+        throw "Couldn't reach GitHub to find the Enhance models: check the internet connection and try again. ($($_.Exception.Message))"
+    }
     $Tag = $t; break
 }
 if (-not $rel) { throw "The Enhance models aren't published yet. Smoothing works meanwhile." }
@@ -119,7 +129,7 @@ if (-not $hasScript -or (-not $hasTrt -and -not $hasNcnn)) {
     Step "vs-mlrt on Vulkan (runs the models on any modern graphics card)"
     Send-NovaStep "Downloading what runs the models (vs-mlrt)"
     if (-not $SevenZip) { throw "7-Zip not found in the runtime: run build.cmd again" }
-    $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/AmusementClub/vs-mlrt/releases?per_page=15" -Headers $Headers
+    $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/AmusementClub/vs-mlrt/releases?per_page=15" -Headers $ApiHeaders
     # A stable release with both the Vulkan plugin and the scripts; test builds only if there's none
     $usable = $releases | Where-Object { -not $_.draft -and ($_.assets | Where-Object { $_.name -match '^VSNCNN-Windows-x64.*\.7z$' }) -and
                                          ($_.assets | Where-Object { $_.name -match '^scripts\..+\.7z$' }) }
