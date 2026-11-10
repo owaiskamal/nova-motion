@@ -359,6 +359,46 @@ m_ = [track(novamotion_trt.interpolate(held, Fraction(24), Fraction(60), "rife-v
 check(any(all(abs(v - x) > 0.01 for x in drawn_pos) for v in m_), f"drawn off: the same video gets in-between frames ({m_})")
 d_ = [track(novamotion_trt.interpolate(moving[4:], Fraction(24), Fraction(48), "rife-v4.6", 0, scene_detect=True, drawn=True), n) for n in range(0, 6)]
 check(any(abs(v - 0.45) < 0.002 for v in d_), f"drawn: a pan moving on every frame is still smoothed ({d_})")
+
+def corner_clip(values):       # a small drawing (top left) taking these values over a still background
+    def draw(n, f):
+        out = f.copy()
+        for pl in range(3):
+            np_ = out[pl]
+            for y in range(48):
+                for x in range(80):
+                    np_[y, x] = values[n]
+        return out
+    c = core.std.BlankClip(width=640, height=360, format=vs.RGBS, length=len(values), fpsnum=24, color=[0.3] * 3)
+    return core.resize.Point(core.std.ModifyFrame(c, c, draw), format=vs.RGBH)
+def drawn_out(values, first=2, last=None):
+    c = corner_clip(values)
+    o_ = novamotion_trt.interpolate(c, Fraction(24), Fraction(48), "rife-v4.6", 0, scene_detect=True, drawn=True)
+    return [track(o_, n) for n in range(first, last or 2 * len(values) - 2)]
+is_real = lambda v, values: any(abs(v - x) < 0.003 for x in values)
+
+# A held drawing is rarely the exact same picture twice in a compressed video: here each repeat is off
+# by 5 levels of 255, more than a plain repeat allows. Missed, the drawings on either side were morphed
+noisy = [0.0, 0.02, 0.3, 0.32, 0.6, 0.62, 0.9, 0.92, 0.5, 0.52]
+flags = [novamotion_trt.frame_info(corner_clip(noisy)).get_frame(n).props["Dup0"] for n in range(10)]
+check(sum(flags) == 0, f"drawn: a repeat with compression noise isn't a repeat for other video ({flags})")
+d_ = drawn_out(noisy)
+check(all(is_real(v, noisy) for v in d_), f"drawn: held drawings with compression noise between them aren't morphed ({d_})")
+# Two single drawings between held ones are drawings too
+singles = [0.0, 0.0, 0.3, 0.5, 0.7, 0.7, 0.9, 0.9, 0.2, 0.2]
+d_ = drawn_out(singles)
+check(all(is_real(v, singles) for v in d_), f"drawn: single drawings between held ones aren't morphed ({d_})")
+# A slow, steady change (a pan, a fade) is small on every frame: motion, not a held drawing
+slow = [round(0.1 + 0.02 * n, 3) for n in range(12)]
+d_ = drawn_out(slow, 4, 16)
+check(sum(1 for v in d_ if not is_real(v, slow)) >= 5, f"drawn: a slow steady change is still smoothed ({d_})")
+# The extra frame of a 24 fps video stored at 30 (one repeat in five), inside motion: blended across
+stray = [0.0, 0.1, 0.2, 0.3, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 0.9, 1.0]
+full = core.std.BlankClip(width=128, height=64, format=vs.RGBH, length=len(stray), fpsnum=24)
+full = core.std.FrameEval(full, lambda n: core.std.BlankClip(full, color=[stray[n]] * 3))
+o_ = novamotion_trt.interpolate(full, Fraction(24), Fraction(48), "rife-v4.6", 0, scene_detect=False, drawn=True)
+d_ = [track(o_, n) for n in range(4, 14)]
+check(all(0.02 < st_ < 0.11 for st_ in steps(d_)), f"drawn: a stray repeat inside motion doesn't stop it ({d_}, steps {steps(d_)})")
 fake.RIFEMerge = real_merge
 o = run({"engine": "mvtools", "target": 60, "drawn": True}, fps=24, frames=10, w=640, h=360)
 check(o.fps == Fraction(60), f"drawn on MVTools: still 60 fps ({o.fps})")

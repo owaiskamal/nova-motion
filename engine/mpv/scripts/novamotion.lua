@@ -13,7 +13,11 @@ local msg   = require "mp.msg"
 local o = {
     vpy = "",                 -- path to novamotion.vpy (default: <mpv dir>\..\novamotion.vpy)
     config = "",              -- path to engine.json   (default: env / %APPDATA%)
-    buffered_frames = 12,      -- slack so RIFE bursts do not starve the display
+    -- Slack so RIFE bursts do not starve the display, and room for the frames the engine looks ahead:
+    -- up to 8 for "keep drawings as drawn", plus those of the frames being made at once (a 24-thread
+    -- CPU makes 24, about 12 source frames). With too few, mpv drops a frame the engine still needs
+    -- and the filter stops. 24 is what exports have always used.
+    buffered_frames = 24,
     concurrent_frames = "auto",
 }
 opts.read_options(o, "novamotion")

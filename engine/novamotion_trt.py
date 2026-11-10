@@ -400,32 +400,96 @@ def block_change(clip):
     return core.std.ModifyFrame(stats, stats, tag)
 
 
-def frame_info(clip):
-    """Per source frame k: Cut1/Cut2 (k+1 / k+2 starts a new shot), DupM1/Dup0/Dup1/Dup2 (k-1 .. k+2 repeat the frame before)."""
+# Drawn animation (anime, cartoons). A drawing held for 2 or 3 frames is rarely the exact same picture
+# twice in a compressed video: measured on a 480p clip, 8 of 147 repeats changed by 4-6 levels of 255
+# (above DUP_THRESHOLD), and each one missed made the engine morph the drawings on either side of it
+# (a mouth melting from clenched to open). So for drawn video a frame also counts as a repeat when it
+# changes little AND far less than the frames around it do: 4 between changes of 65 and 68. A slow pan
+# or fade changes every frame by a similar small amount, so it isn't taken for a held drawing.
+DRAWN_SMALL = 0.06
+DRAWN_RATIO = 0.2
+# A repeat with no other repeat within 4 frames either side is a stray one inside moving video (the
+# extra frame of a 24 or 25 fps video stored at 30: one in five or six), not a held drawing. Every
+# frame looked ahead is one more the player must hold decoded (see buffered_frames in novamotion.lua).
+ISOLATED_BACK, ISOLATED_AHEAD = 4, 4
+
+
+def _shift(clip, n):
+    """clip moved by n frames: frame k is the clip's frame k+n (the ends repeat)."""
+    if n == 0:
+        return clip
+    if abs(n) >= clip.num_frames:                    # a clip shorter than the shift: all one end
+        return (clip[-1] if n > 0 else clip[0]) * clip.num_frames
+    if n > 0:
+        return clip[n:] + clip[-1] * n
+    return clip[0] * (-n) + clip[:n]
+
+
+def repeats(clip, drawn=False):
+    """Per frame k: Rep = 1 when k shows the same picture as k-1 (see DUP_THRESHOLD, DRAWN_SMALL)."""
+    diff = block_change(clip)
+    before, after = _shift(diff, -1), _shift(diff, 1)
+
+    def tag(n, f):
+        out = f[0].copy()
+        c = f[0].props["BlockChange"]
+        rep = n > 0 and c < DUP_THRESHOLD
+        if drawn and not rep and n > 0 and c < DRAWN_SMALL:
+            around = max(f[1].props["BlockChange"] if n > 1 else 0.0, f[2].props["BlockChange"])
+            rep = c < DRAWN_RATIO * around
+        out.props["Rep"] = 1 if rep else 0
+        out.props["Hold"] = out.props["Iso"] = 0
+        return out
+
+    # Without drawn, only the frame itself is looked at (two clips, so tag gets a list either way)
+    return core.std.ModifyFrame(diff, [diff, before, after] if drawn else [diff, diff], tag)
+
+
+def holds(rep):
+    """Per frame k: Hold = 1 for a repeat that belongs to a held drawing (other repeats nearby),
+    Iso = 1 for a stray repeat inside moving video."""
+    offsets = [d for d in range(-ISOLATED_BACK, ISOLATED_AHEAD + 1) if d != 0]
+    around = [rep] + [_shift(rep, d) for d in offsets]
+
+    def tag(n, f):
+        out = f[0].copy()
+        r = out.props["Rep"]
+        others = sum(f[j + 1].props["Rep"] for j, d in enumerate(offsets) if n + d > 0)
+        out.props["Hold"] = 1 if r and others else 0
+        out.props["Iso"] = 1 if r and not others else 0
+        return out
+
+    return core.std.ModifyFrame(rep, around, tag)
+
+
+INFO_PROPS = ("Cut1", "Cut2", "DupM1", "Dup0", "Dup1", "Dup2", "HM1", "H0", "H1", "H2", "H3", "I0", "I1")
+
+
+def frame_info(clip, drawn=False):
+    """Per source frame k: Cut1/Cut2 (k+1 / k+2 starts a new shot), DupM1/Dup0/Dup1/Dup2 (k-1 .. k+2
+    repeat the frame before), and for drawn video HM1/H0/H1/H2/H3 (k-1 .. k+3 belong to a held drawing)
+    and I0/I1 (k / k+1 is a stray repeat inside moving video)."""
     small = core.resize.Bilinear(clip, width=160, height=96, format=vs.GRAY8, matrix_s="709")
-    n = small.num_frames
-    if n < 4:
-        return core.std.SetFrameProps(small, Cut1=0, Cut2=0, DupM1=0, Dup0=0, Dup1=0, Dup2=0)
+    if small.num_frames < 4:
+        return core.std.SetFrameProps(small, **{name: 0 for name in INFO_PROPS})
     cuts = scene_changes(clip)
-    diff = block_change(clip)                                     # frame k against k-1
-    d1 = diff[1:] + diff[-1]
-    d2 = diff[2:] + diff[-1] + diff[-1]
-    dm1 = diff[0] + diff[:-1]
-    c1 = cuts[1:] + cuts[-1]
-    c2 = cuts[2:] + cuts[-1] + cuts[-1]
+    # Held drawings are only looked for (5 more frames ahead) when drawn asks for them
+    rep = holds(repeats(clip, True)) if drawn else repeats(clip)
+    inputs = [rep, _shift(rep, 1), _shift(rep, 2), _shift(rep, -1), _shift(cuts, 1), _shift(cuts, 2),
+              _shift(rep, 3) if drawn else rep]
 
     def mark(n, f):
         out = f[0].copy()
-        dup = lambda fr, idx: 1 if idx > 0 and fr.props["BlockChange"] < DUP_THRESHOLD else 0
-        out.props["Dup0"] = dup(f[0], n)
-        out.props["Dup1"] = dup(f[1], n + 1)
-        out.props["Dup2"] = dup(f[2], n + 2)
-        out.props["DupM1"] = dup(f[3], n - 1)
+        out.props["Dup0"], out.props["H0"], out.props["I0"] = f[0].props["Rep"], f[0].props["Hold"], f[0].props["Iso"]
+        out.props["Dup1"], out.props["H1"], out.props["I1"] = f[1].props["Rep"], f[1].props["Hold"], f[1].props["Iso"]
+        out.props["Dup2"], out.props["H2"] = f[2].props["Rep"], f[2].props["Hold"]
+        out.props["DupM1"], out.props["HM1"] = (f[3].props["Rep"], f[3].props["Hold"]) if n > 0 else (0, 0)
+        out.props["H3"] = f[6].props["Hold"] if drawn else 0
         out.props["Cut1"] = f[4].props.get("_SceneChangePrev", 0)
         out.props["Cut2"] = f[5].props.get("_SceneChangePrev", 0)
         return out
 
-    return core.std.ModifyFrame(diff, [diff, d1, d2, dm1, c1, c2], mark)
+    return core.std.ModifyFrame(rep, inputs, mark)
 
 
 def plan(n, p, q, info, drawn=False):
@@ -436,20 +500,27 @@ def plan(n, p, q, info, drawn=False):
     motion, so blending across it gives a ball that stops and then jumps; instead the pair is
     widened to skip the repeat and the time point halved to match the longer gap.
 
-    drawn (anime and cartoons): a drawing held for 2 or 3 frames is shown as drawn, and the
-    switch from one held drawing to the next gets no in-between frames either, because the AI
-    can only morph one drawing into another (a mouth melting from closed to open). What moves
-    on every frame (pans, camera moves, scrolling backgrounds) is smoothed as usual.
+    drawn (anime and cartoons): a drawing held for 2 or 3 frames is shown as drawn, and so is
+    the switch into or out of a held drawing, because the AI can only morph one drawing into
+    another (a mouth melting from closed to open). What moves on every frame (pans, camera
+    moves, action drawn on every frame) is smoothed as usual, and a stray repeat inside it is
+    blended across, as without drawn.
     """
     i, k = n * q // p, (n * q) % p
     g = lambda name: info.props.get(name, 0)
+    nearest = (i, i, 0, True) if k * 2 < p else (i + 1, i + 1, 0, True)
     if drawn:
-        if g("Dup1"):                                    # i+1 repeats i: the same drawing, held
+        if g("H1"):                                      # i+1 repeats i: the same drawing, held
             return i, i, 0, True
-        if g("Dup0") and g("Dup2") and k:                # a held drawing changes to another held one
-            return (i, i, 0, True) if k * 2 < p else (i + 1, i + 1, 0, True)
-        if g("Cut1") and k:
-            return (i, i, 0, True) if k * 2 < p else (i + 1, i + 1, 0, True)
+        if g("I1") and not g("Cut2"):                    # a stray repeat at i+1: blend i .. i+2
+            return i, i + 2, k, k == 0
+        if g("I0") and not g("Cut1"):                    # a stray repeat at i: blend i-1 .. i+1
+            return i - 1, i + 1, p + k, False
+        # Leaving a held drawing, arriving at one, or a cut. One frame further out counts too: two or three
+        # single drawings between held ones are still drawings, not motion (only a run of five frames
+        # that all move is smoothed)
+        if (g("HM1") or g("H0") or g("H2") or g("H3") or g("Cut1")) and k:
+            return nearest
         return i, i + 1, 2 * k, k == 0
     # Only a single repeat inside moving video counts: a run of identical frames is a still
     # scene, and a pair is never widened across a cut
@@ -458,7 +529,7 @@ def plan(n, p, q, info, drawn=False):
     if g("Dup1") and not g("Dup0") and not g("Dup2") and not g("Cut2"):    # i+1 repeats i: blend i .. i+2
         return i, i + 2, k, k == 0
     if g("Cut1") and k:                             # a cut between i and i+1: no blend
-        return (i, i, 0, True) if k * 2 < p else (i + 1, i + 1, 0, True)
+        return nearest
     return i, i + 1, 2 * k, k == 0
 
 
@@ -541,7 +612,7 @@ def interpolate(rgbh, src, dst, model_name, gpu=0, scene_detect=False, dedup=Tru
     src_at = lambda idx: clip[min(max(idx, 0), last)]
 
     if scene_detect or dedup or drawn:
-        info = frame_info(clip)
+        info = frame_info(clip, drawn)
         if not scene_detect:
             info = core.std.SetFrameProps(info, Cut1=0, Cut2=0)
         if not dedup and not drawn:

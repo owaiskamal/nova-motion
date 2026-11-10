@@ -693,7 +693,7 @@ def keep_drawings(smooth, clip, src, dst):
     ratio = Fraction(dst) / Fraction(src)
     p, q = ratio.numerator, ratio.denominator
     last = clip.num_frames - 1
-    info = novamotion_trt.frame_info(clip)
+    info = novamotion_trt.frame_info(clip, drawn=True)
     base = core.std.BlankClip(info, length=smooth.num_frames, fpsnum=dst.numerator, fpsden=dst.denominator, keep=True)
     info_out = core.std.FrameEval(base, lambda n: info[min(n * q // p, last)])
     real = core.resize.Point(clip, format=smooth.format.id) if clip.format.id != smooth.format.id else clip
