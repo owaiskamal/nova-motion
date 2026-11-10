@@ -74,7 +74,7 @@ if ($builtIn) {
 }
 $Lua = Join-Path $PSScriptRoot "playback-profile.lua"
 $env:NOVAMOTION_NO_FALLBACK = $null
-Say ("{0,-12} {1,7} {2,7} {3,8} {4,7} {5,7} {6,7} {7,7} {8,6} {9,6}  {10}" -f "run", "src fps", "made", "screen", "dropped", "decoder", "mistime", "delayed", "gpu %", "temp", "engine")
+Say ("{0,-12} {1,7} {2,7} {3,8} {4,7} {5,7} {6,7} {7,7} {8,6} {9,6} {10,6}  {11}" -f "run", "src fps", "made", "screen", "dropped", "decoder", "mistime", "delayed", "gpu %", "watts", "temp", "engine")
 foreach ($name in $cases.Keys) {
     if ($Only -and (($Only -split ",") -notcontains $name)) { continue }
     $cfg = @{}; foreach ($k in $userCfg.Keys) { $cfg[$k] = $userCfg[$k] }
@@ -104,17 +104,22 @@ foreach ($name in $cases.Keys) {
     $span = [Math]::Max(1, [double]$last.wall - [double]$first.wall)
     function Rate($col) { try { [Math]::Round(([double]$last.$col - [double]$first.$col) / $span, 2) } catch { -1 } }
     function Mid($col) { $v = @($steady | ForEach-Object { try { [double]$_.$col } catch { } } | Sort-Object); if ($v.Count) { [Math]::Round($v[[int]($v.Count / 2)], 2) } else { -1 } }
-    $gpuUse = ""; $temp = ""
+    $gpuUse = ""; $temp = ""; $watts = ""
     if (Test-Path $gpuLog) {
         $g = @(Get-Content $gpuLog | Where-Object { $_ -match '^\s*\d' } | Select-Object -Skip 6)
         if ($g.Count) {
             $u = @($g | ForEach-Object { [double]($_ -split ',')[0] } | Sort-Object); $gpuUse = $u[[int]($u.Count / 2)]
             $temp = (@($g | ForEach-Object { [double]($_ -split ',')[3] }) | Measure-Object -Maximum).Maximum
+            # Watts say more than the load figure, which is a share of whatever speed the card clocked down to
+            $w = @($g | ForEach-Object { try { [double]($_ -split ',')[4] } catch { } } | Sort-Object); if ($w.Count) { $watts = [Math]::Round($w[[int]($w.Count / 2)]) }
         }
     }
     $eng = ""; if (Test-Path $state) { try { $eng = ((Get-Content $state -Raw) -replace '\s+', ' ').Trim() } catch { } }
-    Say ("{0,-12} {1,7} {2,7} {3,8} {4,7} {5,7} {6,7} {7,7} {8,6} {9,6}  {10}" -f $name, (Mid "container-fps"), (Mid "estimated-vf-fps"), (Mid "estimated-display-fps"),
-        (Rate "frame-drop-count"), (Rate "decoder-frame-drop-count"), (Rate "mistimed-frame-count"), (Rate "vo-delayed-frame-count"), $gpuUse, $temp, $eng)
+    if (-not $eng -and $cfg["enabled"] -ne $false) {
+        $eng = "smoothing didn't start" + $(if ((Mid "container-fps") -gt 31) { ": this video is above 31 fps, which is played as it is. Use a 24, 25 or 30 fps video." } else { ": see $name.mpv.log" })
+    }
+    Say ("{0,-12} {1,7} {2,7} {3,8} {4,7} {5,7} {6,7} {7,7} {8,6} {9,6} {10,6}  {11}" -f $name, (Mid "container-fps"), (Mid "estimated-vf-fps"), (Mid "estimated-display-fps"),
+        (Rate "frame-drop-count"), (Rate "decoder-frame-drop-count"), (Rate "mistimed-frame-count"), (Rate "vo-delayed-frame-count"), $gpuUse, $watts, $temp, $eng)
 }
 Say ""
 Say "dropped / decoder / mistime / delayed are frames a second during the steady part of each run (0 is perfect)."
