@@ -324,7 +324,10 @@ public sealed class ExportRunner : IExportRunner
         File.WriteAllText(cfg, JsonSerializer.Serialize(probed, Json.Options));
         var rate = source.Fps is { } fps ? FrameRate.Output(probed, fps) : null;
         long? frames = options.Still ? 1
-                     : rate is not null && source.Frames is { } n ? FrameRate.Frames(n, FrameRate.Snap(source.Fps!.Value), rate) : null;
+                     // The part being exported, not the whole file: with the whole file's count the encoder
+                     // never stopped, mpv asked for frames past the engine's end and switched it off, and a
+                     // part from 4:18 of a film failed with "The AI engine didn't run"
+                     : rate is not null && probed.SourceFrames is { } n ? FrameRate.Frames(n, FrameRate.Snap(source.Fps!.Value), rate) : null;
 
         var final = output;
         output = ExportPlan.PartPath(final);
