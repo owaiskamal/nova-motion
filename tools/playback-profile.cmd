@@ -6,6 +6,6 @@ if "%~1"=="" (
   echo Drag a video file onto this file to profile its playback.
   pause & exit /b 1
 )
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0playback-profile.ps1" -Video "%~1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0playback-profile.ps1" -Video "%~1" -Only "%PROFILE_ONLY%"
 echo.
 pause

@@ -11,7 +11,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Video,
     [int]$Seconds = 25,
     [string]$Start = "",                 # where in the video (seconds); default: a third of the way in
-    [string[]]$Only = @()
+    [string]$Only = ""                   # only these runs, e.g. "off,auto,auto-builtin"
 )
 $ErrorActionPreference = "Stop"
 $Root    = Split-Path -Parent $PSScriptRoot
@@ -58,13 +58,28 @@ $cases = [ordered]@{
     "v4.6-half"      = @{ enabled = $true; engine = "rife_trt"; target = "display"; trt_model = "rife-v4.6"; ai_scale = 0.5; quality_step = 0; rate_step = 0; drawn = $false; demo = $false }
     "vulkan"         = @{ enabled = $true; engine = "rife"; target = "60"; quality_step = 0; rate_step = 0; drawn = $false; demo = $false }
 }
+# Laptops with two graphics chips: the same runs with the picture drawn by the built-in one, which
+# leaves the NVIDIA card to the AI alone (decoding and drawing took about a quarter of a GTX 1650)
+$builtIn = ""
+try {
+    $names = @((Get-CimInstance Win32_VideoController).Name)
+    if ($names | Where-Object { $_ -match 'NVIDIA' }) { $builtIn = @($names | Where-Object { $_ -match 'Intel|AMD|Radeon' -and $_ -notmatch 'NVIDIA' })[0] }
+} catch { }
+if ($builtIn) {
+    foreach ($base in @("off", "auto", "x2")) {
+        $c = @{}; foreach ($k in $cases[$base].Keys) { $c[$k] = $cases[$base][$k] }
+        $c["_mpv"] = @("--d3d11-adapter=$builtIn")
+        $cases["$base-builtin"] = $c
+    }
+}
 $Lua = Join-Path $PSScriptRoot "playback-profile.lua"
 $env:NOVAMOTION_NO_FALLBACK = $null
 Say ("{0,-12} {1,7} {2,7} {3,8} {4,7} {5,7} {6,7} {7,7} {8,6} {9,6}  {10}" -f "run", "src fps", "made", "screen", "dropped", "decoder", "mistime", "delayed", "gpu %", "temp", "engine")
 foreach ($name in $cases.Keys) {
-    if ($Only.Count -and ($Only -notcontains $name)) { continue }
+    if ($Only -and (($Only -split ",") -notcontains $name)) { continue }
     $cfg = @{}; foreach ($k in $userCfg.Keys) { $cfg[$k] = $userCfg[$k] }
-    foreach ($k in $cases[$name].Keys) { $cfg[$k] = $cases[$name][$k] }
+    $extra = @()
+    foreach ($k in $cases[$name].Keys) { if ($k -eq "_mpv") { $extra = @($cases[$name][$k]) } else { $cfg[$k] = $cases[$name][$k] } }
     $cfgFile = Join-Path $Out "$name.engine.json"; $state = Join-Path $Out "$name.state.json"; $csv = Join-Path $Out "$name.csv"
     [IO.File]::WriteAllText($cfgFile, ($cfg | ConvertTo-Json -Depth 6))
     $env:NOVAMOTION_ENGINE_CONFIG = $cfgFile; $env:NOVAMOTION_ENGINE_STATE = $state
@@ -75,6 +90,7 @@ foreach ($name in $cases.Keys) {
               "--script-opts=novamotion-vpy=$Vpy,novamotion-config=$cfgFile,profile-out=$csv",
               "--osd-msg1=NOVA profile: $name")
     $mpvArgs += $(if ($Start) { "--start=$Start" } else { "--start=33%" })
+    $mpvArgs += $extra
     $mpvArgs += @("--", $Video)
     $p = Start-Process -FilePath $Mpv -ArgumentList ($mpvArgs | ForEach-Object { '"' + $_ + '"' }) -PassThru
     if (-not $p.WaitForExit(($Seconds + 150) * 1000)) { try { $p.Kill() } catch { } }
