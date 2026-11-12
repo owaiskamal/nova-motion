@@ -86,7 +86,7 @@ def run(cmd, log):
 
 def encode(mpv, frames, fps, out, log):
     """PNG frames to an H.264 video at high quality, with the app's own mpv."""
-    files = sorted(glob.glob(os.path.join(frames, "*.png")))
+    files = sorted(glob.glob(os.path.join(frames, "**", "*.png"), recursive=True))
     if not files:
         return False
     lst = os.path.join(frames, "list.txt")
@@ -170,7 +170,7 @@ def main():
             t = time.time()
             code, oom = run(cmd, log)
             took = time.time() - t
-            if code == 0 and glob.glob(os.path.join(frames, "*.png")):
+            if code == 0 and glob.glob(os.path.join(frames, "**", "*.png"), recursive=True):
                 run_info.update(batch=batch, seconds=round(took), seconds_per_frame=round(took / count, 2))
                 break
             print(f"   {'Ran out of graphics memory' if oom else 'Failed'} at {batch} frames at once"
