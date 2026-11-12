@@ -16,7 +16,6 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BATCHES = [21, 9, 5]          # frames the model sees at once (4n+1); fewer if the card runs out of memory
 
 
 def find_runtime(start):
@@ -53,10 +52,18 @@ def dit_model(models):
     sys.exit("The Generative model isn't installed yet: add Generative on the AI Models page first.")
 
 
+def batches(vram):
+    """Frames the model sees at once (4n+1). On a 12 GB RTX 4070, 21 frames of 1080p overflowed into
+    system memory: no error, just 5 minutes to encode one batch, so smaller cards start at 9."""
+    return [21, 9, 5] if vram >= 16 else [9, 5]
+
+
 def memory_args(out_w, out_h, vram):
     args = ["--vae_encode_tiled", "--vae_decode_tiled"]
-    if vram < 12:
-        args += ["--vae_decode_tile_size", "512", "--vae_decode_tile_overlap", "64"]
+    if vram < 16:
+        # 512-pixel tiles both ways: the runner's 1024 for encoding overflowed 12 GB at 1080p
+        args += ["--vae_encode_tile_size", "512", "--vae_encode_tile_overlap", "64",
+                 "--vae_decode_tile_size", "512", "--vae_decode_tile_overlap", "64"]
     if vram < 16 and out_w * out_h > 4e6:
         args += ["--dit_offload_device", "cpu", "--blocks_to_swap", "16"]
     return args
@@ -133,6 +140,10 @@ def main():
     log = open(os.path.join(out_dir, "log.txt"), "a", encoding="utf-8")
     print(f"{name}, {vram:.0f} GB. Source {w}x{h} at {fps:.3f} fps; doing {count} frames from {a.start:g} s.")
     print(f"Model {model}. Results go to:\n   {out_dir}\n")
+    print("If a phase takes many minutes with the graphics card's shared memory filling up in Task Manager,\n"
+          "the card ran out of its own memory and Windows is using system memory instead (very slow).\n"
+          "NVIDIA Control Panel > Manage 3D settings > CUDA - Sysmem Fallback Policy > Prefer No Sysmem\n"
+          "Fallback turns that into an error, and this test then retries with fewer frames.\n")
 
     results = {"gpu": name, "vram_gb": round(vram, 1), "source": f"{w}x{h}", "fps": round(fps, 3),
                "frames": count, "start_s": a.start, "model": model, "runs": []}
@@ -146,7 +157,8 @@ def main():
         frames = os.path.join(out_dir, f"frames {size}")
         print(f"{out_w}x{out_h}:")
         run_info = {"size": f"{out_w}x{out_h}"}
-        for batch in BATCHES:
+        tries = batches(vram)
+        for batch in tries:
             shutil.rmtree(frames, ignore_errors=True)
             cmd = [python, runner, video, "--output", frames, "--output_format", "png", "--model_dir", models,
                    "--dit_model", model, "--resolution", str(min(out_w, out_h)), "--max_resolution",
@@ -162,7 +174,7 @@ def main():
                 run_info.update(batch=batch, seconds=round(took), seconds_per_frame=round(took / count, 2))
                 break
             print(f"   {'Ran out of graphics memory' if oom else 'Failed'} at {batch} frames at once"
-                  + (", trying fewer." if batch != BATCHES[-1] else "."))
+                  + (", trying fewer." if batch != tries[-1] else "."))
             run_info.setdefault("failed", []).append({"batch": batch, "oom": oom, "seconds": round(took)})
         else:
             results["runs"].append(run_info)
