@@ -340,6 +340,14 @@ twice = field[0:3] + field[2] + field[3:7]                  # frame 3 repeats fr
 flags = [novamotion_trt.frame_info(twice).get_frame(n).props["Dup0"] for n in range(8)]
 check(flags == [0, 0, 0, 1, 0, 0, 0, 0], f"dedup: the repeated frame is still found ({flags})")
 
+# 60 fps video on a fast screen: smoothed to 120 (until November 2026 anything above 31 fps played as it was)
+o = run({"engine": "mvtools", "target": "display"}, fps=60, display=120.0, frames=24)
+check(o.fps == Fraction(120), f"60 fps on a 120 Hz screen: 120 fps ({o.fps})")
+o = run({"engine": "mvtools", "target": "display"}, fps=60, display=60.0, frames=24)
+check(o.fps == Fraction(60), f"60 fps on a 60 Hz screen: left at 60 ({o.fps})")
+o = run({"engine": "mvtools", "target": "display", "max_source_fps": 61.0}, fps=120, display=144.0, frames=24)
+check(o.fps == Fraction(120), f"120 fps video: played as it is ({o.fps})")
+
 # Drawn animation (anime on 2s): every output frame is a real drawing, no in-betweens to morph,
 # while a pan that moves on every frame is still smoothed
 drawn_pos = [0.0, 0.0, 0.2, 0.2, 0.4, 0.4, 0.6, 0.6, 0.8, 0.8]

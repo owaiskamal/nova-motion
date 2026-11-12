@@ -116,6 +116,10 @@ The full list is in Settings → Keyboard shortcuts.
 - **`benchmark.cmd`** measures every engine on your PC (results in `runtime\benchmark.log`). Sharing the result in an issue helps others with the same card.
 - **`collect-logs.cmd`** puts the player and engine logs, settings, tuning results and graphics info into `nova-motion-logs.zip` on your Desktop, to attach to an [issue](https://github.com/owaiskamal/nova-motion/issues).
 
+### After 0.3.1
+
+- **60 fps video is smoothed too**, to 120 or 144 on a fast screen. Until now anything above 31 fps played as it was, so a 60 fps video on a 144 Hz screen got nothing. The engine still plays only what the card keeps up with (it lowers the rate to what tuning measured), and on a 60 Hz screen a 60 fps video is left alone. Not yet measured on real hardware.
+
 ### Fixed in 0.3.1
 
 Found in a review of the whole engine, app and setup, not from one bug report each:

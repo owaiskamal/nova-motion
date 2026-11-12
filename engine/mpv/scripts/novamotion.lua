@@ -39,7 +39,7 @@ local function vpy_path()
 end
 
 local DEFAULTS = {
-    enabled = true, engine = "rife", target = "display", max_source_fps = 31.0,
+    enabled = true, engine = "rife", target = "display", max_source_fps = 61.0,
     rife_model = "rife-v4.6_ensembleFalse", rife_gpu = 0, rife_threads = 2, scene_detect = true,
     mv_quality = "balanced", demo = false, rtx_vsr = false,
 }

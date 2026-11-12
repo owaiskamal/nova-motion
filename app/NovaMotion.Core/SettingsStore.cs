@@ -27,7 +27,13 @@ public sealed class SettingsStore
             if (File.Exists(SettingsPath))
             {
                 var s = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsPath), Json.Options);
-                if (s is { Profiles.Count: > 0 }) return s;
+                if (s is { Profiles.Count: > 0 })
+                {
+                    // Saved with the old limit (31 fps, the default; nothing in the app sets it): raised once
+                    foreach (var e in s.Profiles.Select(p => p.Engine))
+                        if (e is not null && e.MaxSourceFps == 31.0) e.MaxSourceFps = EngineSettings.HighFrameRateLimit;
+                    return s;
+                }
             }
         }
         catch (Exception ex) when (ex is IOException or JsonException)

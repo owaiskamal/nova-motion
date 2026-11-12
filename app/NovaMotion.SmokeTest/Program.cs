@@ -38,6 +38,11 @@ s.Active.Engine.TargetText = "x2"; store.Save(s);
 Check(JsonNode.Parse(File.ReadAllText(store.EngineConfigPath))!["target"]!.GetValue<string>() == "x2", "engine.json target x2 string");
 var reloaded = new SettingsStore(dir).Load();
 Check(reloaded.Active.Engine.TargetText == "x2", "settings reload");
+foreach (var pr in reloaded.Profiles) pr.Engine.MaxSourceFps = 31.0;   // saved by an older version
+store.Save(reloaded);
+var raised = new SettingsStore(dir).Load();
+Check(raised.Profiles.All(p => p.Engine.MaxSourceFps == EngineSettings.HighFrameRateLimit),
+      "settings saved with the old 31 fps limit are raised to 61 (60 fps video can go to 120/144)");
 File.WriteAllText(store.SettingsPath, "{ broken");
 Check(new SettingsStore(dir).Load().Profiles.Count == 4 && File.Exists(store.SettingsPath + ".bad"), "corrupt settings recovered");
 

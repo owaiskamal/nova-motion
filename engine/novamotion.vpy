@@ -44,7 +44,7 @@ DEFAULTS = {
     "enabled": True,
     "engine": "rife",            # rife_trt (NVIDIA TensorRT) | rife (Vulkan) | mvtools
     "target": "display",         # display | display/2 | x2 | <number, e.g. 60 or 120>
-    "max_source_fps": 31.0,      # never interpolate content above this rate
+    "max_source_fps": 61.0,      # never interpolate content above this rate (60 fps to 120/144 is allowed)
     "rife_model": "rife-v4.6_ensembleFalse",   # Vulkan RIFE model
     "trt_model": "auto",         # TensorRT model: auto (best this PC sustains, see Tune) or e.g. rife-v4.26
     "quality_step": 0,           # set by the player when frames drop: go this many models lighter

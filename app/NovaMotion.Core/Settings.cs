@@ -11,7 +11,11 @@ public sealed class EngineSettings
     [JsonPropertyName("enabled")]        public bool Enabled { get; set; } = true;
     [JsonPropertyName("engine")]         public string Engine { get; set; } = "rife";        // rife_trt | rife | mvtools
     [JsonPropertyName("target")]         public JsonElement Target { get; set; } = JsonSerializer.SerializeToElement("display");
-    [JsonPropertyName("max_source_fps")] public double MaxSourceFps { get; set; } = 31.0;
+    [JsonPropertyName("max_source_fps")] public double MaxSourceFps { get; set; } = HighFrameRateLimit;
+    /// <summary>Videos up to 60 fps are smoothed (to 120 or 144 on fast screens, if the card keeps up:
+    /// the engine lowers the rate to what tuning says it makes). Until November 2026 it was 31, so a
+    /// 60 fps video on a 144 Hz screen played as it was.</summary>
+    public const double HighFrameRateLimit = 61.0;
     [JsonPropertyName("rife_model")]     public string RifeModel { get; set; } = "rife-v4.6_ensembleFalse";
     [JsonPropertyName("rife_gpu")]       public int RifeGpu { get; set; }
     /// <summary>TensorRT model: "auto" picks the best one this PC sustains (see tune.cmd), or e.g. "rife-v4.26".</summary>
