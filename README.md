@@ -116,7 +116,7 @@ The full list is in Settings → Keyboard shortcuts.
 - **`benchmark.cmd`** measures every engine on your PC (results in `runtime\benchmark.log`). Sharing the result in an issue helps others with the same card.
 - **`collect-logs.cmd`** puts the player and engine logs, settings, tuning results and graphics info into `nova-motion-logs.zip` on your Desktop, to attach to an [issue](https://github.com/owaiskamal/nova-motion/issues).
 
-### Reliability fixes after 0.3.0
+### Fixed in 0.3.1
 
 Found in a review of the whole engine, app and setup, not from one bug report each:
 
